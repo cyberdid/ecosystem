@@ -1,0 +1,9 @@
+{
+  "$comment": "Єдиний реєстр MCP-серверів екосистеми. Per-harness конфіги генеруються з нього (Phase 2). Жодних ключів/токенів тут — лише імена та призначення.",
+  "servers": {
+    "filesystem": { "purpose": "доступ до локальних файлів", "scope": "per-machine" },
+    "github": { "purpose": "GitHub API (PAT з env)", "scope": "global" },
+    "postgres-spark": { "purpose": "spark-ts:5432/spark", "scope": "spark-ts" },
+    "spark-ts": { "purpose": "кастомний MCP-сервер на DGX Spark", "scope": "spark-ts" }
+  }
+}
