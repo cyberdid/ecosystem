@@ -1,0 +1,69 @@
+apiVersion: ai.ecosystem/v1alpha1
+kind: DeploymentCatalog
+deployments:
+  - id: dgx-lab
+    provider: local
+    adapter: openai-compatible
+    model: configured-at-runtime
+    endpointRef: env:ECO_DGX_OPENAI_BASE_URL
+    zone: Z1
+    allowedDataClasses:
+      - D0
+      - D1
+      - D2
+    artifactTrust: P1
+    declaredCapabilities:
+      - model.text
+    observedCapabilitiesRef: .ai/evals/observed/dgx-lab.json
+    retention: local-runtime-dependent
+    trainingUse: prohibited
+    region: local
+    enabled: false
+  - id: approved-cloud
+    provider: configured-at-runtime
+    adapter: direct-provider
+    model: configured-at-runtime
+    endpointRef: env:ECO_CLOUD_ENDPOINT
+    zone: Z3
+    allowedDataClasses:
+      - D0
+      - D1
+    artifactTrust: P1
+    declaredCapabilities:
+      - model.text
+    observedCapabilitiesRef: .ai/evals/observed/approved-cloud.json
+    retention: contract-required
+    trainingUse: unknown
+    region: contract-required
+    enabled: false
+logicalRoles:
+  code.read:
+    requiredCapabilities:
+      - model.text
+    allowedDataClasses:
+      - D0
+      - D1
+    allowedZones:
+      - Z1
+      - Z2
+      - Z3
+    minimumArtifactTrust: P1
+    maximumActionClass: A1
+    candidates:
+      - dgx-lab
+      - approved-cloud
+  review.private:
+    requiredCapabilities:
+      - model.text
+    allowedDataClasses:
+      - D0
+      - D1
+      - D2
+    allowedZones:
+      - Z0
+      - Z1
+    minimumArtifactTrust: P2
+    maximumActionClass: A1
+    candidates:
+      - dgx-lab
+

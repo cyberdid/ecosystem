@@ -1,0 +1,41 @@
+{
+  "apiVersion": "ai.ecosystem/v1alpha1",
+  "deployments": [
+    {
+      "adapter": "openai-compatible",
+      "enabled": false,
+      "id": "dgx-lab",
+      "model": "configured-at-runtime",
+      "provider": "local"
+    },
+    {
+      "adapter": "direct-provider",
+      "enabled": false,
+      "id": "approved-cloud",
+      "model": "configured-at-runtime",
+      "provider": "configured-at-runtime"
+    }
+  ],
+  "inputs": {
+    "capabilities": {
+      "path": "capabilities.yaml",
+      "sha256": "1d9cfb617867c6378d5b9a2c8ec0b61f230d42577b55782cdde49b501e12e986"
+    },
+    "deployments": {
+      "path": "deployments.yaml",
+      "sha256": "a7b54217e39283b0549dcd86125318684d63d0c89f5283c034cf62a475fcffc0"
+    },
+    "instructions": {
+      "path": "instructions.yaml",
+      "sha256": "a8ec549144f97ac0420a36597fdb7b63d6bba131ceb4f09deff35881e1c2e539"
+    },
+    "project": {
+      "path": "project.yaml",
+      "sha256": "6a6c0bb766b9b7d7aadef70b00fdf3762149b7113b4ff76ba83f053c50c7210b"
+    },
+    "tools": {
+      "path": "tools.yaml",
+      "sha256": "4dc8f1c63c99352978f39b70b188d81822b19e88f4f6dabd5011d4a65530b0fb"
+    }
+  }
+}

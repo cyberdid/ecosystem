@@ -1,9 +1,12 @@
-# Skills — канонічна тека
+# Skills — portable payloads, not automatic trust
 
 Кожна навичка: `skills/<name>/SKILL.md` (frontmatter: `name`, `description`) + опц. `scripts/`, `references/`.
 
-- Пишемо РАЗ тут → у харнеси потрапляє синком (Phase 2: skillfish / adapters-скрипт), не копіпастою.
+- Skill payload пишеться один раз; client-specific installation є adapter operation, не доказ semantic portability.
 - Урок після реального фейлу дописується у відповідний SKILL.md (процедурна пам'ять, їде між проєктами).
-- Джерела скілів аудитуються перед встановленням (prompt-injection у description — реальний вектор).
+- Skill не отримує permissions із власного description/frontmatter.
+- До promotion потрібні source, version, immutable digest, license, requested capabilities, provenance/signature status, scan та behavioral evaluation.
+- Revocation/quarantine важливі не менше за initial install.
+- Джерела аудитуються до встановлення; scripts і references вважаються untrusted supply-chain artifacts.
 
-Черга на перенесення: dgx_spark skills (inference/, ml/, platform/), wiki-health-check (новий), baoyu-danger-x-to-markdown (встановлений через skillfish).
+Черга на evaluation, не автоматичне перенесення: `dgx_spark` inference/ml/platform skills, wiki-health-check і вже встановлені external skills. Canonical lock format буде додано після skill schema.

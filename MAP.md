@@ -1,6 +1,6 @@
-# MAP — карта екосистеми
+# MAP — deployment inventory
 
-> Оновлено: 2026-07-14. Порти/сервіси spark-ts — станом на dgx_spark AGENTS.md (2026-05-30); перевіряти перед використанням.
+> Оновлено: 2026-07-14. Це операційний inventory, не canonical architecture і не trust certificate. Порти/сервіси spark-ts — snapshot із `dgx_spark`; перевіряти health, version, identity та policy перед використанням.
 
 ## Машини
 
@@ -16,7 +16,7 @@
 
 | Порт | Сервіс |
 |------|--------|
-| `:4000` | **LiteLLM** — модельний шлюз (основа L1; аліаси claude-* → локальні вже працюють) |
+| `:4000` | **LiteLLM** — наявний optional gateway; не source of truth і не обов'язковий execution path |
 | `:8001` | TRT-LLM GPT-OSS 120B Eagle3 (direct, ~40 tok/s) |
 | `:8002` | gpt-oss-proxy (channel format → OpenAI tool_calls) |
 | `:8003` | vLLM Qwen3.6 35B-A3B heretic NVFP4 + DFlash (84–118 tok/s) |
@@ -25,7 +25,7 @@
 | `:8080` | NemoClaw OpenShell кластер |
 | `:8000` / `:3000` | Chatbot API (FastAPI) / Spark Chat UI (Next.js) |
 | `:5432` | PostgreSQL 15 |
-| — | **Hermes Agent** (Telegram `@dgx_spark_ts_bot`) — кандидат в оркестратори (Phase 5); k3s |
+| — | **Hermes Agent** (Telegram `@dgx_spark_ts_bot`) — optional external-agent adapter candidate; not core |
 
 ⚠️ GPU-конфлікт: `trtllm-eagle3` і `vllm-dflash` не працюють одночасно — зупиняй один перед стартом іншого.
 
@@ -33,7 +33,7 @@
 
 | Репо | Роль в екосистемі |
 |------|-------------------|
-| **ecosystem** (цей) | хаб: конституція, контракти, skills, mcp, loops, wiki |
+| **ecosystem** (цей) | executable contracts, compiler, validation, projections; майбутні enforcement/evals |
 | dgx_spark | вузол «машина DGX»: wiki (29 стор.), корпус доків (`docs/CORPUS.md` + `refresh-docs.sh`), скіли inference/ml/platform |
 | LLM | сабмодулі karpathy/autoresearch + nanochat (Karpathy loop — кандидат Loop #2) |
 | ML, voice-id-claude, voice-id-copilot | діаризація мовців / voice-id з агентною оркестрацією |

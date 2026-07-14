@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ai-ecosystem-harness"
+version = "0.1.0"
+description = "Embedded-first, vendor-neutral AI project contracts and compiler"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "ecosystem maintainers" }]
+dependencies = [
+  "PyYAML>=6.0,<7",
+  "jsonschema>=4.10,<5",
+]
+
+[project.scripts]
+eco = "eco_cli.cli:main"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+eco_cli = ["schemas/*.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+

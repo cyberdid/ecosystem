@@ -4,3 +4,9 @@ node_modules/
 __pycache__/
 .env
 .env.*
+.venv/
+dist/
+build/
+*.egg-info/
+.pytest_cache/
+.ai/.state/
