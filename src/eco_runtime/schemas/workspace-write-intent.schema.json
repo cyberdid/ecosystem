@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai.ecosystem.local/schemas/runtime/workspace-write-intent.schema.json",
+  "title": "WorkspaceWriteIntent",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "runtime.ai.ecosystem/v1alpha1" },
+    "kind": { "const": "WorkspaceWriteIntent" },
+    "metadata": { "$ref": "#/$defs/metadata" },
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["idempotencyKeyDigest", "planDigest", "toolRequest", "policyAllowDecision", "approvalGrant", "proposal", "toolCatalogDigest", "operation", "pathDigest", "expectedBefore", "candidateArtifact", "rollback"],
+      "properties": {
+        "idempotencyKeyDigest": { "$ref": "#/$defs/sha256" },
+        "planDigest": { "$ref": "#/$defs/sha256" },
+        "toolRequest": { "$ref": "#/$defs/recordBinding" },
+        "policyAllowDecision": { "$ref": "#/$defs/recordBinding" },
+        "approvalGrant": { "$ref": "#/$defs/recordBinding" },
+        "proposal": { "$ref": "#/$defs/recordBinding" },
+        "toolCatalogDigest": { "$ref": "#/$defs/sha256" },
+        "operation": { "enum": ["create", "replace"] },
+        "pathDigest": { "$ref": "#/$defs/sha256" },
+        "expectedBefore": { "$ref": "#/$defs/expectedBefore" },
+        "candidateArtifact": { "$ref": "#/$defs/artifactProof" },
+        "rollback": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["profile", "expectedAppliedDigest"],
+          "properties": {
+            "profile": { "const": "single-file-cas-restore-v1" },
+            "expectedAppliedDigest": { "$ref": "#/$defs/sha256" },
+            "backupArtifact": { "$ref": "#/$defs/artifactProof" }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "operation": { "const": "create" } }, "required": ["operation"] },
+          "then": {
+            "properties": {
+              "expectedBefore": { "$ref": "#/$defs/absentBefore" },
+              "rollback": { "not": { "required": ["backupArtifact"] } }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "operation": { "const": "replace" } }, "required": ["operation"] },
+          "then": {
+            "properties": {
+              "expectedBefore": { "$ref": "#/$defs/presentBefore" },
+              "rollback": { "required": ["backupArtifact"] }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$" },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "runId", "createdAt"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "runId": { "$ref": "#/$defs/id" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "recordBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "digest"],
+      "properties": { "id": { "$ref": "#/$defs/id" }, "digest": { "$ref": "#/$defs/sha256" } }
+    },
+    "absentBefore": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state"],
+      "properties": { "state": { "const": "absent" } }
+    },
+    "presentBefore": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "fileType", "encoding", "contentDigest", "byteLength", "mode"],
+      "properties": {
+        "state": { "const": "present" },
+        "fileType": { "const": "regular" },
+        "encoding": { "const": "UTF-8" },
+        "contentDigest": { "$ref": "#/$defs/sha256" },
+        "byteLength": { "type": "integer", "minimum": 0, "maximum": 1073741824 },
+        "mode": { "type": "integer", "minimum": 0, "maximum": 511 }
+      }
+    },
+    "expectedBefore": { "oneOf": [{ "$ref": "#/$defs/absentBefore" }, { "$ref": "#/$defs/presentBefore" }] },
+    "artifactProof": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["artifactRecordDigest", "contentDigest", "byteLength", "dataClass", "trust", "availabilityProofDigest", "fileType", "encoding", "mode"],
+      "properties": {
+        "artifactRecordDigest": { "$ref": "#/$defs/sha256" },
+        "contentDigest": { "$ref": "#/$defs/sha256" },
+        "byteLength": { "type": "integer", "minimum": 0, "maximum": 1073741824 },
+        "dataClass": { "enum": ["D0", "D1", "D2", "D3"] },
+        "trust": { "enum": ["P1", "P2", "P3", "P4"] },
+        "availabilityProofDigest": { "$ref": "#/$defs/sha256" },
+        "fileType": { "const": "regular" },
+        "encoding": { "const": "UTF-8" },
+        "mode": { "type": "integer", "minimum": 0, "maximum": 511 }
+      }
+    }
+  }
+}

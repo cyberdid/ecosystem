@@ -52,6 +52,22 @@ logicalRoles:
     candidates:
       - local-openai-compatible
       - approved-cloud-openai-compatible
+  code.write:
+    requiredCapabilities:
+      - model.text
+    allowedDataClasses:
+      - D0
+      - D1
+    allowedZones:
+      - Z0
+      - Z1
+      - Z2
+      - Z3
+    minimumArtifactTrust: P1
+    maximumActionClass: A2
+    candidates:
+      - local-openai-compatible
+      - approved-cloud-openai-compatible
   review.private:
     requiredCapabilities:
       - model.text

@@ -4,6 +4,15 @@ Append-only хронологічний лог операцій. Формат: `#
 
 ---
 
+## [2026-07-15] implementation | M3 bounded controlled-write profile completed
+
+- Added exact A2 `repository.write` contracts for one Linux/WSL UTF-8 regular-file create/replace operation, with active-plan, snapshot, root, before-state, candidate, preview, limit and rollback bindings.
+- Added a separate authenticated write authority that atomically consumes human approval and policy decision, binds idempotency, locks the target, fences leases and detects SQLite/audit tampering without storing raw paths or content.
+- Added descriptor-anchored atomic apply and compare-and-swap rollback with protected-path, traversal, symlink, hardlink, race, content, mode and fault-injection defenses.
+- Added private-CAS recovery bundles and full process-loss recovery: exact before becomes failed, exact after is rolled back, and unrelated state remains `recovery_required`.
+- Closed adversarial review findings for proposal substitution, root mismatch, inactive plans, policy reuse, expired terminal replay, detect-only recovery and stale lease timestamps.
+- Final deterministic regression gate: 258/258 `unittest`; full pytest, compile, validation, render, doctor, lock and diff gates are required by the completion report.
+
 ## [2026-07-15] security | M2 adversarial closure passed
 
 - Removed the last production-callable unsigned fixture path and arbitrary verifier injection: `PolicyEngine` now owns a verifier built from exact immutable issuer policies.

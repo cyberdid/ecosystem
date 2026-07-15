@@ -121,6 +121,14 @@ def starter_bundle(name: str) -> dict[str, dict[str, Any]]:
                     "minimumArtifactTrust": "P1",
                     "maximumActionClass": "A1",
                     "candidates": [],
+                },
+                "code.write": {
+                    "requiredCapabilities": ["model.text"],
+                    "allowedDataClasses": ["D0", "D1"],
+                    "allowedZones": ["Z0", "Z1", "Z2", "Z3"],
+                    "minimumArtifactTrust": "P1",
+                    "maximumActionClass": "A2",
+                    "candidates": [],
                 }
             },
         },
@@ -136,6 +144,15 @@ def starter_bundle(name: str) -> dict[str, dict[str, Any]]:
                     "actionClass": "A1",
                     "allowedSandboxes": ["inspect", "workspace-change", "build-test"],
                     "enabled": True,
+                },
+                {
+                    "id": "repository.write",
+                    "transport": "builtin",
+                    "binding": "workspace-filesystem",
+                    "capability": "workspace.write",
+                    "actionClass": "A2",
+                    "allowedSandboxes": ["workspace-change"],
+                    "enabled": False,
                 }
             ],
         },

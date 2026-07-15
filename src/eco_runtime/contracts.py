@@ -31,10 +31,17 @@ SCHEMA_BY_KIND = {
     "RepositoryReadReceipt": "repository-read-receipt.schema.json",
     "ToolExecutionOutcome": "tool-execution-outcome.schema.json",
     "RunCheckpoint": "run-checkpoint.schema.json",
+    "WorkspaceChangeProposal": "workspace-change-proposal.schema.json",
+    "ApprovalRequest": "approval-request.schema.json",
+    "ApprovalGrant": "approval-grant.schema.json",
+    "WorkspaceWriteIntent": "workspace-write-intent.schema.json",
+    "WorkspaceWriteReceipt": "workspace-write-receipt.schema.json",
+    "WorkspaceRollbackReceipt": "workspace-rollback-receipt.schema.json",
 }
 
 TOOL_ARGUMENT_SCHEMAS = {
     "repository.read": "repository-read.schema.json",
+    "repository.write": "repository-write.schema.json",
 }
 
 CONTRACT_PROFILE = "runtime-contracts-v1alpha1"
@@ -151,7 +158,7 @@ def tool_argument_errors(tool_id: str, arguments: Any) -> list[str]:
     ]
     if structural_errors:
         return structural_errors
-    if tool_id == "repository.read":
+    if tool_id in {"repository.read", "repository.write"}:
         path = arguments["path"]
         invalid_path = (
             len(path.encode("utf-8")) > 4096

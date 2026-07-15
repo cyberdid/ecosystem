@@ -34,6 +34,7 @@ DATA_ORDER = {f"D{level}": level for level in range(5)}
 TRUST_ORDER = {f"P{level}": level for level in range(5)}
 ARGUMENT_CONTRACTS = {
     "repository.read": "eco://tools/repository-read/v1alpha1",
+    "repository.write": "eco://tools/repository-write/v1alpha1",
 }
 POLICY_ENGINE_VERSION = "0.1.0"
 
@@ -637,7 +638,8 @@ class PolicyEngine:
                 request, run_id=run_id, decision_id=decision_id, now=now, code="ECO_BUDGET_INVALID"
             )
 
-        if "repository.read" in spec["requestedTools"] and self._repository_snapshot is None:
+        repository_tools = {"repository.read", "repository.write"}
+        if repository_tools.intersection(spec["requestedTools"]) and self._repository_snapshot is None:
             return self._deny_run(
                 request,
                 run_id=run_id,
@@ -666,6 +668,15 @@ class PolicyEngine:
                 return self._deny_run(
                     request, run_id=run_id, decision_id=decision_id, now=now, code="ECO_TOOL_BINDING_MISMATCH"
                 )
+            if tool_id == "repository.write" and (
+                tool.get("transport") != "builtin"
+                or tool.get("binding") != "workspace-filesystem"
+                or tool.get("capability") != "workspace.write"
+                or tool.get("actionClass") != "A2"
+            ):
+                return self._deny_run(
+                    request, run_id=run_id, decision_id=decision_id, now=now, code="ECO_TOOL_BINDING_MISMATCH"
+                )
             tool_action = tool.get("actionClass")
             if ACTION_ORDER.get(tool_action, 99) > ACTION_ORDER[requested_action] or ACTION_ORDER.get(
                 tool_action, 99
@@ -673,7 +684,8 @@ class PolicyEngine:
                 return self._deny_run(
                     request, run_id=run_id, decision_id=decision_id, now=now, code="ECO_ACTION_CLASS_DENIED"
                 )
-            if "inspect" not in tool.get("allowedSandboxes", []):
+            requested_sandbox = spec["constraints"]["sandbox"]
+            if requested_sandbox not in tool.get("allowedSandboxes", []):
                 return self._deny_run(
                     request, run_id=run_id, decision_id=decision_id, now=now, code="ECO_SANDBOX_DENIED"
                 )
@@ -706,7 +718,7 @@ class PolicyEngine:
                 "effectivePolicy": {
                     "dataClass": data_class,
                     "maximumActionClass": requested_action,
-                    "sandbox": "inspect",
+                    "sandbox": spec["constraints"]["sandbox"],
                     "agentNetwork": "deny",
                     "toolNetwork": "deny",
                 },
@@ -721,7 +733,8 @@ class PolicyEngine:
                             "evidence": self._repository_snapshot_provenance.as_dict(),
                         }
                     }
-                    if self._repository_snapshot is not None and "repository.read" in spec["requestedTools"]
+                    if self._repository_snapshot is not None
+                    and repository_tools.intersection(spec["requestedTools"])
                     else {}
                 ),
                 "route": {
@@ -764,7 +777,7 @@ class PolicyEngine:
             effect="allow",
             reason_codes=["ECO_RUN_ALLOWED"],
             maximum_expiry=self._evidence_deadline(
-                pin, include_snapshot="repository.read" in spec["requestedTools"]
+                pin, include_snapshot=bool(repository_tools.intersection(spec["requestedTools"]))
             ),
         )
         return PlanningResult(plan=plan, decision=decision)
@@ -827,6 +840,31 @@ class PolicyEngine:
                     plan["spec"]["effectivePolicy"]["dataClass"]
                 ]:
                     code = "ECO_DATA_CLASS_DENIED"
+            elif tool_id == "repository.write":
+                arguments = request["spec"]["arguments"]
+                path = arguments["path"]
+                entry = self._repository_entries.get(path)
+                candidate = arguments["candidateArtifact"]
+                expected_before = arguments["expectedBefore"]
+                if plan["spec"]["effectivePolicy"]["sandbox"] != "workspace-change":
+                    code = "ECO_SANDBOX_DENIED"
+                elif protected_repository_path(path):
+                    code = "ECO_PROTECTED_PATH"
+                elif candidate["dataClass"] == "D4" or DATA_ORDER[candidate["dataClass"]] > DATA_ORDER[
+                    plan["spec"]["effectivePolicy"]["dataClass"]
+                ]:
+                    code = "ECO_DATA_CLASS_DENIED"
+                elif arguments["operation"] == "create" and entry is not None:
+                    code = "ECO_WRITE_PRECONDITION_MISMATCH"
+                elif arguments["operation"] == "replace" and entry is None:
+                    code = "ECO_REPOSITORY_PATH_UNSNAPSHOTTED"
+                elif arguments["operation"] == "replace" and (
+                    expected_before["contentDigest"] != entry["contentDigest"]
+                    or expected_before["byteLength"] != entry["byteLength"]
+                    or expected_before["fileType"] != "regular"
+                    or expected_before["encoding"] != "UTF-8"
+                ):
+                    code = "ECO_WRITE_PRECONDITION_MISMATCH"
 
         return self._decision(
             decision_id=decision_id,

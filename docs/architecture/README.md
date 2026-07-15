@@ -1,6 +1,6 @@
 # Architecture
 
-**Status:** M1 and the embedded M2 Linux/WSL read-only reference profile are implemented; M3 controlled writes/approvals are pending.
+**Status:** M1, the embedded M2 read-only profile, and the bounded M3 Linux/WSL controlled-write profile are implemented.
 
 **Updated:** 2026-07-15
 
@@ -20,6 +20,8 @@ flowchart TB
     DPEP --> ORCH["Typed embedded orchestrator"]
     ORCH --> STORE["SQLite event / plan / budget / operation authority"]
     ORCH --> BROKER["Filesystem-only Linux read broker"]
+    ORCH --> WRITEAUTH["Authenticated M3 write authority"]
+    ORCH --> WRITEBROKER["Linux/WSL CAS write broker"]
     ORCH --> CAS["Private durable artifact CAS"]
     DPEP --> EVIDENCE["Trusted evidence ingestion"]
     DPEP --> ISOLATION["Linux/WSL isolation launcher"]
@@ -80,6 +82,9 @@ This provides ownership and reversibility. It does not prove that different AI c
 - durable full-projection event replay, native lifecycle and terminal checkpoints;
 - typed PREPARE/read/artifact-fsync/COMMIT orchestration with explicit no-retry crash recovery;
 - authenticated migration, database backup/restore, key rotation, and external-anchor protocols.
+- exact A2 one-file create/replace proposals with parameter-bound human approval and policy decisions;
+- separate authenticated write authority with atomic approval/policy consumption, target locks, idempotency and fenced leases;
+- Linux/WSL descriptor-anchored compare-and-swap apply/rollback plus restart-safe private-CAS recovery bundles.
 
 ### Implemented M2 runtime TCB
 
@@ -89,15 +94,16 @@ This provides ownership and reversibility. It does not prove that different AI c
 - Linux/WSL direct-egress denial and clean environment launcher;
 - durable audit/artifact authority and signed evaluation verifier.
 
-### Remaining beyond M2
+### Remaining beyond M3
 
 - endpoint-specific network allowlist backend;
 - Windows/macOS isolation and filesystem backends;
-- action PEP and parameter-bound approvals for A2+;
+- Windows/macOS controlled-write backends and conformance evidence;
+- delete, rename, directory, batch, command, A3 and A4 action profiles;
 - descendant-exec/seccomp/cgroup/device containment;
 - asymmetric team-verifiable evidence identity.
 
-The embedded capability guards remain process-local and the executable filesystem/isolation proof is Linux/WSL-specific. Evidence HMACs authenticate the embedded issuer boundary but are not remote third-party identities. See [M2 runtime contracts](runtime-contracts.md), [Read-only repository broker](read-only-broker.md), [Durable runtime store](durable-runtime-store.md), [M2 completion report](../research/2026-07-15-m2-completion-report.md), and [D/A/Z/P semantics](policy-semantics.md).
+The embedded capability guards remain process-local and the executable filesystem/isolation/write proof is Linux/WSL-specific. Evidence and reference-approval HMACs authenticate configured embedded boundaries but are not remote third-party identities. See [M2 runtime contracts](runtime-contracts.md), [Read-only repository broker](read-only-broker.md), [Durable runtime store](durable-runtime-store.md), [M3 controlled writes](controlled-writes.md), [M3 completion report](../research/2026-07-15-m3-completion-report.md), and [D/A/Z/P semantics](policy-semantics.md).
 
 LLMs, prompts, skills, plugins, MCP servers, gateways, generated files, vector indexes, and arbitrary probe workloads are not trusted by default.
 
@@ -125,7 +131,7 @@ client without credentials
 
 ## Next milestone
 
-M3 adds narrowly controlled workspace writes, explicit approvals, idempotency, rollback, and regression tests that preserve every M2 read-only boundary. M2 observations must be renewed after their validity window before they are used for current routing or promotion.
+M4 adds repeated L0–L4 evaluation and promotion gates around the now-implemented M3 primitive. The first candidate remains `wiki-health-check`: start with deterministic observe/report runs, then separately measure proposal quality and controlled-apply recovery before enabling scheduling. M2 deployment observations still require renewal after their validity window before current routing or promotion.
 
 ## Sources
 

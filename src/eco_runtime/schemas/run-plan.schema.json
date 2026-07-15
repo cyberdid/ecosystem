@@ -58,11 +58,18 @@
           "required": ["dataClass", "maximumActionClass", "sandbox", "agentNetwork", "toolNetwork"],
           "properties": {
             "dataClass": { "enum": ["D0", "D1", "D2", "D3", "D4"] },
-            "maximumActionClass": { "enum": ["A0", "A1"] },
-            "sandbox": { "const": "inspect" },
+            "maximumActionClass": { "enum": ["A0", "A1", "A2"] },
+            "sandbox": { "enum": ["inspect", "workspace-change"] },
             "agentNetwork": { "const": "deny" },
             "toolNetwork": { "const": "deny" }
-          }
+          },
+          "allOf": [
+            {
+              "if": { "properties": { "maximumActionClass": { "const": "A2" } } },
+              "then": { "properties": { "sandbox": { "const": "workspace-change" } } },
+              "else": { "properties": { "sandbox": { "const": "inspect" } } }
+            }
+          ]
         },
         "inputs": {
           "type": "array",
@@ -162,7 +169,7 @@
               "id": { "type": "string", "pattern": "^[a-z][a-z0-9._-]+$" },
               "catalogDigest": { "$ref": "#/$defs/sha256" },
               "capability": { "type": "string", "pattern": "^[a-z][a-z0-9._-]+$" },
-              "actionClass": { "enum": ["A0", "A1"] },
+              "actionClass": { "enum": ["A0", "A1", "A2"] },
               "argumentContract": { "type": "string", "pattern": "^eco://tools/[a-z][a-z0-9._/-]+$" }
             }
           }

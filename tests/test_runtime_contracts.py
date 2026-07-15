@@ -12,6 +12,7 @@ from eco_runtime.contracts import (
     validate_tool_arguments,
 )
 from eco_runtime.errors import ContractValidationError
+from tests.test_m3_contracts import positive_m3_records
 
 
 NOW = "2026-07-15T12:00:00Z"
@@ -512,6 +513,7 @@ class RuntimeContractTests(unittest.TestCase):
             repository_read_receipt(),
             tool_execution_outcome(),
             run_checkpoint(),
+            *positive_m3_records(),
         ]
 
     def test_positive_records_validate(self) -> None:

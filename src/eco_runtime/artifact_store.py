@@ -547,6 +547,37 @@ class ContentAddressedArtifactStore:
         with self._exclusive_lock():
             self._verify_object(self._object_path(sha256), sha256, byte_length)
 
+    def proof_for_record(
+        self, *, storage_ref: str, sha256: str, byte_length: int
+    ) -> ArtifactAvailabilityProof:
+        """Reissue availability proof for authenticated runtime metadata.
+
+        The caller is responsible for authenticating the record that supplies
+        ``storage_ref``, ``sha256``, and ``byte_length``.  This store does not
+        trust those claims on their own: it reopens the digest-addressed object,
+        hashes every byte, verifies its exact length and stable file metadata,
+        and only then signs a fresh availability proof.
+        """
+
+        if not isinstance(storage_ref, str) or _ARTIFACT_REF_RE.fullmatch(storage_ref) is None:
+            raise RuntimeStoreError(
+                "ECO_ARTIFACT_PROOF_INVALID", "Artifact reference is invalid"
+            )
+        if not isinstance(sha256, str) or _DIGEST_RE.fullmatch(sha256) is None:
+            raise RuntimeStoreError("ECO_ARTIFACT_DIGEST_INVALID", "Artifact digest is invalid")
+        if not isinstance(byte_length, int) or isinstance(byte_length, bool) or byte_length < 0:
+            raise RuntimeStoreError(
+                "ECO_ARTIFACT_PROOF_INVALID", "Artifact length is invalid"
+            )
+
+        with self._exclusive_lock():
+            self._verify_object(self._object_path(sha256), sha256, byte_length)
+            return self._make_proof(
+                storage_ref=storage_ref,
+                digest=sha256,
+                byte_length=byte_length,
+            )
+
     @contextmanager
     def open_verified(self, proof: ArtifactAvailabilityProof) -> Iterator[BinaryIO]:
         """Open only after proof and full content verification; never expose the CAS path."""

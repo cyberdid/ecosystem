@@ -171,6 +171,86 @@ class ArtifactStoreTests(unittest.TestCase):
                     "ECO_ARTIFACT_STORE_CORRUPT", lambda: store.verify_availability(proof)
                 )
 
+    def test_proof_for_record_reissues_proof_after_full_object_verification(self) -> None:
+        content = b"durable recovery bundle"
+        reference = "artifact://recovery/operation-1"
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "artifacts"
+            with self.make_store(root) as store:
+                original = store.put(content, storage_ref=reference)
+
+            with self.make_store(root) as reopened:
+                recovered = reopened.proof_for_record(
+                    storage_ref=reference,
+                    sha256=original.sha256,
+                    byte_length=original.byte_length,
+                )
+                self.assertEqual(recovered, original)
+                reopened.verify_availability(recovered)
+                with reopened.open_verified(recovered) as stream:
+                    self.assertEqual(stream.read(), content)
+
+    def test_proof_for_record_rejects_invalid_record_fields(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "artifacts"
+            with self.make_store(root) as store:
+                original = store.put(b"recovery")
+                self.assert_code(
+                    "ECO_ARTIFACT_DIGEST_INVALID",
+                    lambda: store.proof_for_record(
+                        storage_ref=original.storage_ref,
+                        sha256="not-a-sha256",
+                        byte_length=original.byte_length,
+                    ),
+                )
+                self.assert_code(
+                    "ECO_ARTIFACT_UNAVAILABLE",
+                    lambda: store.proof_for_record(
+                        storage_ref=original.storage_ref,
+                        sha256="0" * 64,
+                        byte_length=original.byte_length,
+                    ),
+                )
+                self.assert_code(
+                    "ECO_ARTIFACT_STORE_CORRUPT",
+                    lambda: store.proof_for_record(
+                        storage_ref=original.storage_ref,
+                        sha256=original.sha256,
+                        byte_length=original.byte_length + 1,
+                    ),
+                )
+                self.assert_code(
+                    "ECO_ARTIFACT_PROOF_INVALID",
+                    lambda: store.proof_for_record(
+                        storage_ref="artifact://recovery/../escape",
+                        sha256=original.sha256,
+                        byte_length=original.byte_length,
+                    ),
+                )
+
+    def test_proof_for_record_fails_closed_when_object_was_tampered(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "artifacts"
+            with self.make_store(root) as store:
+                original = store.put(b"trusted1", storage_ref="artifact://recovery/op-2")
+                object_path = (
+                    root
+                    / "objects"
+                    / original.sha256[:2]
+                    / original.sha256[2:4]
+                    / original.sha256
+                )
+                object_path.write_bytes(b"attacker")
+                self.assertEqual(object_path.stat().st_size, original.byte_length)
+                self.assert_code(
+                    "ECO_ARTIFACT_STORE_CORRUPT",
+                    lambda: store.proof_for_record(
+                        storage_ref=original.storage_ref,
+                        sha256=original.sha256,
+                        byte_length=original.byte_length,
+                    ),
+                )
+
     def test_forbidden_repository_overlap_is_denied_in_both_directions(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             base = Path(directory)

@@ -23,7 +23,7 @@
     },
     "deployments": {
       "path": "deployments.yaml",
-      "sha256": "de574585d98795fd8c83100ef1087dc3b5b7725fa93a5ad490db46f20f01bb84"
+      "sha256": "e33d53efa016297d8207a6c0989bdb3dc2191fa2197abae0ec44248a080aa920"
     },
     "instructions": {
       "path": "instructions.yaml",
@@ -35,7 +35,7 @@
     },
     "tools": {
       "path": "tools.yaml",
-      "sha256": "4dc8f1c63c99352978f39b70b188d81822b19e88f4f6dabd5011d4a65530b0fb"
+      "sha256": "0f513028b369a35c751b9536111136ef9cbc1860fcb2f95baf88ff2ae3d4f652"
     }
   }
 }

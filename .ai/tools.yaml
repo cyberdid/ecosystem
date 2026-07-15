@@ -19,7 +19,7 @@ tools:
     allowedSandboxes:
       - workspace-change
       - build-test
-    enabled: false
+    enabled: true
   - id: tests.run
     transport: command
     binding: python -m unittest discover -s tests -v
@@ -28,4 +28,3 @@ tools:
     allowedSandboxes:
       - build-test
     enabled: true
-

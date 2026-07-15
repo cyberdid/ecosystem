@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai.ecosystem.local/schemas/runtime/approval-grant.schema.json",
+  "title": "ApprovalGrant",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "runtime.ai.ecosystem/v1alpha1" },
+    "kind": { "const": "ApprovalGrant" },
+    "metadata": { "$ref": "#/$defs/metadata" },
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["approvalRequest", "proposal", "subject", "authoritySubjectDigest", "displayDigest", "decision", "approver", "constraints", "signedEnvelope"],
+      "properties": {
+        "approvalRequest": { "$ref": "#/$defs/recordBinding" },
+        "proposal": { "$ref": "#/$defs/recordBinding" },
+        "subject": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "id", "digest"],
+          "properties": {
+            "kind": { "const": "WorkspaceChangeProposal" },
+            "id": { "$ref": "#/$defs/id" },
+            "digest": { "$ref": "#/$defs/sha256" }
+          }
+        },
+        "authoritySubjectDigest": { "$ref": "#/$defs/sha256" },
+        "displayDigest": { "$ref": "#/$defs/sha256" },
+        "decision": { "enum": ["approve", "deny"] },
+        "approver": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "issuerId", "subjectId", "assurance", "challengeDigest"],
+          "properties": {
+            "type": { "const": "human" },
+            "issuerId": { "$ref": "#/$defs/id" },
+            "subjectId": { "$ref": "#/$defs/id" },
+            "assurance": { "enum": ["local-os-session", "webauthn", "hardware-backed", "federated-mfa"] },
+            "challengeDigest": { "$ref": "#/$defs/sha256" }
+          }
+        },
+        "constraints": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["singleUse", "expiresAt"],
+          "properties": {
+            "singleUse": { "const": true },
+            "expiresAt": { "type": "string", "format": "date-time" }
+          }
+        },
+        "signedEnvelope": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["protocol", "envelopeId", "issuer", "subjectDigest", "issuedAt", "expiresAt", "signature"],
+          "properties": {
+            "protocol": { "const": "eco-approval-envelope-v1" },
+            "envelopeId": { "$ref": "#/$defs/id" },
+            "issuer": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["id", "keyId"],
+              "properties": { "id": { "$ref": "#/$defs/id" }, "keyId": { "$ref": "#/$defs/id" } }
+            },
+            "subjectDigest": { "$ref": "#/$defs/sha256" },
+            "issuedAt": { "type": "string", "format": "date-time" },
+            "expiresAt": { "type": "string", "format": "date-time" },
+            "signature": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["algorithm", "tag"],
+              "properties": {
+                "algorithm": { "const": "HMAC-SHA256" },
+                "tag": { "$ref": "#/$defs/sha256" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$" },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "runId", "createdAt"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "runId": { "$ref": "#/$defs/id" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "recordBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "digest"],
+      "properties": { "id": { "$ref": "#/$defs/id" }, "digest": { "$ref": "#/$defs/sha256" } }
+    }
+  }
+}

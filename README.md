@@ -36,7 +36,19 @@ The project owns stable contracts, deterministic instruction projections, valida
 - Linux/WSL untrusted-process isolation using user/net/pid namespaces, Landlock filesystem/TCP denial, a clean environment, zero credential bindings, executable allowlisting, closed stdin, bounded output, and fail-closed preflight;
 - exact-output local/cloud conformance evaluation with signed raw-content-free D0 evidence and one passing live Ollama/Qwen plus broker-owned Claude/Sonnet reference run.
 
-**Not implemented and not claimed:** endpoint-specific network allowlists, Windows/macOS executable isolation backends, descendant-exec/seccomp/cgroup/device containment, asymmetric evidence signatures, durable evidence replay IDs, retryable encrypted recovery payloads, controlled writes, approvals, a bundled database-plus-CAS disaster-recovery package, caller-independent external anchoring, or production autonomy.
+**M3 bounded controlled-write profile complete:**
+
+- exact A2 `repository.write` proposals in a dedicated write-only plan for one UTF-8 regular-file `create` or `replace` on Linux/WSL;
+- separate authenticated human approval and policy allow, both parameter-bound and atomically single-use;
+- exact active-plan, repository-snapshot, broker-root, candidate, before-state, limit and display bindings;
+- private CAS candidate/before-image/recovery bundles plus a content-free authenticated SQLite write authority;
+- descriptor-anchored compare-and-swap apply, atomic install, postcondition validation and compare-and-swap rollback;
+- fenced leases, idempotent historical replay after authority expiry, restart reconciliation and conservative rollback;
+- negative coverage for substitution, traversal, protected paths, symlink/hardlink races, tampering, process loss and unrelated edits.
+
+See [M3 controlled writes](docs/architecture/controlled-writes.md) and the [M3 completion report](docs/research/2026-07-15-m3-completion-report.md).
+
+**Not implemented and not claimed:** endpoint-specific network allowlists, Windows/macOS executable isolation/write backends, descendant-exec/seccomp/cgroup/device containment, asymmetric evidence or approval signatures, durable evidence replay IDs, delete/rename/mkdir/batch/arbitrary-command writes, A3/A4 external actions, a bundled database-plus-CAS disaster-recovery package, caller-independent external anchoring, or production autonomy.
 
 ## Architecture in one sentence
 

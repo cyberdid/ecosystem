@@ -3,13 +3,13 @@
 > Curated operational knowledge. Canonical executable truth lives under `.ai/`; generated vendor files are projections.
 
 **Updated:** 2026-07-15
-**Status:** M1 and the embedded M2 read-only reference profile are complete; M3 controlled writes/approvals are next.
+**Status:** M1, embedded M2 read-only, and bounded M3 Linux/WSL controlled writes are complete; M4 evaluation/promotion is next.
 
 ## Pages
 
 | Page | Purpose | Updated |
 |---|---|---:|
-| [architecture.md](architecture.md) | Current implemented boundary and target runtime flow | 2026-07-14 |
+| [architecture.md](architecture.md) | Current implemented boundary and target runtime flow | 2026-07-15 |
 | [loops.md](loops.md) | Loop contract, safety boundaries, maturity and first candidates | 2026-07-15 |
 | [openresearcher.md](openresearcher.md) | Downloaded upstream research node, evidence, boundaries, and possible role | 2026-07-15 |
 | [labs-molt.md](labs-molt.md) | NVIDIA agentic-RL training node, architecture, evidence, risks, and gated role | 2026-07-15 |
@@ -17,6 +17,8 @@
 | [roadmap.md](roadmap.md) | Dependency-ordered M0–M6 delivery plan | 2026-07-15 |
 | [Read-only broker](../docs/architecture/read-only-broker.md) | Snapshot-bound Linux/WSL A1 enforcement and proof limits | 2026-07-15 |
 | [Durable runtime store](../docs/architecture/durable-runtime-store.md) | Schema-v3 event/plan/budget/operation authority and operational durability | 2026-07-15 |
+| [M3 controlled writes](../docs/architecture/controlled-writes.md) | Exact approval, A2 one-file CAS apply/rollback and restart recovery boundary | 2026-07-15 |
+| [M3 completion report](../docs/research/2026-07-15-m3-completion-report.md) | Exit-criteria evidence, multi-agent review, 258-test gate and exact limitations | 2026-07-15 |
 | [M2.5 completion report](../docs/research/2026-07-15-m2.5-completion-report.md) | Implemented slices, evidence matrix, and exact proof boundary | 2026-07-15 |
 | [M2 completion report](../docs/research/2026-07-15-m2-completion-report.md) | Exit-criteria evidence, test gate, and exact limitations | 2026-07-15 |
 | [M2 evaluation report](../docs/research/2026-07-15-m2-cross-deployment-evaluation-report.md) | Identical suite runner, governed local/cloud evidence, cloud-alias and renewal boundaries | 2026-07-15 |
@@ -37,8 +39,8 @@
 2. `.ai/project.yaml`
 3. `docs/architecture/README.md`
 4. `docs/decisions/README.md`
-5. `docs/architecture/runtime-contracts.md` and `read-only-broker.md` for the current M2 boundary
-6. `wiki/loops.md` for bounded automation and learning-loop rules
+5. `docs/architecture/runtime-contracts.md`, `read-only-broker.md`, and `controlled-writes.md` for the current M2/M3 boundary
+6. `wiki/loops.md` for bounded automation, proposal, and controlled-apply rules
 7. `wiki/openresearcher.md` for the current external research-node snapshot
 8. `wiki/labs-molt.md` for the external agentic-RL training-node snapshot
 9. `wiki/ai-legal-claude.md` for the external legal-prompt corpus and its safety limits

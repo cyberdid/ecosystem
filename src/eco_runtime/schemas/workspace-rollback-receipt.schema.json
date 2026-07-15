@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai.ecosystem.local/schemas/runtime/workspace-rollback-receipt.schema.json",
+  "title": "WorkspaceRollbackReceipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "runtime.ai.ecosystem/v1alpha1" },
+    "kind": { "const": "WorkspaceRollbackReceipt" },
+    "metadata": { "$ref": "#/$defs/metadata" },
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["writeIntentDigest", "reasonCode", "pathDigest", "status", "expectedAppliedDigest", "beforeRestored", "rollbackProfile"],
+      "properties": {
+        "writeIntentDigest": { "$ref": "#/$defs/sha256" },
+        "writeReceiptDigest": { "$ref": "#/$defs/sha256" },
+        "reasonCode": { "type": "string", "pattern": "^ECO_[A-Z0-9_]+$" },
+        "pathDigest": { "$ref": "#/$defs/sha256" },
+        "status": { "enum": ["rolled-back", "recovery-required"] },
+        "expectedAppliedDigest": { "$ref": "#/$defs/sha256" },
+        "beforeRestored": { "$ref": "#/$defs/expectedBefore" },
+        "rollbackProfile": { "const": "single-file-cas-restore-v1" },
+        "restoredStateDigest": { "$ref": "#/$defs/sha256" },
+        "errorRecordDigest": { "$ref": "#/$defs/sha256" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "status": { "const": "rolled-back" } }, "required": ["status"] },
+          "then": { "required": ["restoredStateDigest"], "not": { "required": ["errorRecordDigest"] } }
+        },
+        {
+          "if": { "properties": { "status": { "const": "recovery-required" } }, "required": ["status"] },
+          "then": { "required": ["errorRecordDigest"], "not": { "required": ["restoredStateDigest"] } }
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$" },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "runId", "operationId", "createdAt"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "runId": { "$ref": "#/$defs/id" },
+        "operationId": { "$ref": "#/$defs/id" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "absentBefore": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state"],
+      "properties": { "state": { "const": "absent" } }
+    },
+    "presentBefore": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "fileType", "encoding", "contentDigest", "byteLength", "mode"],
+      "properties": {
+        "state": { "const": "present" },
+        "fileType": { "const": "regular" },
+        "encoding": { "const": "UTF-8" },
+        "contentDigest": { "$ref": "#/$defs/sha256" },
+        "byteLength": { "type": "integer", "minimum": 0, "maximum": 1073741824 },
+        "mode": { "type": "integer", "minimum": 0, "maximum": 511 }
+      }
+    },
+    "expectedBefore": { "oneOf": [{ "$ref": "#/$defs/absentBefore" }, { "$ref": "#/$defs/presentBefore" }] }
+  }
+}

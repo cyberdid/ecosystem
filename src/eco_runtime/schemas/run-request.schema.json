@@ -72,11 +72,18 @@
           "additionalProperties": false,
           "required": ["maximumActionClass", "sandbox", "agentNetwork", "toolNetwork"],
           "properties": {
-            "maximumActionClass": { "enum": ["A0", "A1"] },
-            "sandbox": { "const": "inspect" },
+            "maximumActionClass": { "enum": ["A0", "A1", "A2"] },
+            "sandbox": { "enum": ["inspect", "workspace-change"] },
             "agentNetwork": { "const": "deny" },
             "toolNetwork": { "const": "deny" }
-          }
+          },
+          "allOf": [
+            {
+              "if": { "properties": { "maximumActionClass": { "const": "A2" } } },
+              "then": { "properties": { "sandbox": { "const": "workspace-change" } } },
+              "else": { "properties": { "sandbox": { "const": "inspect" } } }
+            }
+          ]
         },
         "budget": {
           "type": "object",

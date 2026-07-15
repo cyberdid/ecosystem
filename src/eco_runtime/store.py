@@ -26,6 +26,12 @@ from .state_reducer import RunProjection, RunState, TERMINAL_STATES, reduce_run_
 STORE_SCHEMA_VERSION = 3
 STORE_APPLICATION_ID = 0x45434F31
 GENESIS_DIGEST = "0" * 64
+# The M3 contracts are additive, while this class remains the proven M2 read
+# authority.  Retain authenticated read access to journals created by the M2
+# completion build instead of forcing an implicit security-boundary migration.
+LEGACY_SCHEMA_BUNDLE_DIGESTS = frozenset(
+    {"4e4adc61b9c4ab32049a651a6d8749f3abb739c08c81d8cd5f233ed6a4f41aa0"}
+)
 SAFE_BROKER_ERROR_MESSAGES = {
     "ECO_BINARY_FILE": "Repository content is not approved text",
     "ECO_FILE_CHANGED": "Repository file changed during the approved read",
@@ -694,7 +700,8 @@ class SQLiteRuntimeStore:
             meta["schema_version"] != STORE_SCHEMA_VERSION
             or meta["digest_profile"] != DIGEST_PROFILE
             or meta["contract_profile"] != CONTRACT_PROFILE
-            or meta["schema_bundle_digest"] != schema_bundle_digest()
+            or meta["schema_bundle_digest"]
+            not in {schema_bundle_digest(), *LEGACY_SCHEMA_BUNDLE_DIGESTS}
             or meta["policy_engine_version"] != POLICY_ENGINE_VERSION
             or meta["audit_key_id"] != self._key_id
             or meta["producer_issuers_digest"]
@@ -1650,6 +1657,36 @@ class SQLiteRuntimeStore:
             result["history_complete"] = bool(baseline["history_complete"])
             result["history_source"] = baseline["source"]
             return result
+
+    @contextmanager
+    def active_plan_guard(
+        self, run_id: str, plan_digest: str
+    ) -> Iterator[dict[str, Any]]:
+        """Serialize final external-effect authorization against run termination.
+
+        ``BEGIN IMMEDIATE`` makes this guard effective across SQLite connections,
+        not only threads sharing this object. The caller may durably issue one
+        external commit permit while the exact plan is still RUNNING.
+        """
+
+        if not isinstance(run_id, str) or not run_id:
+            raise ValueError("run_id must be a non-empty string")
+        if not isinstance(plan_digest, str) or re.fullmatch(r"[0-9a-f]{64}", plan_digest) is None:
+            raise ValueError("plan_digest must be a lowercase SHA-256 digest")
+        with self._transaction():
+            row = self._connection.execute(
+                "SELECT * FROM runs WHERE run_id=?", (run_id,)
+            ).fetchone()
+            if (
+                row is None
+                or row["state"] != "RUNNING"
+                or row["active_plan_digest"] != plan_digest
+            ):
+                raise RuntimeStoreError(
+                    "ECO_PLAN_NOT_ACTIVE",
+                    "External commit requires the exact active running plan",
+                )
+            yield dict(row)
 
     def event_history(self, run_id: str) -> tuple[dict[str, Any], ...]:
         with self._lock:

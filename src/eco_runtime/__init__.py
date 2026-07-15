@@ -17,6 +17,15 @@ from .adapters import (
     PinnedOpenAICompatibleDeployment,
 )
 from .artifact_store import ArtifactAvailabilityProof, ContentAddressedArtifactStore
+from .approval import (
+    ApprovalKeyPolicy,
+    ApprovalSigner,
+    ApprovalTrustStore,
+    VerifiedApproval,
+    approval_subject_digest,
+    build_approval_grant,
+)
+from .change_store import SQLiteChangeAuthority, SQLiteChangeStore
 from .budget import BudgetLedger, BudgetSnapshot
 from .errors import (
     BrokerError,
@@ -36,12 +45,26 @@ from .orchestrator import (
 )
 from .state import RunEventChain, RunState
 from .store import SQLiteRuntimeStore
+from .write_broker import (
+    FileState,
+    LinuxWorkspaceWriteBroker,
+    WorkspaceRollbackResult,
+    WorkspaceWriteResult,
+)
+from .write_orchestrator import (
+    ControlledWriteExecution,
+    ControlledWriteOrchestrator,
+    ControlledWriteProposal,
+)
 
 __all__ = [
     "API_VERSION",
     "ADAPTER_VERSION",
     "AdapterInvocationResult",
     "ArtifactAvailabilityProof",
+    "ApprovalKeyPolicy",
+    "ApprovalSigner",
+    "ApprovalTrustStore",
     "BrokerError",
     "BudgetLedger",
     "BudgetSnapshot",
@@ -52,12 +75,17 @@ __all__ = [
     "PinnedOpenAICompatibleDeployment",
     "RuntimeAdapterError",
     "ContentAddressedArtifactStore",
+    "ControlledWriteExecution",
+    "ControlledWriteOrchestrator",
+    "ControlledWriteProposal",
+    "FileState",
     "RuntimePolicyError",
     "RuntimeStateError",
     "RuntimeStoreError",
     "PlanningResult",
     "EmbeddedOrchestrator",
     "PolicyEngine",
+    "LinuxWorkspaceWriteBroker",
     "RunEventChain",
     "RepositoryReadBroker",
     "RepositoryReadExecution",
@@ -67,10 +95,17 @@ __all__ = [
     "RuntimeBudgetError",
     "RuntimeCapabilities",
     "SQLiteRuntimeStore",
+    "SQLiteChangeAuthority",
+    "SQLiteChangeStore",
+    "VerifiedApproval",
+    "WorkspaceRollbackResult",
+    "WorkspaceWriteResult",
+    "approval_subject_digest",
+    "build_approval_grant",
     "contract_errors",
     "tool_argument_errors",
     "validate_record",
     "validate_tool_arguments",
 ]
 
-VERSION = "0.1.0"
+VERSION = "0.2.0"

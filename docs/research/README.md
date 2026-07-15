@@ -13,6 +13,7 @@ This directory stores project-specific research that informs, but does not by it
 
 | Review | Raw source | Verdict |
 |---|---|---|
+| [M3 controlled-write completion report](2026-07-15-m3-completion-report.md) | Local M3 implementation, multi-agent reviews, adversarial tests and project gates | Bounded Linux/WSL one-file create/replace profile complete; broader actions and production identity remain explicit non-claims |
 | [Loop and Harness engineering source review](2026-07-15-loop-and-harness-engineering-source-review.md) | [Archived Markdown](sources/loop-and-harness-engineering-7-files-5-steps-every-config-in.md) | Useful mental model; Claude-specific details require correction; not a universal contract |
 | [M2.5 completion report](2026-07-15-m2.5-completion-report.md) | Local implementation, multi-agent reviews, and verification suite | Embedded durability slice complete with explicit proof boundary |
 | [M2 cross-deployment evaluation report](2026-07-15-m2-cross-deployment-evaluation-report.md) | Deterministic runner, signed mock tests, and live local/cloud evidence | Passing governed Ollama/Claude reference proof; cloud alias, 24-hour validity, and D0 disclosure limits explicit |

@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai.ecosystem.local/schemas/runtime/tools/repository-write.schema.json",
+  "title": "repository.write arguments",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["path", "operation", "expectedBefore", "candidateArtifact"],
+  "properties": {
+    "path": { "type": "string", "minLength": 1, "maxLength": 4096, "pattern": "^(?!/)(?!.*\\\\)(?!.*://)(?!.*%2[fF]|.*%5[cC]).+$" },
+    "operation": { "enum": ["create", "replace"] },
+    "expectedBefore": { "$ref": "#/$defs/expectedBefore" },
+    "candidateArtifact": { "$ref": "#/$defs/candidateArtifact" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "operation": { "const": "create" } }, "required": ["operation"] },
+      "then": { "properties": { "expectedBefore": { "$ref": "#/$defs/absentBefore" } } }
+    },
+    {
+      "if": { "properties": { "operation": { "const": "replace" } }, "required": ["operation"] },
+      "then": { "properties": { "expectedBefore": { "$ref": "#/$defs/presentBefore" } } }
+    }
+  ],
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "absentBefore": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state"],
+      "properties": { "state": { "const": "absent" } }
+    },
+    "presentBefore": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "fileType", "encoding", "contentDigest", "byteLength", "mode"],
+      "properties": {
+        "state": { "const": "present" },
+        "fileType": { "const": "regular" },
+        "encoding": { "const": "UTF-8" },
+        "contentDigest": { "$ref": "#/$defs/sha256" },
+        "byteLength": { "type": "integer", "minimum": 0, "maximum": 1073741824 },
+        "mode": { "type": "integer", "minimum": 0, "maximum": 511 }
+      }
+    },
+    "expectedBefore": { "oneOf": [{ "$ref": "#/$defs/absentBefore" }, { "$ref": "#/$defs/presentBefore" }] },
+    "candidateArtifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["artifactRecordDigest", "contentDigest", "byteLength", "dataClass", "trust", "availabilityProofDigest", "fileType", "encoding", "mode"],
+      "properties": {
+        "artifactRecordDigest": { "$ref": "#/$defs/sha256" },
+        "contentDigest": { "$ref": "#/$defs/sha256" },
+        "byteLength": { "type": "integer", "minimum": 0, "maximum": 1073741824 },
+        "dataClass": { "enum": ["D0", "D1", "D2", "D3"] },
+        "trust": { "enum": ["P1", "P2", "P3", "P4"] },
+        "availabilityProofDigest": { "$ref": "#/$defs/sha256" },
+        "fileType": { "const": "regular" },
+        "encoding": { "const": "UTF-8" },
+        "mode": { "type": "integer", "minimum": 0, "maximum": 511 }
+      }
+    }
+  }
+}

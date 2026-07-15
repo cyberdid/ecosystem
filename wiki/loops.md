@@ -1,7 +1,7 @@
 # Loop engineering
 
 **Updated:** 2026-07-15
-**Status:** architecture contract; runtime execution is not implemented yet
+**Status:** bounded-loop contract; M2 read and M3 controlled-write primitives exist, autonomous scheduling does not
 
 ## TL;DR
 
@@ -153,7 +153,7 @@ Exhaustion produces a typed incomplete result with evidence. It must never be re
 | L4 — Controlled apply | Approved writes inside enforced boundaries | Sandbox, PEP, idempotency, approval and negative tests |
 | L5 — Evidence-compounding | Strategy may improve inside frozen objective/evaluator bounds | Longitudinal safety, quality, cost and recovery evidence |
 
-Production or external-write loops stay disabled until M3/M4 enforcement and promotion gates are implemented.
+Production or external-write loops stay disabled until M4 repeated-run promotion gates are implemented. M3 supplies only the narrowly approved one-file apply primitive; it does not authorize autonomous scheduling or broaden the action scope.
 
 ## Candidate 1: wiki-health-check
 
@@ -233,16 +233,15 @@ Implemented today:
 - canonical `.ai/` contracts and validation;
 - deterministic instruction projections;
 - audit, lock, drift, backup and uninstall foundations;
+- default-deny runtime policy, immutable plans, budgets and trusted run/event ledger;
+- Linux/WSL read isolation and exact-approved one-file create/replace with restart-safe rollback;
 - a documented registry of loop candidates.
 
 Not implemented today:
 
 - loop scheduler or durable execution engine;
-- runtime policy enforcement point;
-- sandbox and network boundary;
-- approval engine;
-- trusted run/experiment ledger;
-- runtime capability probes;
+- a production multi-user approval service;
+- cross-platform controlled-write backends;
 - promotion evaluation for L2–L5 loops.
 
 Therefore `wiki-health-check` and `ml-autoresearch` are candidates, not running autonomous services.

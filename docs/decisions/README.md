@@ -18,6 +18,7 @@
 | ADR-014 | Untrusted processes are network-denied; provider credentials belong to trusted transports | Accepted for Linux/WSL M2 profile |
 | ADR-015 | Deployment promotion requires identical signed cross-deployment evaluation evidence | Accepted for M2 |
 | ADR-016 | Hardware-neutral local/cloud substitution and observable cloud identity | Accepted; supersedes ADR-007 as the active deployment rule |
+| ADR-017 | Controlled workspace writes use exact human approvals, a trusted CAS broker, and compare-and-swap rollback | Accepted for the M3 Linux/WSL single-file profile |
 
 ## ADR-001 — Contracts-first
 
@@ -112,6 +113,22 @@ The first M2 live observations have a 24-hour validity window. After expiry they
 Retained evaluation artifacts are described as **raw-content-free D0 evidence**: they omit raw prompt and response bodies but retain metadata and deterministic digests. Plain SHA-256 output digests can reveal low-entropy values by guessing, so non-public evaluations require a keyed digest or a separately governed disclosure policy.
 
 **Consequences.** ADR-007 remains in the register as provenance but no longer defines an active dependency. Roadmaps and architecture documents use “local/cloud” unless they discuss historical DGX material or an explicitly optional DGX profile. No cloud identity claim may imply immutable model weights without provider-verifiable revision evidence.
+
+## ADR-017 — Exact approval and compare-and-swap controlled writes
+
+**Date:** 2026-07-15
+
+**Context.** M2 deliberately stops at A1 repository reads. Giving an agent a writable checkout, treating a prompt confirmation as authorization, or recording only a path allowlist would permit parameter substitution, approval replay, symlink and hardlink attacks, partial writes, and unsafe rollback after third-party edits.
+
+**Decision.** The first M3 conformance profile is a deliberately narrow A2 operation: create or replace one bounded UTF-8 regular file below an already existing directory in an isolated Linux/WSL workspace. The untrusted agent produces candidate bytes in private scratch/CAS storage and never receives writable access to the governed workspace. A trusted write broker alone crosses that boundary.
+
+Every operation binds, by canonical digest, the project/run/plan, policy allow decision, root identity and base snapshot, canonical target reference, exact expected-before state, desired artifact and size, display preview, limits, and rollback manifest. A separately configured human-approval authority signs that exact subject. Approval is expiring and single-use; changing any bound parameter requires a new proposal and approval. The runtime journal HMAC protects local journal integrity but is not evidence of human identity. The embedded HMAC approval verifier is a reference adapter whose configured key-to-human mapping must be replaced or backed by WebAuthn/OIDC or an equivalent authenticated approval boundary in multi-user deployments.
+
+Before mutation, candidate bytes and the exact before-image (or an absence marker) must be durably available. The broker uses descriptor-anchored Linux resolution, rejects protected paths, symlinks, mount crossing, special files and multiple hard links, and rechecks compare-and-swap preconditions. The runtime store then holds a cross-connection active-plan transaction guard while the change authority persists a fenced `commit_ready` permit immediately before an atomic same-directory rename. Run termination cannot interleave with permit issuance. A stop or lease expiry after this one-shot permit does not retroactively revoke the kernel commit; ambiguous completion is reconciled and compensated from exact durable state. The broker fsyncs the file and parent directory, then verifies the installed digest. Rollback is also compare-and-swap: it restores the before-image only while the current file still equals the approved after-image. Unexpected state becomes `recovery_required`; it is never overwritten or reported as success.
+
+The bounded M3 profile excludes delete, rename, directory creation, multi-file transactions, arbitrary command execution, live-root promotion, and A3/A4 external actions. Those capabilities require separate contracts and conformance evidence rather than silent broadening of this approval.
+
+**Consequences.** M2's read-only store and regression profile remain valid. M3 uses a distinct write-authority journal so an old schema-v3 read journal is never implicitly migrated across a security-boundary change. The write journal contains only content-free records, opaque keyed path/CAS references, digests, authority state and an authenticated audit chain; raw paths, candidate bytes, backups, credentials and diffs remain outside SQLite. A private CAS recovery bundle is completed before mutation, allowing a restarted fenced worker to mark exact-before as failed or conservatively roll exact-after back; unrelated state remains `recovery_required`.
 
 ## Supersession
 
