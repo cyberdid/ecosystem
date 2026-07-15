@@ -4,14 +4,14 @@
     {
       "adapter": "openai-compatible",
       "enabled": false,
-      "id": "dgx-lab",
+      "id": "local-openai-compatible",
       "model": "configured-at-runtime",
       "provider": "local"
     },
     {
-      "adapter": "direct-provider",
+      "adapter": "openai-compatible",
       "enabled": false,
-      "id": "approved-cloud",
+      "id": "approved-cloud-openai-compatible",
       "model": "configured-at-runtime",
       "provider": "configured-at-runtime"
     }
@@ -23,7 +23,7 @@
     },
     "deployments": {
       "path": "deployments.yaml",
-      "sha256": "a7b54217e39283b0549dcd86125318684d63d0c89f5283c034cf62a475fcffc0"
+      "sha256": "de574585d98795fd8c83100ef1087dc3b5b7725fa93a5ad490db46f20f01bb84"
     },
     "instructions": {
       "path": "instructions.yaml",

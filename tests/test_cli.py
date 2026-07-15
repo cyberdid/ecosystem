@@ -101,6 +101,54 @@ class EcoCliTests(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertIn("unknown capability", error)
 
+    def test_role_candidate_artifact_trust_mismatch_is_rejected(self) -> None:
+        self.init()
+        path = self.repo / ".ai/deployments.yaml"
+        document = yaml.safe_load(path.read_text(encoding="utf-8"))
+        document["deployments"] = [
+            {
+                "id": "weak-local",
+                "provider": "local",
+                "adapter": "test",
+                "model": "test-model",
+                "zone": "Z1",
+                "allowedDataClasses": ["D0", "D1"],
+                "artifactTrust": "P1",
+                "declaredCapabilities": ["model.text"],
+                "enabled": False,
+            }
+        ]
+        role = document["logicalRoles"]["code.read"]
+        role["minimumArtifactTrust"] = "P2"
+        role["candidates"] = ["weak-local"]
+        path.write_text(yaml.safe_dump(document, sort_keys=False), encoding="utf-8")
+        code, _, error = self.run_cli("validate")
+        self.assertEqual(code, 1)
+        self.assertIn("artifact trust", error)
+
+    def test_enabled_deployment_requires_exact_identity_and_observation(self) -> None:
+        self.init()
+        path = self.repo / ".ai/deployments.yaml"
+        document = yaml.safe_load(path.read_text(encoding="utf-8"))
+        document["deployments"] = [
+            {
+                "id": "unresolved-local",
+                "provider": "configured-at-runtime",
+                "adapter": "openai-compatible",
+                "model": "configured-at-runtime",
+                "zone": "Z1",
+                "allowedDataClasses": ["D0"],
+                "artifactTrust": "P1",
+                "declaredCapabilities": ["model.text"],
+                "enabled": True,
+            }
+        ]
+        path.write_text(yaml.safe_dump(document, sort_keys=False), encoding="utf-8")
+        code, _, error = self.run_cli("validate")
+        self.assertEqual(code, 1)
+        self.assertIn("deployments", error)
+        self.assertIn("required property", error)
+
     def test_projection_path_cannot_escape_repository(self) -> None:
         self.init()
         path = self.repo / ".ai/instructions.yaml"

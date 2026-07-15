@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai.ecosystem.local/schemas/runtime/model-result.schema.json",
+  "title": "ModelResult",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "runtime.ai.ecosystem/v1alpha1" },
+    "kind": { "const": "ModelResult" },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "runId", "requestId", "createdAt"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "runId": { "$ref": "#/$defs/id" },
+        "requestId": { "$ref": "#/$defs/id" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["modelRequestDigest", "deploymentId", "deploymentIdentityDigest", "endpointBindingDigest", "adapterVersion", "providerRequestIdDigest", "reportedModelDigest", "output", "usage", "finishReason"],
+      "properties": {
+        "modelRequestDigest": { "$ref": "#/$defs/sha256" },
+        "deploymentId": { "$ref": "#/$defs/id" },
+        "deploymentIdentityDigest": { "$ref": "#/$defs/sha256" },
+        "endpointBindingDigest": { "$ref": "#/$defs/sha256" },
+        "adapterVersion": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$" },
+        "providerRequestIdDigest": { "$ref": "#/$defs/sha256" },
+        "reportedModelDigest": { "$ref": "#/$defs/sha256" },
+        "output": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["contentDigest", "byteLength", "dataClass", "trust"],
+          "properties": {
+            "contentDigest": { "$ref": "#/$defs/sha256" },
+            "byteLength": { "type": "integer", "minimum": 0, "maximum": 1073741824 },
+            "dataClass": { "enum": ["D0", "D1", "D2", "D3"] },
+            "trust": { "const": "P0" }
+          }
+        },
+        "usage": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["inputTokens", "outputTokens", "totalTokens"],
+          "properties": {
+            "inputTokens": { "type": "integer", "minimum": 0 },
+            "outputTokens": { "type": "integer", "minimum": 0 },
+            "totalTokens": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "finishReason": { "enum": ["stop", "length"] }
+      }
+    }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$" },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+  }
+}

@@ -1,11 +1,11 @@
 # Current architecture
 
-**Updated:** 2026-07-14  
-**Status:** compiler foundation implemented
+**Updated:** 2026-07-15
+**Status:** M1 compiler and embedded M2 read-only reference profile implemented
 
 ## TL;DR
 
-The repository currently implements canonical contracts, validation, audit, deterministic projections, lock generation, drift checks, backups, and uninstall. It does not yet enforce runtime model/tool permissions.
+The repository implements canonical contracts/compiler plus an embedded default-deny policy, trusted evidence ingestion, durable Linux/WSL repository reads, governed model-adapter identities, direct-egress isolation, and signed local/cloud evaluation evidence. Cloud aliases are observable routing identities, not immutable-weight pins.
 
 ## Implemented
 
@@ -15,25 +15,33 @@ The repository currently implements canonical contracts, validation, audit, dete
 → eco compiler
 → owned vendor projections
 → CI drift and unit tests
+→ pure PolicyEngine
+→ typed EmbeddedOrchestrator
+→ SQLite event/plan/budget/operation authority
+→ filesystem-only Linux broker + private artifact CAS
+→ trusted snapshot/observation ingestion
+→ governed local/cloud adapters (observable identity boundary)
+→ Linux/WSL network-denied launcher
+→ signed cross-deployment evaluation
 ```
 
 ## Explicitly not implemented
 
-- provider or tool credential broker;
-- data/action PEP;
-- network egress control;
-- sandbox execution;
-- model router;
-- capability probes;
-- SQLite run events;
+- endpoint-specific network allowlist backend;
+- Windows/macOS executable broker and isolation backends;
+- controlled-write sandbox execution;
+- autonomous model router;
+- durable replay registry for evidence envelopes;
+- asymmetric evidence signatures;
+- cryptographic remote issuer identity;
 - approvals;
-- signed audit checkpoints.
+- caller-independent external anchor storage.
 
-The project must not claim these boundaries until negative tests prove them.
+The implemented M2 boundary has negative, concurrency, process-crash, artifact, migration, backup, key-rotation, anchor, adapter, isolation, evidence, and parity tests. See the [M2 completion report](../docs/research/2026-07-15-m2-completion-report.md).
 
 ## Next vertical slice
 
-Integrate one external repository in `observe` mode, then build a read-only broker with one local DGX adapter and one approved cloud adapter. Both must run the same evaluation task, and a bypass test must fail closed.
+Begin M3 with narrowly controlled workspace writes, explicit approvals, idempotency, rollback, and platform adapters. Every new backend must preserve the M2 trusted-evidence, isolation, no-fallback, and parity gates.
 
 The first automation loop remains `wiki-health-check` in L2 observe/report-only mode. Scheduling and autonomous retries are added only after the manual command, deterministic gate, bounded state, and repeated-run evaluation are reliable. See [Loop engineering](loops.md).
 

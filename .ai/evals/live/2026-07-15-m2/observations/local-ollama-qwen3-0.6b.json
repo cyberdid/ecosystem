@@ -1,0 +1,37 @@
+{
+  "apiVersion": "runtime.ai.ecosystem/v1alpha1",
+  "kind": "AdapterConformanceProfile",
+  "metadata": {
+    "deploymentId": "local-ollama-qwen3-0.6b",
+    "id": "eval-00a876165ff558fc753a7408",
+    "testedAt": "2026-07-15T12:25:06.596412Z",
+    "validUntil": "2026-07-16T12:25:06.596412Z"
+  },
+  "spec": {
+    "adapterVersion": "ollama-eval-v1",
+    "deploymentIdentityDigest": "230d8461ae618f9b8eab69ad0f748db5e8d5b4c8aabb0fad0a71d29e076b14a7",
+    "deviationCodes": [],
+    "effectiveCapabilities": [
+      "model.text"
+    ],
+    "probes": [
+      {
+        "attempts": 1,
+        "evidenceDigest": "5af38ce96a2a95eff4ae3c60d50f97a4c19268d0936c791b23ee7627da08dce0",
+        "id": "exact-ready-token",
+        "metrics": {
+          "inputTokens": 44,
+          "outputTokens": 2
+        },
+        "status": "pass",
+        "successes": 1
+      }
+    ],
+    "status": "pass",
+    "suite": {
+      "digest": "b907cb8665d9717d765ccea552480139eacea28042d3feedc29191d3d6f67b8a",
+      "id": "m2-live-local-cloud",
+      "version": "1.0.0"
+    }
+  }
+}

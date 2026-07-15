@@ -1,0 +1,41 @@
+{
+  "apiVersion": "runtime.ai.ecosystem/v1alpha1",
+  "kind": "RunRequest",
+  "metadata": {
+    "actor": {
+      "id": "m2-live-evaluation-runner",
+      "type": "automation"
+    },
+    "createdAt": "2026-07-15T12:57:39.014366Z",
+    "id": "m2-live-policy-gate-request"
+  },
+  "spec": {
+    "budget": {
+      "maxCostMicrousd": 0,
+      "maxDurationSeconds": 120,
+      "maxInputBytes": 4096,
+      "maxModelRequests": 1,
+      "maxOutputBytes": 4096,
+      "maxToolRequests": 0,
+      "maxTotalTokens": 20000
+    },
+    "classificationAuthority": "project-policy",
+    "constraints": {
+      "agentNetwork": "deny",
+      "maximumActionClass": "A0",
+      "sandbox": "inspect",
+      "toolNetwork": "deny"
+    },
+    "dataClass": "D0",
+    "deploymentPin": "local-ollama-qwen3-0.6b",
+    "fallbackPolicy": "none",
+    "logicalRole": "code.read",
+    "projectId": "m2-live-policy-gate",
+    "requestedTools": [],
+    "task": {
+      "inputRefs": [],
+      "instructionRef": "artifact://m2-live/instruction",
+      "type": "conformance"
+    }
+  }
+}

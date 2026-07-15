@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai.ecosystem.local/schemas/runtime/repository-snapshot.schema.json",
+  "title": "RepositorySnapshot",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "runtime.ai.ecosystem/v1alpha1" },
+    "kind": { "const": "RepositorySnapshot" },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "projectId", "createdAt", "issuer"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "projectId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "issuer": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "id"],
+          "properties": {
+            "type": { "enum": ["operator", "runtime"] },
+            "id": { "$ref": "#/$defs/id" }
+          }
+        }
+      }
+    },
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rootIdentityDigest", "trust", "entries"],
+      "properties": {
+        "rootIdentityDigest": { "$ref": "#/$defs/sha256" },
+        "trust": { "enum": ["P1", "P2", "P3", "P4"] },
+        "sourceRevision": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "entries": {
+          "type": "array",
+          "maxItems": 1000000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "contentDigest", "byteLength", "dataClass", "trust", "classificationAuthority"],
+            "properties": {
+              "path": { "type": "string", "minLength": 1, "maxLength": 4096 },
+              "contentDigest": { "$ref": "#/$defs/sha256" },
+              "byteLength": { "type": "integer", "minimum": 0, "maximum": 1073741824 },
+              "dataClass": { "enum": ["D0", "D1", "D2", "D3", "D4"] },
+              "trust": { "enum": ["P1", "P2", "P3", "P4"] },
+              "classificationAuthority": { "enum": ["operator", "policy"] }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$" },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+  }
+}

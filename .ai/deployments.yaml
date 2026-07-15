@@ -1,11 +1,11 @@
 apiVersion: ai.ecosystem/v1alpha1
 kind: DeploymentCatalog
 deployments:
-  - id: dgx-lab
+  - id: local-openai-compatible
     provider: local
     adapter: openai-compatible
     model: configured-at-runtime
-    endpointRef: env:ECO_DGX_OPENAI_BASE_URL
+    endpointRef: env:ECO_LOCAL_OPENAI_BASE_URL
     zone: Z1
     allowedDataClasses:
       - D0
@@ -14,14 +14,14 @@ deployments:
     artifactTrust: P1
     declaredCapabilities:
       - model.text
-    observedCapabilitiesRef: .ai/evals/observed/dgx-lab.json
+    observedCapabilitiesRef: .ai/evals/observed/local-openai-compatible.json
     retention: local-runtime-dependent
     trainingUse: prohibited
     region: local
     enabled: false
-  - id: approved-cloud
+  - id: approved-cloud-openai-compatible
     provider: configured-at-runtime
-    adapter: direct-provider
+    adapter: openai-compatible
     model: configured-at-runtime
     endpointRef: env:ECO_CLOUD_ENDPOINT
     zone: Z3
@@ -31,7 +31,7 @@ deployments:
     artifactTrust: P1
     declaredCapabilities:
       - model.text
-    observedCapabilitiesRef: .ai/evals/observed/approved-cloud.json
+    observedCapabilitiesRef: .ai/evals/observed/approved-cloud-openai-compatible.json
     retention: contract-required
     trainingUse: unknown
     region: contract-required
@@ -50,8 +50,8 @@ logicalRoles:
     minimumArtifactTrust: P1
     maximumActionClass: A1
     candidates:
-      - dgx-lab
-      - approved-cloud
+      - local-openai-compatible
+      - approved-cloud-openai-compatible
   review.private:
     requiredCapabilities:
       - model.text
@@ -64,6 +64,4 @@ logicalRoles:
       - Z1
     minimumArtifactTrust: P2
     maximumActionClass: A1
-    candidates:
-      - dgx-lab
-
+    candidates: []

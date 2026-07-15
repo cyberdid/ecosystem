@@ -1,0 +1,5 @@
+# Authenticated evidence must retain its exact published bytes across platforms.
+.ai/evals/live/** -text -diff
+
+# Archived source material is retained byte-for-byte as reviewed.
+docs/research/sources/** -text -diff

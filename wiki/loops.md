@@ -1,6 +1,6 @@
 # Loop engineering
 
-**Updated:** 2026-07-14  
+**Updated:** 2026-07-15
 **Status:** architecture contract; runtime execution is not implemented yet
 
 ## TL;DR
@@ -263,3 +263,18 @@ Supporting concept sources:
 - Agent workflow anti-patterns: `/home/snow/projects/rnd-llm-playbook/concept/05-anti-patterns.md`
 
 The DGX Spark X-article corpus inspired several loop patterns, but it is secondary, unverified source material. Product claims, performance multipliers and universal numeric thresholds from those articles are not normative evidence for this project.
+
+### Reviewed “Loop and Harness engineering” article
+
+The supplied “7 files, 5 steps” article has been preserved and checked against primary sources in the [detailed source review](../docs/research/2026-07-15-loop-and-harness-engineering-source-review.md).
+
+Accepted insight: the stable harness and iterative loop are separate layers, and loops need durable goals/state, context discipline, verification, and explicit continuation decisions.
+
+Corrections that are normative for this project:
+
+- `.claude/` is a Claude-specific projection, not the ecosystem harness or source of truth;
+- no fixed seven-file set is required across providers or projects;
+- hooks and MCP configuration are not substitutes for external policy enforcement, approval, sandboxing, and audit;
+- fresh-context LLM review is useful evidence but not automatically an independent hard gate;
+- the cited 91.6% and 90.2% results are workload-specific, not universal performance guarantees;
+- no loop runs forever: budgets, no-progress detection, terminal outcomes, incident ownership, and a kill switch remain mandatory.

@@ -1,0 +1,18 @@
+{
+  "decisionDigest": "c1c2ead556101ed4cb6d92a029559b91206ef4592f5b5e3e557e584286397f59",
+  "deploymentId": "local-ollama-qwen3-0.6b",
+  "deploymentIdentityDigest": "230d8461ae618f9b8eab69ad0f748db5e8d5b4c8aabb0fad0a71d29e076b14a7",
+  "evaluationEvidenceDigest": "b3d07b3b8d4a9c55fb7ef3a28a1dd6367bfce186eeae96d35fddc0c3f512fdb9",
+  "observationEvidence": {
+    "envelopeDigest": "4443d3b586dc3da390f0698a4788a813fe2d013822e24c346823720bbb8d38c7",
+    "envelopeId": "trusted-eval-0da5a8f34050b4f1732e290f",
+    "expiresAt": "2026-07-16T12:57:39.014366Z",
+    "issuedAt": "2026-07-15T12:57:39.014366Z",
+    "issuerId": "m2-live-evaluation-runner",
+    "keyId": "m2-live-evaluation-key-1"
+  },
+  "planDigest": "74045aa667aaf5a7b0865a2ebe66ed801cbae4ad9a65af7e7977291c80ee0c94",
+  "runRequestDigest": "9984e17a9fe7bc135fbbd8bfe36c51b598423304af0450cecd4b03f6a4e6456b",
+  "status": "pass",
+  "verifiedAt": "2026-07-15T12:57:39.014366Z"
+}

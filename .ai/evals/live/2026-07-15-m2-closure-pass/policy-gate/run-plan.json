@@ -1,0 +1,84 @@
+{
+  "apiVersion": "runtime.ai.ecosystem/v1alpha1",
+  "kind": "RunPlan",
+  "metadata": {
+    "createdAt": "2026-07-15T12:58:25.628337Z",
+    "id": "m2-live-policy-gate-plan",
+    "runId": "m2-live-policy-gate-run"
+  },
+  "spec": {
+    "budget": {
+      "maxCostMicrousd": 0,
+      "maxDurationSeconds": 120,
+      "maxInputBytes": 4096,
+      "maxModelRequests": 1,
+      "maxOutputBytes": 4096,
+      "maxToolRequests": 0,
+      "maxTotalTokens": 20000
+    },
+    "effectivePolicy": {
+      "agentNetwork": "deny",
+      "dataClass": "D0",
+      "maximumActionClass": "A0",
+      "sandbox": "inspect",
+      "toolNetwork": "deny"
+    },
+    "inputs": [
+      {
+        "artifactRecordDigest": "63b26e5923fd3b9cd9c8918809446fcbc998c22f7f08081723a77d6b7daa56de",
+        "byteLength": 147,
+        "contentDigest": "1d1d7d9fe3eaee5757975861b9c32cf9a92b5afb43761ffa9b9051fe8423524f",
+        "dataClass": "D0",
+        "ref": "artifact://m2-live/instruction"
+      }
+    ],
+    "project": {
+      "contractProfile": "runtime-contracts-v1alpha1",
+      "digestProfile": "eco-python-json-v1",
+      "id": "m2-live-policy-gate",
+      "policyEngineVersion": "0.1.0",
+      "schemaBundleDigest": "4e4adc61b9c4ab32049a651a6d8749f3abb739c08c81d8cd5f233ed6a4f41aa0",
+      "semanticConfigDigest": "74f72b4c9760fe355ffa98286d2f8fa5a46f9d6e3be0a76c6dfe08020859481a",
+      "sourceDigests": {
+        "capabilities": "f4cf6cad678adbe5813f0190610b77cef1963ed59f1cd9f94a990e3a253d7496",
+        "deployments": "2692b8b1c5ba38b225612d091e66051daa5148b1f50db93a830d832f9121832f",
+        "instructions": "be2d4e24ddc19c97db6504048d5193a6a8566f522eb7f46b899bcf07a570970b",
+        "project": "ea46b404fb8c55eb9894498566f1105d057803734393320a43dc11a002e62eb8",
+        "tools": "94a17cc89f801388a57d28159d295b0cdb62c5d12ab3e10207bb6a87cb516ecb"
+      }
+    },
+    "requestDigest": "28f7ea7e6270a6d0d87a95270e9ad97ddbd35d1ac4fa0e9153eeb77d88b9660c",
+    "route": {
+      "brokerModelEgress": {
+        "adapter": "ollama-evaluation",
+        "allowed": true,
+        "endpointReferenceDigest": "537c5274e1cb9abc4e1636476862d3cca8335a1ec0c83ecfbcc907b12649a991"
+      },
+      "deploymentDigest": "59515589737ad6da04fb71c427dafd10153041d65e8d0e68011ca967e2a2bb31",
+      "deploymentId": "local-ollama-qwen3-0.6b",
+      "deploymentIdentityDigest": "230d8461ae618f9b8eab69ad0f748db5e8d5b4c8aabb0fad0a71d29e076b14a7",
+      "identity": {
+        "adapter": "ollama-evaluation",
+        "adapterVersion": "ollama-eval-v1",
+        "endpointReferenceDigest": "537c5274e1cb9abc4e1636476862d3cca8335a1ec0c83ecfbcc907b12649a991",
+        "model": "qwen3:0.6b",
+        "modelRevision": "sha256:7df6b6e09427a769808717c0a93cadc4ae99ed4eb8bf5ca557c90846becea435",
+        "provider": "local",
+        "quantization": "manifest-pinned",
+        "runtimeEngine": "ollama",
+        "runtimeVersion": "0.32.0"
+      },
+      "logicalRole": "code.read",
+      "observedCapabilitiesDigest": "5dcc9689c8a68ec8f56457670c2b92cbf45b92d0bdbdd1c15ebc541ab46679b2",
+      "observedCapabilitiesEvidence": {
+        "envelopeDigest": "8320c3be65d7627c015cf68b8b591f140eb8628a7f625cba5dd0a31d7b9a9fe6",
+        "envelopeId": "trusted-eval-ec9cf9bd500ee279bbc1f21e",
+        "expiresAt": "2026-07-16T12:58:25.628337Z",
+        "issuedAt": "2026-07-15T12:58:25.628337Z",
+        "issuerId": "m2-live-evaluation-runner",
+        "keyId": "m2-live-evaluation-key-1"
+      }
+    },
+    "tools": []
+  }
+}

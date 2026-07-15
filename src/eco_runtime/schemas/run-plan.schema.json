@@ -1,0 +1,209 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai.ecosystem.local/schemas/runtime/run-plan.schema.json",
+  "title": "RunPlan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "runtime.ai.ecosystem/v1alpha1" },
+    "kind": { "const": "RunPlan" },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "runId", "createdAt"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "runId": { "$ref": "#/$defs/id" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requestDigest", "project", "effectivePolicy", "inputs", "route", "tools", "budget"],
+      "properties": {
+        "requestDigest": { "$ref": "#/$defs/sha256" },
+        "project": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "semanticConfigDigest",
+            "sourceDigests",
+            "digestProfile",
+            "contractProfile",
+            "schemaBundleDigest",
+            "policyEngineVersion"
+          ],
+          "properties": {
+            "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$" },
+            "semanticConfigDigest": { "$ref": "#/$defs/sha256" },
+            "digestProfile": { "const": "eco-python-json-v1" },
+            "contractProfile": { "const": "runtime-contracts-v1alpha1" },
+            "schemaBundleDigest": { "$ref": "#/$defs/sha256" },
+            "policyEngineVersion": { "type": "string", "minLength": 1 },
+            "sourceDigests": {
+              "type": "object",
+              "minProperties": 1,
+              "maxProperties": 64,
+              "additionalProperties": { "$ref": "#/$defs/sha256" },
+              "propertyNames": { "pattern": "^[a-z][a-z0-9._-]+$" }
+            }
+          }
+        },
+        "effectivePolicy": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["dataClass", "maximumActionClass", "sandbox", "agentNetwork", "toolNetwork"],
+          "properties": {
+            "dataClass": { "enum": ["D0", "D1", "D2", "D3", "D4"] },
+            "maximumActionClass": { "enum": ["A0", "A1"] },
+            "sandbox": { "const": "inspect" },
+            "agentNetwork": { "const": "deny" },
+            "toolNetwork": { "const": "deny" }
+          }
+        },
+        "inputs": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 257,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["ref", "artifactRecordDigest", "contentDigest", "dataClass", "byteLength"],
+            "properties": {
+              "ref": { "$ref": "#/$defs/artifactRef" },
+              "artifactRecordDigest": { "$ref": "#/$defs/sha256" },
+              "contentDigest": { "$ref": "#/$defs/sha256" },
+              "dataClass": { "enum": ["D0", "D1", "D2", "D3", "D4"] },
+              "byteLength": { "type": "integer", "minimum": 0 }
+            }
+          }
+        },
+        "repositorySnapshot": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "digest", "rootIdentityDigest", "trust", "evidence"],
+          "properties": {
+            "id": { "$ref": "#/$defs/id" },
+            "digest": { "$ref": "#/$defs/sha256" },
+            "rootIdentityDigest": { "$ref": "#/$defs/sha256" },
+            "trust": { "enum": ["P1", "P2", "P3", "P4"] },
+            "evidence": { "$ref": "#/$defs/evidenceProvenance" }
+          }
+        },
+        "route": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "logicalRole",
+            "deploymentId",
+            "deploymentDigest",
+            "deploymentIdentityDigest",
+            "identity",
+            "observedCapabilitiesDigest",
+            "observedCapabilitiesEvidence",
+            "brokerModelEgress"
+          ],
+          "properties": {
+            "logicalRole": { "type": "string", "pattern": "^[a-z][a-z0-9._-]+$" },
+            "deploymentId": { "$ref": "#/$defs/id" },
+            "deploymentDigest": { "$ref": "#/$defs/sha256" },
+            "deploymentIdentityDigest": { "$ref": "#/$defs/sha256" },
+            "observedCapabilitiesDigest": { "$ref": "#/$defs/sha256" },
+            "observedCapabilitiesEvidence": { "$ref": "#/$defs/evidenceProvenance" },
+            "brokerModelEgress": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["allowed", "adapter", "endpointReferenceDigest"],
+              "properties": {
+                "allowed": { "const": true },
+                "adapter": { "type": "string", "minLength": 1 },
+                "endpointReferenceDigest": { "$ref": "#/$defs/sha256" }
+              }
+            },
+            "identity": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "provider",
+                "adapter",
+                "adapterVersion",
+                "model",
+                "modelRevision",
+                "runtimeEngine",
+                "runtimeVersion",
+                "quantization",
+                "endpointReferenceDigest"
+              ],
+              "properties": {
+                "provider": { "type": "string", "minLength": 1 },
+                "adapter": { "type": "string", "minLength": 1 },
+                "adapterVersion": { "type": "string", "minLength": 1 },
+                "model": { "type": "string", "minLength": 1 },
+                "modelRevision": { "type": "string", "minLength": 1 },
+                "runtimeEngine": { "type": "string", "minLength": 1 },
+                "runtimeVersion": { "type": "string", "minLength": 1 },
+                "quantization": { "type": "string", "minLength": 1 },
+                "endpointReferenceDigest": { "$ref": "#/$defs/sha256" }
+              }
+            }
+          }
+        },
+        "tools": {
+          "type": "array",
+          "maxItems": 64,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "catalogDigest", "capability", "actionClass", "argumentContract"],
+            "properties": {
+              "id": { "type": "string", "pattern": "^[a-z][a-z0-9._-]+$" },
+              "catalogDigest": { "$ref": "#/$defs/sha256" },
+              "capability": { "type": "string", "pattern": "^[a-z][a-z0-9._-]+$" },
+              "actionClass": { "enum": ["A0", "A1"] },
+              "argumentContract": { "type": "string", "pattern": "^eco://tools/[a-z][a-z0-9._/-]+$" }
+            }
+          }
+        },
+        "budget": { "$ref": "#/$defs/budget" }
+      }
+    }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$" },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "artifactRef": {
+      "type": "string",
+      "pattern": "^artifact://(?!\\.\\.?(?:/|$))(?!.*?/\\.\\.?(?:/|$))(?!.*//)(?!.*\\\\)(?!.*%2[fF]|.*%5[cC])[A-Za-z0-9][A-Za-z0-9._:/-]{0,4095}$"
+    },
+    "evidenceProvenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["envelopeId", "envelopeDigest", "issuerId", "keyId", "issuedAt", "expiresAt"],
+      "properties": {
+        "envelopeId": { "$ref": "#/$defs/id" },
+        "envelopeDigest": { "$ref": "#/$defs/sha256" },
+        "issuerId": { "$ref": "#/$defs/id" },
+        "keyId": { "$ref": "#/$defs/id" },
+        "issuedAt": { "type": "string", "format": "date-time" },
+        "expiresAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["maxDurationSeconds", "maxModelRequests", "maxToolRequests", "maxInputBytes", "maxOutputBytes", "maxTotalTokens", "maxCostMicrousd"],
+      "properties": {
+        "maxDurationSeconds": { "type": "integer", "minimum": 1, "maximum": 86400 },
+        "maxModelRequests": { "type": "integer", "minimum": 1, "maximum": 1000 },
+        "maxToolRequests": { "type": "integer", "minimum": 0, "maximum": 10000 },
+        "maxInputBytes": { "type": "integer", "minimum": 1, "maximum": 1073741824 },
+        "maxOutputBytes": { "type": "integer", "minimum": 1, "maximum": 1073741824 },
+        "maxTotalTokens": { "type": "integer", "minimum": 1, "maximum": 10000000 },
+        "maxCostMicrousd": { "type": "integer", "minimum": 0, "maximum": 1000000000000 }
+      }
+    }
+  }
+}

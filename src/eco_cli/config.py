@@ -17,6 +17,7 @@ from .errors import EcoError
 
 SECRET_KEY_RE = re.compile(r"(?:password|passwd|secret|token|api[_-]?key|credential)", re.I)
 SAFE_REFERENCE_RE = re.compile(r"^(?:env:|config:|secret://|\$\{|<|placeholder$|none$)", re.I)
+ARTIFACT_TRUST_ORDER = {f"P{level}": level for level in range(5)}
 
 
 def ensure_within(root: Path, candidate: Path) -> Path:
@@ -211,6 +212,41 @@ def validate_bundle(
                     f"logicalRoles.{role_name}: deployment {candidate!r} lacks declared capabilities "
                     f"{', '.join(sorted(missing))}"
                 )
+            if deployment.get("zone") not in role.get("allowedZones", []):
+                errors.append(
+                    f"logicalRoles.{role_name}: deployment {candidate!r} zone "
+                    f"{deployment.get('zone')!r} is not allowed"
+                )
+            shared_data_classes = set(role.get("allowedDataClasses", [])) & set(
+                deployment.get("allowedDataClasses", [])
+            )
+            if not shared_data_classes:
+                errors.append(
+                    f"logicalRoles.{role_name}: deployment {candidate!r} has no allowed data-class intersection"
+                )
+            minimum_trust = ARTIFACT_TRUST_ORDER.get(role.get("minimumArtifactTrust"), -1)
+            deployment_trust = ARTIFACT_TRUST_ORDER.get(deployment.get("artifactTrust"), -1)
+            if deployment_trust < minimum_trust:
+                errors.append(
+                    f"logicalRoles.{role_name}: deployment {candidate!r} artifact trust "
+                    f"{deployment.get('artifactTrust')!r} is below {role.get('minimumArtifactTrust')!r}"
+                )
+
+    for deployment in deployments:
+        if not deployment.get("enabled"):
+            continue
+        observed_ref = deployment.get("observedCapabilitiesRef")
+        if not isinstance(observed_ref, str):
+            continue
+        try:
+            observed_path = ensure_within(directory, directory / observed_ref)
+        except EcoError as exc:
+            errors.append(f"deployments[{deployment.get('id')}].observedCapabilitiesRef: {exc}")
+            continue
+        if not observed_path.is_file():
+            errors.append(
+                f"deployments[{deployment.get('id')}]: observed capability record does not exist"
+            )
 
     projections = bundle["instructions"].get("projections", {})
     for client, relative in projections.items():

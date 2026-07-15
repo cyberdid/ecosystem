@@ -1,0 +1,46 @@
+{
+  "allowedDeployments": [
+    "cloud-claude-sonnet-5",
+    "local-ollama-qwen3-0.6b"
+  ],
+  "allowedKinds": [
+    "AdapterConformanceProfile"
+  ],
+  "allowedSuiteDigests": [
+    "08d7ee84c62d53c3ae08419623b48cfb6d645fe8c127ddcd090295e194826dd6"
+  ],
+  "evaluationEvidenceDigest": "1c7e8d1a08006c6606cc734b83f94d5a2df7082a0985a48a820a1fb8c9e46927",
+  "issuerId": "m2-live-evaluation-runner",
+  "keyId": "m2-live-evaluation-key-1",
+  "observations": [
+    {
+      "deploymentId": "cloud-claude-sonnet-5",
+      "deploymentIdentityDigest": "43edd8ca3d7d9fa49765c7deacc37766393479bef37db946a754666f209b0c4d",
+      "evidence": {
+        "envelopeDigest": "b0fb8a97ecacad1c254fd874eac476136e3743bdf6ede6717b98fa851556c3d8",
+        "envelopeId": "trusted-eval-ac06ac90207c5a3b1b9de178",
+        "expiresAt": "2026-07-16T12:58:25.628337Z",
+        "issuedAt": "2026-07-15T12:58:25.628337Z",
+        "issuerId": "m2-live-evaluation-runner",
+        "keyId": "m2-live-evaluation-key-1"
+      },
+      "observationDigest": "498eaa0739bf21bbae44f765ce5756ecc8fe1b78cbea787a48f8ed3c8ce9192e"
+    },
+    {
+      "deploymentId": "local-ollama-qwen3-0.6b",
+      "deploymentIdentityDigest": "230d8461ae618f9b8eab69ad0f748db5e8d5b4c8aabb0fad0a71d29e076b14a7",
+      "evidence": {
+        "envelopeDigest": "8320c3be65d7627c015cf68b8b591f140eb8628a7f625cba5dd0a31d7b9a9fe6",
+        "envelopeId": "trusted-eval-ec9cf9bd500ee279bbc1f21e",
+        "expiresAt": "2026-07-16T12:58:25.628337Z",
+        "issuedAt": "2026-07-15T12:58:25.628337Z",
+        "issuerId": "m2-live-evaluation-runner",
+        "keyId": "m2-live-evaluation-key-1"
+      },
+      "observationDigest": "5dcc9689c8a68ec8f56457670c2b92cbf45b92d0bdbdd1c15ebc541ab46679b2"
+    }
+  ],
+  "status": "pass",
+  "verificationKeyFingerprint": "8fbeb349b72be8214e12504660697c8040feeae9bb4678554e72decc66f74bc0",
+  "verifiedAt": "2026-07-15T12:58:25.628337Z"
+}

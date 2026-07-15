@@ -80,6 +80,13 @@ def starter_bundle(name: str) -> dict[str, dict[str, Any]]:
                     "defaultSandbox": "inspect",
                 },
                 {
+                    "id": "model.tool-calling",
+                    "description": "Propose typed tool calls for independent validation and authorization.",
+                    "actionClass": "A0",
+                    "sideEffect": False,
+                    "defaultSandbox": "inspect",
+                },
+                {
                     "id": "filesystem.read",
                     "description": "Read project files inside the approved repository boundary.",
                     "actionClass": "A1",
@@ -133,4 +140,3 @@ def starter_bundle(name: str) -> dict[str, dict[str, Any]]:
             ],
         },
     }
-

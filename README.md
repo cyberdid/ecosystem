@@ -18,7 +18,25 @@ The project owns stable contracts, deterministic instruction projections, valida
 - deterministic configuration lock;
 - automated unit tests and CI.
 
-**Not implemented and not claimed:** runtime PEP/broker, model routing, sandbox execution, approvals, immutable audit, or production autonomy.
+**M2 embedded read-only reference profile complete:**
+
+- separate `runtime.ai.ecosystem/v1alpha1` records for requests, immutable plans, decisions, events, artifacts, typed errors, and adapter observations;
+- strict broker-owned `repository.read` argument contract;
+- enabled deployments require exact identity fields and an observed-capability reference;
+- cross-contract validation rejects candidate zone, data-class, and artifact-trust incompatibility;
+- runtime contract validation is fail-closed and does not echo untrusted values;
+- embedded default-deny planning/tool PEP with immutable plans and single-use decisions;
+- capability-scoped run state machine backed by a shared pure replay reducer, plus one runtime-owned atomic budget ledger per active plan;
+- snapshot-bound Linux/WSL `repository.read` broker with `openat2`, symlink/hardlink defense, D/P gates, and content-digest verification.
+- SQLite schema-v3 authority for the full native run-event lifecycle, plan activation, absolute deadlines, exact policy provenance, atomic decision nonces, durable tool/input budgets, repository-read PREPARE/COMMIT, explicit no-retry recovery, terminal checkpoints, canonical immutable records, and HMAC-linked authority revisions;
+- filesystem-only broker plus typed orchestrator, private content-addressed artifact storage with availability proofs, authenticated v2→v3 migration, online backup/restore, historical-key rotation, and external anchor protocols;
+- privacy-preserving store boundary: no raw path/content, store-scoped keyed path references, code-owned failure records, coherent-snapshot verification, and relational result reconciliation.
+- pinned local-loopback and direct-cloud model adapter contracts with credential-free requests, exact endpoint/model identity, strict response limits, sanitized failures, and no automatic fallback;
+- signed trusted snapshot/observation ingestion; unsigned runtime evidence is rejected by `PolicyEngine` by default;
+- Linux/WSL untrusted-process isolation using user/net/pid namespaces, Landlock filesystem/TCP denial, a clean environment, zero credential bindings, executable allowlisting, closed stdin, bounded output, and fail-closed preflight;
+- exact-output local/cloud conformance evaluation with signed raw-content-free D0 evidence and one passing live Ollama/Qwen plus broker-owned Claude/Sonnet reference run.
+
+**Not implemented and not claimed:** endpoint-specific network allowlists, Windows/macOS executable isolation backends, descendant-exec/seccomp/cgroup/device containment, asymmetric evidence signatures, durable evidence replay IDs, retryable encrypted recovery payloads, controlled writes, approvals, a bundled database-plus-CAS disaster-recovery package, caller-independent external anchoring, or production autonomy.
 
 ## Architecture in one sentence
 
@@ -109,7 +127,7 @@ MAP.md                  deployment inventory, not architecture truth
 ```text
 rnd-llm-playbook = methodology and research
 ecosystem        = executable contracts/compiler/harness
-dgx_spark        = local execution and evaluation lab
+dgx_spark        = historical example/corpus; retired host, not a dependency
 odysseus         = brownfield conformance benchmark
 ```
 
@@ -119,7 +137,7 @@ odysseus         = brownfield conformance benchmark
 - LiteLLM is optional and replaceable; direct provider adapters remain possible.
 - MCP is a tool/resource protocol, not a policy engine or trust certificate.
 - Local execution is not automatically private.
-- SQLite is a local audit trail, not an immutable production ledger.
+- SQLite is the local M2.5 transaction authority for the embedded read-only lifecycle. External immutability exists only when the caller publishes anchors to an independent append-only/WORM sink.
 - Multi-agent execution is opt-in and must outperform a single-agent baseline.
 - A central control service, A2A, Temporal, Kubernetes, Vault, and SPIFFE are deferred until a measured need exists.
 
@@ -131,7 +149,8 @@ Read [the architecture](docs/architecture/README.md), [the decisions](docs/decis
 - Audit output reports secret-like keys and locations but intentionally does not display values.
 - Generated files carry ownership markers and source digests.
 - Unmanaged files are never overwritten by default.
-- Runtime enforcement remains a future milestone; instruction files are not authorization boundaries.
+- Runtime authorization exists in the embedded M2 read-only slice; instruction files are never authorization boundaries.
+- Broker results remain untrusted content and require plan-bound classification and downstream authorization.
 
 ## License
 

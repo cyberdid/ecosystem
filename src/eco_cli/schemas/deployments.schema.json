@@ -24,12 +24,62 @@
           "allowedDataClasses": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "enum": ["D0", "D1", "D2", "D3"] } },
           "artifactTrust": { "enum": ["P0", "P1", "P2", "P3", "P4"] },
           "declaredCapabilities": { "type": "array", "uniqueItems": true, "items": { "type": "string" } },
-          "observedCapabilitiesRef": { "type": "string" },
+          "observedCapabilitiesRef": {
+            "type": "string",
+            "minLength": 1,
+            "not": { "pattern": "^(?:/|[A-Za-z]:|.*(?:^|/)\\.\\.(?:/|$))" },
+            "pattern": "\\.json$"
+          },
           "retention": { "type": "string" },
           "trainingUse": { "enum": ["prohibited", "contractual-opt-out", "unknown"] },
           "region": { "type": "string" },
+          "identity": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "adapterVersion",
+              "modelRevision",
+              "runtimeEngine",
+              "runtimeVersion",
+              "quantization",
+              "endpointReferenceDigest"
+            ],
+            "properties": {
+              "adapterVersion": { "type": "string", "minLength": 1 },
+              "modelRevision": { "type": "string", "minLength": 1 },
+              "runtimeEngine": { "type": "string", "minLength": 1 },
+              "runtimeVersion": { "type": "string", "minLength": 1 },
+              "quantization": { "type": "string", "minLength": 1 },
+              "endpointReferenceDigest": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+            }
+          },
           "enabled": { "type": "boolean" }
-        }
+        },
+        "allOf": [
+          {
+            "if": {
+              "required": ["enabled"],
+              "properties": { "enabled": { "const": true } }
+            },
+            "then": {
+              "required": [
+                "endpointRef",
+                "observedCapabilitiesRef",
+                "retention",
+                "trainingUse",
+                "region",
+                "identity"
+              ],
+              "properties": {
+                "provider": { "not": { "const": "configured-at-runtime" } },
+                "model": { "not": { "const": "configured-at-runtime" } },
+                "retention": { "not": { "enum": ["unknown", "contract-required"] } },
+                "trainingUse": { "not": { "const": "unknown" } },
+                "region": { "not": { "enum": ["unknown", "contract-required"] } }
+              }
+            }
+          }
+        ]
       }
     },
     "logicalRoles": {
@@ -50,4 +100,3 @@
     }
   }
 }
-

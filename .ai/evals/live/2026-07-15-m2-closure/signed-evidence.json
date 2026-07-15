@@ -1,0 +1,73 @@
+{
+  "evidence": {
+    "comparisons": [
+      {
+        "cases": [
+          {
+            "caseId": "text-basic",
+            "status": "not-comparable"
+          }
+        ],
+        "leftDeploymentId": "cloud-claude-sonnet-5",
+        "rightDeploymentId": "local-ollama-qwen3-0.6b",
+        "status": "not-comparable"
+      }
+    ],
+    "deployments": [
+      {
+        "adapterVersion": "claude-cli-eval-v1",
+        "deploymentId": "cloud-claude-sonnet-5",
+        "deviationCodes": [
+          "ECO_EVAL_ADAPTER_FAILURE"
+        ],
+        "observationDigest": "876252630528d8c89275e33e5d7d34bacc93264dcfaca3f2f35faf6e86b85a62",
+        "pinnedIdentityDigest": "43edd8ca3d7d9fa49765c7deacc37766393479bef37db946a754666f209b0c4d",
+        "probes": [
+          {
+            "caseId": "text-basic",
+            "deviationCode": "ECO_EVAL_ADAPTER_FAILURE",
+            "status": "fail"
+          }
+        ],
+        "status": "fail"
+      },
+      {
+        "adapterVersion": "ollama-eval-v1",
+        "deploymentId": "local-ollama-qwen3-0.6b",
+        "deviationCodes": [],
+        "observationDigest": "56887d2952cd8dbd4b8f1020458bf7dcb3c993293a37116525a2e4f53aa6c274",
+        "pinnedIdentityDigest": "230d8461ae618f9b8eab69ad0f748db5e8d5b4c8aabb0fad0a71d29e076b14a7",
+        "probes": [
+          {
+            "caseId": "text-basic",
+            "deviationCode": null,
+            "normalizedOutputDigest": "c2e3ac47f4a325469c1a2d5f117e463ec943c721986d5d9f09ac4540b7d80526",
+            "status": "pass",
+            "usage": {
+              "inputTokens": 44,
+              "modelRequests": 1,
+              "outputTokens": 2,
+              "totalTokens": 46
+            }
+          }
+        ],
+        "status": "pass"
+      }
+    ],
+    "domain": "eco-cross-deployment-evidence-v1",
+    "evaluatedAt": "2026-07-15T12:57:39.014366Z",
+    "status": "fail",
+    "suite": {
+      "digest": "08d7ee84c62d53c3ae08419623b48cfb6d645fe8c127ddcd090295e194826dd6",
+      "id": "m2-live-local-cloud",
+      "version": "1.0.0"
+    },
+    "version": 1
+  },
+  "evidenceDigest": "b3d07b3b8d4a9c55fb7ef3a28a1dd6367bfce186eeae96d35fddc0c3f512fdb9",
+  "signature": {
+    "algorithm": "HMAC-SHA256",
+    "keyId": "m2-live-evaluation-key-1",
+    "value": "105c92d765dce15746066581bf8a3043921d84f0ff1ce19c54b5497f331847f8"
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "apiVersion": "runtime.ai.ecosystem/v1alpha1",
+  "kind": "AdapterConformanceProfile",
+  "metadata": {
+    "deploymentId": "cloud-claude-sonnet-5",
+    "id": "eval-4066137b5086944520aeab21",
+    "testedAt": "2026-07-15T12:25:06.596412Z",
+    "validUntil": "2026-07-16T12:25:06.596412Z"
+  },
+  "spec": {
+    "adapterVersion": "claude-cli-eval-v1",
+    "deploymentIdentityDigest": "d9e9fba035867b9006dd7cd9d81e8f5200cc5a960ae0d70db1b27d84af24a144",
+    "deviationCodes": [],
+    "effectiveCapabilities": [
+      "model.text"
+    ],
+    "probes": [
+      {
+        "attempts": 1,
+        "evidenceDigest": "4393780fe51d1a725a7735bed65de51c2bfea1d3f22da578f8f7bc1b795b3a6b",
+        "id": "exact-ready-token",
+        "metrics": {
+          "inputTokens": 8726,
+          "outputTokens": 4
+        },
+        "status": "pass",
+        "successes": 1
+      }
+    ],
+    "status": "pass",
+    "suite": {
+      "digest": "b907cb8665d9717d765ccea552480139eacea28042d3feedc29191d3d6f67b8a",
+      "id": "m2-live-local-cloud",
+      "version": "1.0.0"
+    }
+  }
+}

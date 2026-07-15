@@ -1,7 +1,8 @@
 # Architecture
 
-**Status:** M1 contracts/compiler implemented; runtime enforcement is future work.  
-**Updated:** 2026-07-14
+**Status:** M1 and the embedded M2 Linux/WSL read-only reference profile are implemented; M3 controlled writes/approvals are pending.
+
+**Updated:** 2026-07-15
 
 ## Logical architecture
 
@@ -13,14 +14,19 @@ flowchart TB
     V --> P["Projection compiler"]
     P --> H["Codex / Claude / Copilot / Gemini / Cursor"]
 
-    H -. future .-> DPEP["Context and data PEP"]
-    DPEP -. future .-> ROUTER["Capability-aware router"]
-    ROUTER -. future .-> ADAPTERS["Replaceable model adapters"]
-    DPEP -. future .-> BROKER["Tool/MCP broker and action PEP"]
-    ADAPTERS -. future .-> OUT["Output validation"]
-    BROKER -. future .-> OUT
-    OUT -. future .-> AUDIT["Audit and provenance"]
-    OUT -. future .-> EVAL["Evaluation gates"]
+    H --> DPEP["Embedded context/data PEP"]
+    DPEP --> ROUTER["Capability-aware planner"]
+    ROUTER --> ADAPTERS["Governed replaceable model adapters"]
+    DPEP --> ORCH["Typed embedded orchestrator"]
+    ORCH --> STORE["SQLite event / plan / budget / operation authority"]
+    ORCH --> BROKER["Filesystem-only Linux read broker"]
+    ORCH --> CAS["Private durable artifact CAS"]
+    DPEP --> EVIDENCE["Trusted evidence ingestion"]
+    DPEP --> ISOLATION["Linux/WSL isolation launcher"]
+    ADAPTERS --> OUT["Bounded result normalization"]
+    BROKER --> OUT
+    OUT --> AUDIT["Audit, artifacts, signed eval evidence"]
+    OUT --> EVAL["Signed evaluation gates"]
 ```
 
 Solid lines are implemented. Dashed lines are contracts or future milestones, not current security claims.
@@ -68,28 +74,43 @@ This provides ownership and reversibility. It does not prove that different AI c
 - read-only audit;
 - lock input hashes;
 - automated regression tests.
+- embedded immutable-plan PEP, single-use decisions, state machine, and atomic local budgets;
+- snapshot-bound Linux/WSL repository reads with negative boundary tests.
+- SQLite authority for active plans, deadlines, decision nonces, durable tool/input accounting, fenced read operations, result reconciliation, and deadline recovery.
+- durable full-projection event replay, native lifecycle and terminal checkpoints;
+- typed PREPARE/read/artifact-fsync/COMMIT orchestration with explicit no-retry crash recovery;
+- authenticated migration, database backup/restore, key rotation, and external-anchor protocols.
 
-### Future runtime TCB
+### Implemented M2 runtime TCB
 
-- context/data Policy Enforcement Point;
-- broker-owned provider/tool credentials;
-- network egress enforcement;
-- action PEP and parameter-bound approval;
-- sandbox launcher;
-- audit writer and signed verifier.
+- orchestrator/store-owned policy/tool authority; the untrusted launcher rejects credential bindings;
+- trusted snapshot and observation ingestion;
+- governed local/cloud adapter boundaries with identity pinned only to observable evidence;
+- Linux/WSL direct-egress denial and clean environment launcher;
+- durable audit/artifact authority and signed evaluation verifier.
+
+### Remaining beyond M2
+
+- endpoint-specific network allowlist backend;
+- Windows/macOS isolation and filesystem backends;
+- action PEP and parameter-bound approvals for A2+;
+- descendant-exec/seccomp/cgroup/device containment;
+- asymmetric team-verifiable evidence identity.
+
+The embedded capability guards remain process-local and the executable filesystem/isolation proof is Linux/WSL-specific. Evidence HMACs authenticate the embedded issuer boundary but are not remote third-party identities. See [M2 runtime contracts](runtime-contracts.md), [Read-only repository broker](read-only-broker.md), [Durable runtime store](durable-runtime-store.md), [M2 completion report](../research/2026-07-15-m2-completion-report.md), and [D/A/Z/P semantics](policy-semantics.md).
 
 LLMs, prompts, skills, plugins, MCP servers, gateways, generated files, vector indexes, and arbitrary probe workloads are not trusted by default.
 
 ## Deployment profiles
 
 1. Embedded CLI: current baseline.
-2. Personal DGX: local adapters and eval runner.
+2. Personal local compute: approved workstation, DGX, or another local runtime behind the same adapter and eval contracts.
 3. Team: PostgreSQL, shared artifacts, signed policies, RBAC.
 4. Enterprise: fleet/multi-tenancy components only after measured need.
 
-## Next milestone
+## M2 regression profile
 
-M2 is a read-only vertical slice on an external repository:
+M2 remains the read-only regression slice on an external repository:
 
 ```text
 client without credentials
@@ -100,7 +121,11 @@ client without credentials
 → identical project eval task
 ```
 
-`odysseus` is the proposed brownfield fixture. DGX Spark is the local execution/evaluation profile, not a control-plane dependency.
+`odysseus` remains a possible brownfield fixture, not an ecosystem dependency. The active local evaluation profile may run on any governed local machine; the retired DGX snapshot has no privileged role. Cloud model aliases are observable routing identities, not immutable-weight attestations. See ADR-016.
+
+## Next milestone
+
+M3 adds narrowly controlled workspace writes, explicit approvals, idempotency, rollback, and regression tests that preserve every M2 read-only boundary. M2 observations must be renewed after their validity window before they are used for current routing or promotion.
 
 ## Sources
 
