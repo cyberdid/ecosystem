@@ -3,13 +3,15 @@
 > Curated operational knowledge. Canonical executable truth lives under `.ai/`; generated vendor files are projections.
 
 **Updated:** 2026-07-16
-**Status:** M1–M4.6 are complete, and M5.0–M5.2 now provide non-authorizing team identity contracts plus externally anchored Ed25519 policy verification. M5.3 RBAC/ABAC is next; no signed bundle is active/current authority yet.
+**Status:** M1–M5 are complete for the bounded reference profile. M5 adds externally anchored team identity, exact narrowing access policy, durable same-host authority, revocation and emergency recovery, dual-signed key rotation, and quorum approvals.
 
 ## Pages
 
 | Page | Purpose | Updated |
 |---|---|---:|
-| [M5 team authority](../docs/architecture/team-authority.md) | Threat boundary, identity catalog, Ed25519 verification, diagnostic CLI and exact non-claims | 2026-07-16 |
+| [M5 team authority](../docs/architecture/team-authority.md) | Signed identities, narrowing access, shared activation, revocation, quorum, emergency recovery, rotation and exact non-claims | 2026-07-16 |
+| [M5 completion report](../docs/research/2026-07-16-m5-team-authority-completion-report.md) | Full M5.3–M5.7 delivery, multi-agent threat corrections, 473-test evidence and M6 boundary | 2026-07-16 |
+| [M5 operations runbook](../docs/operations/team-authority-runbook.md) | Activation, doctor, backup, emergency recovery, key rotation and incident stop conditions | 2026-07-16 |
 | [M5.0–M5.2 foundation report](../docs/research/2026-07-16-m5-team-authority-foundation-report.md) | Multi-agent findings, implementation evidence, 406-test gate and M5.3 handoff | 2026-07-16 |
 | [architecture.md](architecture.md) | Current implemented boundary and target runtime flow | 2026-07-16 |
 | [loops.md](loops.md) | Loop contract, safety boundaries, maturity and first executable L2 profile | 2026-07-16 |
@@ -53,16 +55,17 @@
 2. `.ai/project.yaml`
 3. `docs/architecture/README.md`
 4. `docs/decisions/README.md`
-5. `docs/architecture/runtime-contracts.md`, `read-only-broker.md`, `controlled-writes.md`, and `no-model-wiki-health.md` for the current M2–M4 boundary
-6. `docs/architecture/project-adoption.md` for installing the harness into another project
-7. `docs/architecture/platform-adapter-conformance.md` for the portable passive profile boundary
-8. `docs/architecture/portable-distribution.md` and `platform-backend-conformance.md` for the final bounded M4 portability surfaces
-9. `wiki/loops.md` for bounded automation, evaluation, proposal, and controlled-apply rules
-10. `wiki/openresearcher.md` for the current external research-node snapshot
-11. `wiki/labs-molt.md` for the external agentic-RL training-node snapshot
-12. `wiki/ai-legal-claude.md` for the external legal-prompt corpus and its safety limits
-13. `docs/research/README.md` for source reviews and raw-source provenance
-14. This wiki for current operational status
+5. `docs/architecture/team-authority.md` and `docs/operations/team-authority-runbook.md` for the current M5 authority and operations boundary
+6. `docs/architecture/runtime-contracts.md`, `read-only-broker.md`, `controlled-writes.md`, and `no-model-wiki-health.md` for the M2–M4 runtime boundary
+7. `docs/architecture/project-adoption.md` for installing the harness into another project
+8. `docs/architecture/platform-adapter-conformance.md` for the portable passive profile boundary
+9. `docs/architecture/portable-distribution.md` and `platform-backend-conformance.md` for the bounded M4 portability surfaces
+10. `wiki/loops.md` for bounded automation, evaluation, proposal, and controlled-apply rules
+11. `wiki/openresearcher.md` for the current external research-node snapshot
+12. `wiki/labs-molt.md` for the external agentic-RL training-node snapshot
+13. `wiki/ai-legal-claude.md` for the external legal-prompt corpus and its safety limits
+14. `docs/research/README.md` for source reviews and raw-source provenance
+15. This wiki for current operational status
 
 ## Knowledge boundaries
 

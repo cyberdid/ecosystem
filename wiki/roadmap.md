@@ -15,10 +15,13 @@
 | M4.5.2 | Platform and adapter capability profiles | Complete: closed non-authorizing profiles, passive doctor, six-platform fixtures and focused portability CI |
 | M4.5.3 | Portable packaging and installer adapters | Complete for exact wheel-only offline integrity, preview-only adapters and real Linux private-venv install smoke |
 | M4.6 | Controlled native backend conformance | Complete for fixed Linux/WSL namespace + Landlock observations; no runtime consumer |
-| M5.0–M5.2 | Threat model, team identity contracts, externally anchored signed deny-all policy | Implemented; verification-only and non-authorizing |
-| M5.3 | Bounded RBAC/ABAC intersected with the existing PolicyEngine | Next |
-| M5.4–M5.7 | Shared activation authority, revocation/rotation/emergency, quorum and conformance | Planned |
-| M6 | Enterprise topology options | Deferred |
+| M5.0–M5.2 | Threat model, team identity contracts, externally anchored signed deny-all policy | Complete |
+| M5.3 | Bounded exact RBAC/ABAC intersected with the existing PolicyEngine | Complete; narrowing-only and explicit-deny-first |
+| M5.4 | Shared activation authority, revisions, snapshots and epochs | Complete for private same-host SQLite |
+| M5.5 | Revocation, emergency recovery and dual-anchor generation rotation | Complete |
+| M5.6 | Distinct-human quorum, separation of duties and single-use permits | Complete |
+| M5.7 | CLI, backup, portability, documentation and release conformance | Complete for the bounded `0.7.0` profile |
+| M6 | Enterprise/network topology and native platform backends | Next; no hidden M5 claim |
 
 ## M2 exit criteria
 
@@ -136,17 +139,21 @@ All criteria pass for the bounded integrity profile. See [architecture](../docs/
 
 All criteria pass for the bounded Linux/WSL backend observation profile. See [architecture](../docs/architecture/platform-backend-conformance.md), [completion report](../docs/research/2026-07-16-m4-portability-completion-report.md), and [ADR-024](../docs/decisions/README.md#adr-024--active-backend-conformance-produces-observation-never-effective-authority).
 
-## M5.0–M5.2 exit criteria
+## M5 exit criteria
 
 1. Team, principal, membership, public-key and policy-bundle records use a separate closed authority namespace.
 2. Record and cross-record digests are deterministic, non-self-referential and exact.
 3. A policy signature is verified only relative to a caller-supplied external immutable Ed25519 anchor; an embedded key cannot bootstrap trust and anchor provenance is not claimed.
-4. The initial signed bundle is structurally deny-all and cannot contain roles or permissions.
-5. Valid signature, active status claim and predecessor link do not imply latest/current state.
-6. CLI inspection/verification reads exact safe files and creates no store, policy engine, network, mutation, activation or runtime authority.
-7. M4 schema digest, HMAC evidence profile, policy/store behavior and all earlier tests remain unchanged.
+4. Signed access rules use exact action/resource matching, deny precedence and can only narrow a trusted current `PolicyEngine` decision.
+5. Currentness is established only by private authenticated SQLite activation with monotonic revision, predecessor digest, snapshot CAS and serialized writers.
+6. Runtime identity is derived from current signed state; live HMAC, raw envelope, signature, epoch and revocation checks fail closed.
+7. A2 permits require an exact signed profile/request, distinct eligible human principals, requester separation, current epochs and authority-ledger issue/consumption.
+8. Emergency deny blocks authorization and effects; disable requires an exact signed recovery profile and at least two independent human approvals in one transaction.
+9. Trust-anchor rotation requires old and new signatures and creates a successor authority generation without rewriting the predecessor.
+10. CLI activation/doctor, coherent verified backup, reopen/tamper checks, cross-platform contract tests and `0.7.0` metadata are delivered.
+11. M4 schema digest, existing runtime behavior and all earlier tests remain unchanged.
 
-All seven criteria pass. The next slice is M5.3 RBAC/ABAC, still without durable activation until M5.4. See [team authority](../docs/architecture/team-authority.md), [foundation report](../docs/research/2026-07-16-m5-team-authority-foundation-report.md), and [ADR-025](../docs/decisions/README.md#adr-025--signed-team-declarations-authenticate-bytes-but-do-not-create-authority).
+All criteria pass for the bounded same-host reference profile. PostgreSQL/network authority, SSO/OIDC/WebAuthn, KMS/HSM/Vault, HA/consensus, multi-region operation, native Windows ACL enforcement, native macOS/Windows runtime backends and A3/A4 remain M6. See [team authority](../docs/architecture/team-authority.md), [completion report](../docs/research/2026-07-16-m5-team-authority-completion-report.md), [operations runbook](../docs/operations/team-authority-runbook.md), [ADR-025](../docs/decisions/README.md#adr-025--signed-team-declarations-authenticate-bytes-but-do-not-create-authority), and [ADR-026](../docs/decisions/README.md#adr-026--team-authority-is-a-narrowing-same-host-authority-with-generation-based-rotation).
 
 ## Loop rollout
 

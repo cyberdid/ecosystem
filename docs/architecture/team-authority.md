@@ -1,119 +1,156 @@
 # M5 team authority
 
-**Status:** M5.0–M5.2 foundation implemented; activation, RBAC, shared authority, revocation and quorum are not yet implemented.
+**Status:** M5.0–M5.7 implemented for the bounded same-host reference profile.
 
 **Updated:** 2026-07-16
 
 ## Purpose
 
-M5 replaces machine-local identity labels with a portable team-authority contract while preserving the existing embedded runtime safety boundary. The first slice is deliberately non-authorizing:
+M5 turns portable signed team declarations into a shared authority that can safely narrow, but never expand, the existing runtime policy. It is independent of a particular model, client, cloud, or laptop.
 
 ```text
-closed identity declarations
-→ Ed25519 signature verification relative to a supplied external anchor
-→ immutable verification result
-→ no activation, permission, runtime or write authority
+external Ed25519 trust anchor
+→ signed team/policy bundle
+→ private SQLite activation authority
+→ current actor and membership resolution
+→ exact Ed25519 workload-authentication assertion
+→ exact ToolRequest-bound trusted PolicyEngine decision
+→ in-memory or durable single-use runtime claim
+→ exact signed team-access candidate
+→ optional authority-issued quorum permit
+→ one atomic effect-boundary recheck
 ```
 
-A valid signature proves only that the holder of the externally trusted private key signed the exact canonical bytes. It does not prove that the declaration is the newest revision, that the named human is present, that revocation state is fresh, or that an operation is permitted.
+A signature authenticates exact bytes relative to an externally supplied anchor. Only activation in the authority store establishes the current revision. Neither a valid bundle nor team access can turn a runtime deny into an allow.
 
-## Threat model
+## Implemented slices
 
-| Threat | M5.0–M5.2 control | Remaining control |
-|---|---|---|
-| Bundle supplies a key that authenticates itself | Verification key comes only from a caller-supplied external `PolicyTrustAnchor`; the same key must also be exactly represented in the signed catalog | Independently provisioned anchor resolver, rotation ceremony and durable key heads in M5.5 |
-| Algorithm downgrade or confusion | Envelope accepts only exact `Ed25519`; raw key and signature lengths are fixed and base64url is canonical | Hardware-backed/KMS signers remain outside this repository |
-| Field, subject or project substitution | Signature covers a domain-separated canonical envelope; subject, team, project, key and record digest are re-bound after verification | Durable activation head in M5.4 |
-| Duplicate keys or ambiguous serialization | Canonical UTF-8 JSON only; duplicate keys, BOM, whitespace variants, invalid UTF-8 and oversized inputs fail closed | Alternative encodings are not supported |
-| Identity declaration silently grants access | Every record structurally fixes `permissionsGranted: false` and `runtimeAuthorityCreated: false`; policy profile is `deny-all` | RBAC intersection in M5.3 |
-| Old valid bundle replay | CLI reports `currentness: not-established` and `activationEligible: false` | Monotonic revision/CAS authority in M5.4 |
-| Project replaces its own root of trust | `eco policy verify` rejects an anchor inside the repository and labels success as relative to the caller-supplied anchor | M5.2 does not establish anchor provenance; an independently provisioned resolver/OS trust-store adapter requires later conformance |
-| Unsafe input file | Descriptor-based bounded read rejects relative paths, symlinks, hardlinks, reparse points, mutation during read and non-regular files | Cross-platform file-safety claims remain bounded by hosted tests |
-| M5 change invalidates M4 durable state | Runtime schemas and `schema_bundle_digest()` remain unchanged; authority schemas use a separate registry and digest | Future migrations must keep the profiles explicit |
+| Slice | Delivered contract |
+|---|---|
+| M5.0–M5.2 | Closed team, principal, membership, public-key and policy-bundle records; canonical digests; externally anchored Ed25519 verification; deny-all bootstrap |
+| M5.3 | Exact role/action/resource/constraint access policy with explicit-deny precedence and no wildcard or inheritance semantics |
+| M5.4 | Private HMAC-authenticated SQLite authority, monotonic revision activation, predecessor CAS, epochs, snapshots and multi-process serialization |
+| M5.5 | Principal/membership/key/policy revocation, emergency deny, quorum-protected recovery, dual-anchor rotation and successor-generation migration |
+| M5.6 | Signed approval profiles, requests and votes; distinct-human quorum; requester separation; exact single-use action permits |
+| M5.7 | Public doctor/activation CLI, coherent verified backup, reopen/tamper checks, Linux/macOS/Windows contract tests, documentation and `0.7.0` release metadata |
 
-## Authority contracts
+## Trust and storage boundary
 
-All new records use `authority.ai.ecosystem/v1alpha1` and closed JSON Schemas.
+The project never stores a private signing key. The operator supplies:
 
-| Kind | Meaning | Explicitly not granted |
-|---|---|---|
-| `TeamIdentity` | Versioned team declaration and validity claim | Membership, permission, ownership |
-| `PrincipalIdentity` | Human/service/agent/CI declaration with controller rule | Authentication, role, runtime access |
-| `MembershipBinding` | Exact digest-bound team/principal relationship claim | Role or permission |
-| `IdentityKey` | Public Ed25519 key, purpose, lifecycle and exact subject claim | Private key custody or effective trust |
-| `TeamPolicyBundle` | Revisioned, signed identity catalog for exact projects | Activation or runtime policy |
+- an external immutable Ed25519 trust-anchor document;
+- a 32-byte HMAC secret through `ECO_TEAM_AUTHORITY_HMAC_HEX`;
+- an absolute authority-database path outside the governed project;
+- externally signed canonical policy envelopes, actor assertions and approval votes.
 
-Authority record digests use a domain-separated projection that excludes `metadata.recordDigest`. Membership IDs derive deterministically from exact team and principal IDs. Key IDs are `ed25519:` plus the SHA-256 digest of the raw 32-byte public key. IDs are lowercase ASCII and timestamps are UTC seconds ending in `Z`.
+The authority database authenticates its state, epochs, event chain, permit ledger, recovery evidence, backup snapshot and generation lineage. Opening an unsafe, aliased, linked, permission-exposed or modified store fails closed on supported POSIX hosts. Windows CI proves contract behavior, not native Windows ACL enforcement.
 
-The initial policy profile is intentionally fixed:
+Every live authorization rechecks the raw active envelope, its HMAC, canonical digest and Ed25519 signature. Catalog lookup proves that an identity exists; it is not authentication. A live actor must additionally supply a closed Ed25519 assertion from the principal's active `workload-authentication` key. The assertion binds team, project, principal, membership, exact authority snapshot, audience, operation digest, nonce and a five-minute-or-shorter validity window. Caller-supplied principal or membership labels alone never create actor authority.
+
+## Activation and currentness
+
+Activation runs under `BEGIN IMMEDIATE` and requires all of the following:
+
+1. exact store/team/project identity;
+2. a valid envelope under the external trust anchor;
+3. revision 1 with the zero predecessor, or exact previous revision and digest;
+4. an unused activation ID;
+5. a matching current snapshot CAS;
+6. no revoked trust component.
+
+Successful activation advances the authority epoch and creates a new authenticated snapshot. Competing writers serialize; stale activation attempts leave state unchanged. A cryptographically valid but inactive policy is never current authority.
+
+## Access semantics
+
+`TeamAccessPolicy` supports only exact actions and exact resource identities. There are no wildcards, implicit inheritance, substring matches, or “closest” policies. Constraints are evaluated inside the same matching statement. An explicit matching deny takes precedence over allow.
+
+Team access returns only an `ALLOW_CANDIDATE`. Final authorization is the intersection of:
 
 ```text
-profile: identity-catalog-only
-authorityMode: deny-all
-permissionsGranted: false
-runtimeAuthorityCreated: false
-policyActivated: false
-privateKeyPresent: false
+trusted current PolicyEngine allow
+AND current signed team-access allow
+AND active non-revoked actor/membership/key
+AND emergency-deny is off
+AND exact authority-issued permit when action class is A2
 ```
 
-Embedded teams, principals, memberships and keys are recursively validated, sorted, unique and digest-bound. The bundle must contain the exact active team and an exact active team-owned policy-signing key. A structural predecessor link is required for revisions after revision 1, but it is not described as replay protection.
+The M5 reference profile hard-denies A3, A4 and D4. It creates no new model, network, scheduling, command, delete, rename or batch authority.
 
-## Signature envelope
+The executable M5 gate is narrower than the access-policy vocabulary. It currently supports only `repository.read` and `repository.write`, each bound to an exact `ToolRequest` kind, id, full semantic digest and matching `spec.toolId`. Other action/resource shapes fail closed until an action-specific extractor is implemented. The runtime allow must be issued by a concrete `PolicyEngine` adapter and is consumed exactly once before permit consumption or the effect callback. The durable adapter additionally requires the same decision to have been issued into `SQLiteRuntimeStore`; replay remains denied after reopen. Because the runtime and team stores are separate SQLite authorities, a later team-state race may conservatively burn the runtime claim, but it cannot create an effect.
 
-`TeamPolicyVerifier` accepts canonical bytes for `eco-team-policy-envelope-v1`. It verifies a signature over:
+## Approvals and separation of duties
 
-```text
-"eco-team-policy-signature-v1\0" + canonical_json(envelope_without_signature)
-```
+An approval profile is part of the signed active bundle. A request binds the exact policy digest, authority/revocation epoch, requester, action, operation, resource digest and expiry. Votes are canonical Ed25519 signatures by active human approval keys.
 
-The immutable `PolicyTrustAnchor` binds:
+The authority requires:
 
-- exact team ID;
-- exact deterministic key ID and raw public key;
-- exact sorted project allowlist;
-- external validity interval.
+- the profile's exact quorum and required role;
+- distinct principals, not merely distinct keys;
+- requester/approver separation;
+- exact approve votes for the same request;
+- current non-revoked human principals, memberships and keys;
+- an unexpired request under the current policy and revocation epoch.
 
-The verified result retains signature provenance relative to that supplied anchor and a deeply immutable policy view. Its fixed safety state is:
+The resulting permit is recorded by the authority, bound to one exact effect and consumed once. A valid-looking permit dataclass constructed by a caller is not authority.
 
-```text
-signature_verified = true
-activation_eligible = false
-authority_created = false
-currentness = "not-established"
-```
+## Revocation, emergency recovery and rotation
 
-There is no production signing API or CLI command. Private-key custody and signing ceremony remain external boundaries.
+Revocation is exact and epoch-bound. Critical revocations invalidate live authorization immediately. `effect_guard` repeats the live-state check at the effect boundary, closing the window between planning and mutation.
 
-## Diagnostic CLI
+Emergency deny blocks ordinary authorization, permit issue/consume and effects. A plain disable call is rejected. Recovery requires a signed `emergency-recovery` profile, a request bound to the exact emergency head and epoch, an Ed25519 requester assertion bound to that exact recovery request, and at least two distinct eligible human approvers excluding the authenticated requester. Verification and disable occur in one transaction and persist authenticated recovery evidence.
 
-```text
-eco identity inspect --record /absolute/identity.json --json
-eco policy inspect --record /absolute/policy.json --json
-eco policy verify \
-  --envelope /absolute/policy-envelope.json \
-  --trust-anchor /absolute/external/trust-anchor.json \
-  --project exact-project-id \
+Trust-anchor rotation requires possession of both old and new Ed25519 private keys. The canonical rotation envelope is signed by both anchors. The predecessor first reserves one target-bound commitment and enters `rotation-pending`, fencing ordinary use. A pending successor imports the exact authenticated revocation epoch/head/set, records lineage, activates revision 1, is atomically published without replacement, and only then becomes active; the predecessor becomes `retired`. Exact resume is fail-closed after a crash, while replay to a second target is rejected. Completed backup copies remain movable evidence, so this protocol prevents API-level rotation forks rather than claiming protection from an operator who manually clones the database and its secrets.
+
+## Operator CLI
+
+The CLI never accepts the HMAC secret as an argument and does not print it, raw envelopes, key material or database paths.
+
+```bash
+export ECO_TEAM_AUTHORITY_HMAC_HEX='<64 hexadecimal characters>'
+export EXPECTED_AUTHORITY_SNAPSHOT_DIGEST='<digest from eco team doctor --json>'
+
+eco team activate \
+  --database /external/private/team-authority.sqlite3 \
+  --trust-anchor /external/private/team-anchor.json \
+  --project example-project \
+  --audit-key-id audit-key-1 \
+  --store-id authority-store-1 \
+  --envelope /external/inbox/policy-envelope.json \
+  --activation-id activation-0001 \
+  --expected-revision 0 \
+  --expected-digest 0000000000000000000000000000000000000000000000000000000000000000 \
+  --expected-snapshot-digest "$EXPECTED_AUTHORITY_SNAPSHOT_DIGEST" \
+  --apply --json
+
+eco team doctor \
+  --database /external/private/team-authority.sqlite3 \
+  --trust-anchor /external/private/team-anchor.json \
+  --project example-project \
+  --audit-key-id audit-key-1 \
+  --store-id authority-store-1 \
   --json
 ```
 
-`inspect` proves only structural/semantic validity. `verify` proves a cryptographic signature relative to the supplied external anchor; it does not establish who provisioned that anchor. Neither command writes files, contacts a network, creates a store, constructs `PolicyEngine`, activates a revision, or emits private/public key bytes or raw payloads in diagnostics.
+`activate` is the only mutating public command and requires the explicit `--apply` confirmation. `doctor` opens and verifies existing state without granting runtime authority.
 
-## Compatibility
+## Backup and recovery runbook
 
-M4 runtime schemas remain in `RUNTIME_SCHEMA_BY_KIND`, and the legacy `SCHEMA_BY_KIND` alias still exposes that exact set. Authority records live in `AUTHORITY_SCHEMA_BY_KIND`. Therefore the existing M4 runtime schema digest remains:
+1. Put the database and trust anchor in an operator-controlled private external directory.
+2. Keep the HMAC secret and Ed25519 private keys in separate secret custody; never commit them.
+3. Use the exported API `SQLiteTeamAuthority.backup_to(destination, expected_snapshot_digest=..., now=..., forbidden_root=...)` to create a coherent private SQLite backup while writers may exist.
+4. Reopen the backup with the same external anchor and HMAC secret; require the exact returned snapshot. Before using a restored active copy, fence/decommission the original authority path—backup is not distributed consensus or an active-active mechanism.
+5. Test emergency-recovery quorum and successor-generation rotation with non-production identities before production use.
+6. Preserve the predecessor store and dual-signed rotation evidence after migration.
+7. Treat any corruption, topology, HMAC, signature, lineage or snapshot error as a stop condition, not a repair suggestion.
+
+## Compatibility and proof boundary
+
+M5 authority schemas use a separate registry. The M4 runtime schema bundle remains unchanged:
 
 ```text
 d7ab8041c8d42b51ff0cfe7996254fc91c3ec0555df0491328673949db316d9d
 ```
 
-`.ai/trust.yaml`, the existing HMAC evidence profile, `PolicyEngine`, runtime decisions, stores, brokers and loop authority are unchanged in this slice.
+M5 proves a local same-host reference authority. PostgreSQL or a network control plane, SSO/OIDC/WebAuthn, KMS/HSM/Vault integration, HA consensus, multi-region operation, remote attestation, native Windows ACL enforcement, native macOS/Windows runtime-security backends, and A3/A4 action profiles remain M6 work.
 
-## Next slices
-
-1. **M5.3 RBAC/ABAC:** signed exact actions/resources/constraints that can only narrow the current `PolicyEngine` decision.
-2. **M5.4 shared authority:** local same-host multiprocess SQLite activation heads, authority epochs and atomic compare-and-swap.
-3. **M5.5 lifecycle:** revocation, key rotation and emergency deny with effect-boundary rechecks.
-4. **M5.6 approval:** distinct-principal quorum and separation of duties bound to exact action permits.
-5. **M5.7 conformance:** migration, contention/recovery, cross-platform contract behavior, distribution and operational runbooks.
-
-PostgreSQL, a network authority service, SSO/OIDC/WebAuthn, KMS/HSM/Vault, HA consensus, multi-region operation and enterprise A3/A4 profiles remain M6 concerns.
+See the [M5 completion report](../research/2026-07-16-m5-team-authority-completion-report.md) and [ADR-026](../decisions/README.md#adr-026--team-authority-is-a-narrowing-same-host-authority-with-generation-based-rotation).

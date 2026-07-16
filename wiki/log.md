@@ -4,6 +4,18 @@ Append-only хронологічний лог операцій. Формат: `#
 
 ---
 
+## [2026-07-16] implementation | M5 team authority completed
+
+- Completed M5.3 exact narrowing team access, M5.4 private shared SQLite activation authority, M5.5 revocation/emergency/recovery/rotation, M5.6 distinct-human quorum permits, and M5.7 CLI/backup/portability/release conformance.
+- The final allow path now requires a trusted current `PolicyEngine` allow, current signed team access, active non-revoked signed actor state, emergency-clear status, and an authority-issued single-use permit for A2.
+- Added explicit-deny precedence, exact resource/action/constraint matching, activation revision + predecessor + snapshot CAS, authenticated epochs/events, live signature/HMAC revalidation and effect-boundary fencing.
+- Added signed approval profiles/requests/votes, requester separation, human-only distinct-principal quorum, durable permit issue/consumption, and exact signed recovery quorum for emergency disable.
+- Added old+new Ed25519 dual-signed rotation and successor-generation migration so trust-anchor changes never rewrite predecessor history.
+- Added public `eco team doctor` and explicit `eco team activate --apply`, coherent verified backup, a dedicated operations runbook, ADR-026 and the full M5 completion report.
+- Multi-agent identity/policy, authority, approval, threat, rotation, recovery and CLI reviews drove adversarial corrections before integration.
+- Local evidence: 473 pytest tests, 473 unittest tests, canonical validate/render/doctor gates, compile, whitespace and unchanged M4 runtime-schema digest checks pass; release metadata is `0.7.0`.
+- Hosted CI evidence will be appended after the release branch is pushed. M6 remains the explicit boundary for network/HA authority, SSO, KMS/HSM, native platform security backends and A3/A4.
+
 ## [2026-07-16] implementation | M5.0–M5.2 team identity and signed-policy foundation
 
 - Added the separate `authority.ai.ecosystem/v1alpha1` contract family for team/principal identities, membership bindings, Ed25519 public identity keys and revisioned deny-all identity catalogs.

@@ -1,11 +1,11 @@
 # Current architecture
 
 **Updated:** 2026-07-16
-**Status:** bounded M1–M4.6 implemented; packaging integrity and backend observation remain non-authorizing boundaries
+**Status:** bounded M1–M5 implemented; enterprise/network authority and native cross-platform security backends remain future boundaries
 
 ## TL;DR
 
-The repository implements canonical contracts/compiler plus an embedded default-deny policy, trusted evidence ingestion, durable Linux/WSL repository reads, exact-approved one-file controlled writes, governed model-adapter identities, direct-egress isolation, signed local/cloud evaluation evidence, one fixed no-model `wiki-health-check` promoted only through L2, preview-bound adoption, passive platform profiles, verified wheel-only offline distribution, and an active fixed Linux/WSL backend observation suite. Cloud aliases are observable routing identities, checksums are not publisher identity, and observations are not capability tokens.
+The repository implements canonical contracts/compiler plus an embedded default-deny runtime, governed model adapters, durable Linux/WSL reads and exact-approved one-file writes, one fixed no-model loop promoted only through L2, safe project adoption, platform/distribution conformance, and a portable signed team-authority layer. M5 adds exact narrowing team access, private same-host activation/currentness, revocation, emergency recovery, dual-signed rotation and distinct-human quorum permits. It remains independent of a specific AI model or client.
 
 ## Implemented
 
@@ -32,6 +32,10 @@ The repository implements canonical contracts/compiler plus an embedded default-
 → passive platform doctor + declaration/inventory-only profiles
 → exact offline wheelhouse/lock/schema verifier + installer previews
 → explicit fixed Linux/WSL backend suite + externally signable observation
+→ externally anchored signed team identity and access policy
+→ private authenticated SQLite activation/revocation authority
+→ distinct-human approval quorum + single-use action permits
+→ emergency recovery + dual-signed successor-generation rotation
 ```
 
 ## Explicitly not implemented
@@ -43,12 +47,14 @@ The repository implements canonical contracts/compiler plus an embedded default-
 - durable replay registry for evidence envelopes;
 - asymmetric evidence signatures;
 - cryptographic remote issuer identity;
-- multi-user WebAuthn/OIDC approval service and asymmetric approval identity;
-- caller-independent external anchor storage.
+- enterprise WebAuthn/OIDC/SSO identity and approval service;
+- caller-independent KMS/HSM/Vault anchor and secret custody;
 - full-wiki link/staleness lint, scheduler, autonomous retry, and L3–L5 loop authority.
 - durable adoption crash journal and hostile filesystem-race proof;
 - publisher-authenticated releases, immutable installer CAS handoff and transactional multi-manager rollback;
 - native Windows/macOS backend runners and runtime consumption of backend observations.
+- PostgreSQL/network authority, HA/consensus and multi-region recovery;
+- A3/A4 action profiles and remote transactional effect adapters.
 
 The implemented M2–M4 boundary has negative, concurrency, process-crash, artifact, migration, backup, key-rotation, anchor, adapter, isolation, evidence, parity, exact-approval, CAS-recovery, no-model replay, state-integrity, repository-nonmutation, and promotion tests. See the [M2 completion report](../docs/research/2026-07-15-m2-completion-report.md), [M3 completion report](../docs/research/2026-07-15-m3-completion-report.md), and [M4 report](../docs/research/2026-07-16-m4-no-model-wiki-health-completion-report.md).
 
@@ -72,7 +78,11 @@ Focused adoption tests run on hosted Linux, macOS, and Windows. This does not po
 
 `eco conformance run` is separate from passive doctor and accepts only the fixed namespace/Landlock suite in a private external root. Its content-free `PlatformBackendConformanceProfile` records narrow observations bound to platform, distribution, backend instance/implementation, runner and suite. External signing/ingestion is supported, but M4.6 has no policy/runtime consumer. Windows, macOS, container and hosted-CI profiles remain unsupported negatives. See [portable distribution](../docs/architecture/portable-distribution.md) and [backend conformance](../docs/architecture/platform-backend-conformance.md).
 
-M5.0–M5.2 now implement non-authorizing team identity records and externally anchored Ed25519 deny-all policy verification. M5.3 RBAC/ABAC is the next vertical slice; durable activation remains M5.4. Scheduling, autonomous retry, full-wiki lint, publisher provenance, cross-platform native security backends, and every L3–L5 profile remain separate future gates. Every new write backend must independently preserve root/path semantics, exact approval, durable recovery, M2 trusted evidence, isolation, no fallback, and parity.
+## Current M5 team-authority slice
+
+Externally anchored Ed25519 bundles define exact team identities, memberships, public keys, access rules and approval profiles. A private HMAC-authenticated SQLite store establishes monotonic currentness, snapshots, revocation/emergency epochs, permit consumption and immutable audit evidence. Catalog labels alone are not actor authentication: runtime and recovery requests require an exact short-lived Ed25519 `workload-authentication` assertion. Team access is only a narrowing candidate; repository read/write effects additionally require an exact ToolRequest-bound, single-use PolicyEngine claim, optionally persisted in the runtime SQLite store. A2 uses distinct eligible human principals, authenticated requester separation and an authority-issued single-use permit; emergency disable requires a separate recovery quorum. Old+new dual-signed rotation creates a successor generation rather than rewriting history.
+
+Contract behavior is tested on Linux/macOS/Windows; strong private-permission enforcement is POSIX-bounded. Scheduling, autonomous retry, full-wiki lint, publisher provenance, enterprise/network authority, native cross-platform runtime-security backends and every A3/A4 or L3–L5 profile remain separate future gates. See [M5 team authority](../docs/architecture/team-authority.md) and the [completion report](../docs/research/2026-07-16-m5-team-authority-completion-report.md).
 
 ## Sources
 
@@ -83,4 +93,6 @@ M5.0–M5.2 now implement non-authorizing team identity records and externally a
 - [Platform and adapter conformance](../docs/architecture/platform-adapter-conformance.md)
 - [Portable distribution](../docs/architecture/portable-distribution.md)
 - [Platform backend conformance](../docs/architecture/platform-backend-conformance.md)
+- [M5 team authority](../docs/architecture/team-authority.md)
+- [M5 operations runbook](../docs/operations/team-authority-runbook.md)
 - [Roadmap](roadmap.md)

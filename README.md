@@ -111,7 +111,20 @@ See [M4.5.2 platform and adapter conformance](docs/architecture/platform-adapter
 
 See [M4.5.3 portable distribution](docs/architecture/portable-distribution.md), [M4.6 platform backend conformance](docs/architecture/platform-backend-conformance.md), and the [combined completion report](docs/research/2026-07-16-m4-portability-completion-report.md).
 
-**Not implemented and not claimed:** durable adoption crash recovery, hostile parent-swap/reparse/case-fold security on every filesystem, publisher-authenticated distribution provenance, immutable verified-byte installer staging, transactional cross-manager rollback, standalone/OS-native packages, Windows/macOS M4 read-broker conformance or executable isolation/write backends, endpoint-specific network allowlists, descendant-exec/seccomp/cgroup/device containment, asymmetric evidence or approval signatures, delete/rename/mkdir/batch/arbitrary-command writes, A3/A4 external actions, a bundled database-plus-CAS disaster-recovery package, caller-independent external anchoring, scheduled/autonomous loops, full wiki link/staleness lint, or production autonomy.
+**M5 bounded team-authority profile complete:**
+
+- externally anchored canonical Ed25519 team, principal, membership, public-key, access-policy and approval-profile bundles;
+- exact access rules with explicit-deny precedence, no wildcard/inheritance semantics and no ability to override an existing runtime-policy deny;
+- private HMAC-authenticated same-host SQLite activation authority with monotonic revisions, predecessor/snapshot CAS, epochs and multi-process serialization;
+- current signed actor derivation, exact revocation and live signature/HMAC checks at authorization and effect boundaries;
+- signed A2 approval requests/votes, distinct eligible human quorum, requester separation and authority-issued single-use permits;
+- emergency deny with independently approved atomic recovery;
+- dual old/new Ed25519 trust-anchor rotation into an authenticated successor authority generation without rewriting history;
+- public sanitized `eco team doctor` and explicit `eco team activate --apply`, plus coherent verified backup and Linux/macOS/Windows contract coverage.
+
+See [M5 team authority](docs/architecture/team-authority.md), the [operations runbook](docs/operations/team-authority-runbook.md), and the [M5 completion report](docs/research/2026-07-16-m5-team-authority-completion-report.md).
+
+**Not implemented and not claimed:** durable adoption crash recovery, hostile parent-swap/reparse/case-fold security on every filesystem, publisher-authenticated distribution provenance, immutable verified-byte installer staging, transactional cross-manager rollback, standalone/OS-native packages, Windows/macOS runtime broker/isolation/write backends or native authority ACL enforcement, endpoint-specific network allowlists, descendant-exec/seccomp/cgroup/device containment, PostgreSQL/network team authority, SSO/OIDC/WebAuthn, KMS/HSM/Vault, HA/consensus or multi-region recovery, delete/rename/mkdir/batch/arbitrary-command writes, A3/A4 external actions, scheduled/autonomous loops, full wiki link/staleness lint, or production autonomy.
 
 ## Architecture in one sentence
 
@@ -203,6 +216,8 @@ eco --repo /path/to/project uninstall --remove-config --yes
 | `eco distribution verify` | Verify one exact local offline wheelhouse and lock | No |
 | `eco distribution plan` | Emit a non-executable package-manager argv preview | No |
 | `eco conformance run` | Run the explicit fixed synthetic Linux/WSL backend suite in an external test root | External synthetic root only |
+| `eco team doctor` | Verify an existing external team-authority store and current signed state | No |
+| `eco team activate --apply` | Activate one exact externally signed policy revision under predecessor/snapshot CAS | External authority store only |
 | `eco run wiki-health-check` | Run the fixed signed-snapshot, no-model A1 health profile | No repository write* |
 | `eco eval wiki-health-check` | Run the fixed five-attempt plus replay L0–L2 promotion gate | No repository write* |
 | `eco lock` | Record deterministic input hashes and deployment identities | Yes |

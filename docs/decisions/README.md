@@ -27,6 +27,7 @@
 | ADR-023 | Distribution integrity, package installation and project adoption are separate boundaries | Implemented for the M4.5.3 wheel-only offline profile |
 | ADR-024 | Active backend conformance produces observation, never effective authority | Implemented for the M4.6 Linux/WSL fixed suite; no runtime consumer |
 | ADR-025 | Signed team declarations authenticate bytes but do not create authority | Implemented for the M5.0–M5.2 diagnostic foundation; activation and anchor provenance remain unavailable |
+| ADR-026 | Team authority is a narrowing same-host authority with generation-based rotation | Implemented for M5; enterprise/network topology remains M6 |
 
 ## ADR-001 — Contracts-first
 
@@ -287,6 +288,20 @@ Runtime and authority schema registries/digests are separate. Existing M4 schema
 **Consequences.** M5.3 may add RBAC/ABAC only as a narrowing gate intersected with the existing `PolicyEngine`, never as a second allow oracle. M5.4 must add a durable monotonic activation head before a signed revision can be called current. Revocation/rotation/emergency state and quorum permits require later explicit contracts and effect-boundary rechecks. PostgreSQL/network services, SSO, hardware-backed signers, HA and enterprise topology remain M6.
 
 **Evidence.** Five packaged schemas, semantic/cross-record validators, Ed25519 verification, descriptor-safe CLI reads, dependency lock and 406-test regression pass. The wheel verifier accepts safely validated two-component dependency releases such as `pycparser 3.0`; a real 11-artifact Linux wheelhouse verifies. Adversarial tests cover digest/field/signature tamper, algorithm confusion, self-bootstrap, wrong team/project/key, duplicate/noncanonical JSON, time windows, unsafe file aliases, output sanitization and zero mutation. See [M5 team authority](../architecture/team-authority.md) and the [M5.0–M5.2 report](../research/2026-07-16-m5-team-authority-foundation-report.md).
+
+## ADR-026 — Team authority is a narrowing same-host authority with generation-based rotation
+
+**Date:** 2026-07-16
+
+**Context.** Signed identity declarations alone cannot establish currentness, revocation freshness, shared-team authorization or independent approvals. Treating role policy as a separate allow oracle would bypass the existing runtime controls. Rewriting one authority database during key rotation would also weaken history and recovery evidence.
+
+**Decision.** M5.3–M5.7 add a private HMAC-authenticated same-host SQLite authority. Activation is monotonic and predecessor/snapshot-bound. Exact team access is an allow candidate intersected with a trusted current `PolicyEngine` decision; explicit deny wins and A3/A4/D4 remain unavailable. Runtime actor state is derived from the active signed bundle and rechecked with signatures, HMACs, revocation epochs and emergency state at the effect boundary.
+
+A2 approval uses exact signed profiles, requests and votes from distinct eligible human principals, excludes the requester, and creates an authority-issued single-use permit. Emergency disable is a separate quorum-protected recovery operation. Trust-anchor change requires old and new Ed25519 signatures and creates a successor authority generation with authenticated lineage; the predecessor history is not rewritten.
+
+**Consequences.** M5 can be embedded locally across projects and AI clients without depending on one model or vendor. The SQLite/HMAC design is not a network control plane and does not prove enterprise identity. PostgreSQL, HA/consensus, SSO/OIDC/WebAuthn, KMS/HSM/Vault, remote effect adapters, multi-region recovery, native Windows ACL enforcement and A3/A4 require separately conformant M6 backends.
+
+**Evidence.** The complete 473-test pytest and unittest gates pass, including actor impersonation, runtime-decision replay, activation contention, live tamper, revocation carry-forward, emergency recovery, quorum, permit forgery/replay, effect fencing, dual-anchor rotation, crash-resume, target-fork prevention and coherent backup. M4 runtime schemas retain their exact prior digest. See [M5 architecture](../architecture/team-authority.md), [completion report](../research/2026-07-16-m5-team-authority-completion-report.md), and [operations runbook](../operations/team-authority-runbook.md).
 
 ## Supersession
 

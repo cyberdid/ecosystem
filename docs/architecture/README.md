@@ -1,6 +1,6 @@
 # Architecture
 
-**Status:** M1, embedded M2 read-only, bounded M3 Linux/WSL controlled writes, M3.5/M3.6 integration/trust, the fixed M4 no-model L0–L2 reference loop, M4.5 portability/conformance, and the non-authorizing M5.0–M5.2 team identity/signed-policy foundation are implemented.
+**Status:** M1–M5 are implemented for the bounded reference profile: canonical harness, embedded Linux/WSL runtime, fixed no-model loop, portable adoption/distribution/conformance, and same-host signed team authority.
 
 **Updated:** 2026-07-16
 
@@ -139,18 +139,22 @@ The wheel-only `DistributionManifest` binds the exact main/dependency wheelhouse
 
 `eco conformance run` accepts only a fixed synthetic Linux/WSL namespace + Landlock suite in an operator-created external private root. The resulting `PlatformBackendConformanceProfile` binds exact platform/distribution/backend/runner/suite identities and uses `observedCapabilities`, never effective authority. External envelope ingestion verifies the record but no policy/store/broker/adapter/loop consumes it in M4.6. See [M4.6 platform backend conformance](platform-backend-conformance.md).
 
-### M5.0–M5.2 team-authority foundation
+### M5 team-authority boundary
 
-The separate `authority.ai.ecosystem/v1alpha1` namespace now describes teams, principals, memberships, public identity keys and revisioned deny-all identity catalogs. Ed25519 verification checks canonical policy bytes relative to a caller-supplied external anchor without self-bootstrap; M5.2 does not establish anchor provenance. The read-only CLI fixes currentness, activation and runtime authority to unavailable. M4 runtime schema snapshots and `.ai/trust.yaml` remain unchanged. See [M5 team authority](team-authority.md).
+The separate `authority.ai.ecosystem/v1alpha1` namespace describes teams, principals, memberships, public keys, exact access policy, approval profiles and revisioned signed bundles. Ed25519 verification is relative to a caller-supplied external anchor without self-bootstrap. A private HMAC-authenticated SQLite authority establishes currentness using monotonic revisions, exact predecessor/snapshot CAS, epochs and serialized writers.
 
-### Remaining after M5.2
+Runtime authorization is an intersection: trusted current `PolicyEngine` allow, current signed team-access allow candidate, active non-revoked signed actor state, emergency-clear state and an authority-issued single-use A2 permit when required. Explicit deny wins. Quorum uses distinct eligible human principals and excludes the requester. Emergency disable has its own signed recovery quorum. Trust-anchor rotation requires both old and new signatures and creates a new successor authority generation without rewriting history. See [M5 team authority](team-authority.md), the [operations runbook](../operations/team-authority-runbook.md), and the [completion report](../research/2026-07-16-m5-team-authority-completion-report.md).
+
+### Remaining after M5
 
 - endpoint-specific network allowlist backend;
 - Windows/macOS isolation and filesystem backends;
 - Windows/macOS controlled-write backends and conformance evidence;
 - delete, rename, directory, batch, command, A3 and A4 action profiles;
 - descendant-exec/seccomp/cgroup/device containment;
-- durable M5 activation heads, RBAC/ABAC, revocation/rotation, emergency state and quorum approvals;
+- PostgreSQL/network authority, SSO/OIDC/WebAuthn, KMS/HSM/Vault, HA/consensus and multi-region recovery;
+- native Windows ACL enforcement and native macOS/Windows runtime-security backends;
+- remote transactional effect adapters and separately threat-modeled A3/A4 profiles;
 - full-wiki link/staleness/duplicate-semantic lint over a separately signed larger scope;
 - loop scheduling, autonomous retry, and L3–L5 promotion profiles.
 - durable adoption crash recovery and hostile concurrent parent-swap protection;
@@ -185,7 +189,7 @@ client without credentials
 
 ## Next milestone
 
-M5.3 adds bounded RBAC/ABAC as a narrowing intersection with the existing `PolicyEngine`; M5.4 then adds local shared activation authority. Neither L2 history, a passive profile, a package checksum, an M4.6 observation nor a cryptographically valid but inactive M5 bundle may become implicit scheduling, model, network or write authority.
+M5 exact team access remains a narrowing intersection with the existing `PolicyEngine`, and a signed bundle is current only after durable activation in the external authority store. Neither L2 history, a passive profile, a package checksum, an M4.6 observation nor a cryptographically valid but inactive M5 bundle may become implicit scheduling, model, network or write authority.
 
 ## Sources
 
