@@ -301,7 +301,7 @@ A2 approval uses exact signed profiles, requests and votes from distinct eligibl
 
 **Consequences.** M5 can be embedded locally across projects and AI clients without depending on one model or vendor. The SQLite/HMAC design is not a network control plane and does not prove enterprise identity. PostgreSQL, HA/consensus, SSO/OIDC/WebAuthn, KMS/HSM/Vault, remote effect adapters, multi-region recovery, native Windows ACL enforcement and A3/A4 require separately conformant M6 backends.
 
-**Evidence.** The complete 473-test pytest and unittest gates pass, including actor impersonation, runtime-decision replay, activation contention, live tamper, revocation carry-forward, emergency recovery, quorum, permit forgery/replay, effect fencing, dual-anchor rotation, crash-resume, target-fork prevention and coherent backup. M4 runtime schemas retain their exact prior digest. See [M5 architecture](../architecture/team-authority.md), [completion report](../research/2026-07-16-m5-team-authority-completion-report.md), and [operations runbook](../operations/team-authority-runbook.md).
+**Evidence.** The complete 474-test pytest and unittest gates pass, including actor impersonation, runtime-decision replay, activation contention, live tamper, revocation carry-forward, emergency recovery, quorum, permit forgery/replay, effect fencing, dual-anchor rotation, crash-resume, target-fork prevention and coherent backup. M4 runtime schemas retain their exact prior digest. See [M5 architecture](../architecture/team-authority.md), [completion report](../research/2026-07-16-m5-team-authority-completion-report.md), and [operations runbook](../operations/team-authority-runbook.md).
 
 ## Supersession
 

@@ -10,7 +10,7 @@
 | Page | Purpose | Updated |
 |---|---|---:|
 | [M5 team authority](../docs/architecture/team-authority.md) | Signed identities, narrowing access, shared activation, revocation, quorum, emergency recovery, rotation and exact non-claims | 2026-07-16 |
-| [M5 completion report](../docs/research/2026-07-16-m5-team-authority-completion-report.md) | Full M5.3–M5.7 delivery, multi-agent threat corrections, 473-test evidence and M6 boundary | 2026-07-16 |
+| [M5 completion report](../docs/research/2026-07-16-m5-team-authority-completion-report.md) | Full M5.3–M5.7 delivery, multi-agent threat corrections, 474-test evidence and M6 boundary | 2026-07-16 |
 | [M5 operations runbook](../docs/operations/team-authority-runbook.md) | Activation, doctor, backup, emergency recovery, key rotation and incident stop conditions | 2026-07-16 |
 | [M5.0–M5.2 foundation report](../docs/research/2026-07-16-m5-team-authority-foundation-report.md) | Multi-agent findings, implementation evidence, 406-test gate and M5.3 handoff | 2026-07-16 |
 | [architecture.md](architecture.md) | Current implemented boundary and target runtime flow | 2026-07-16 |

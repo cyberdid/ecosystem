@@ -13,8 +13,9 @@ Append-only хронологічний лог операцій. Формат: `#
 - Added old+new Ed25519 dual-signed rotation and successor-generation migration so trust-anchor changes never rewrite predecessor history.
 - Added public `eco team doctor` and explicit `eco team activate --apply`, coherent verified backup, a dedicated operations runbook, ADR-026 and the full M5 completion report.
 - Multi-agent identity/policy, authority, approval, threat, rotation, recovery and CLI reviews drove adversarial corrections before integration.
-- Local evidence: 473 pytest tests, 473 unittest tests, canonical validate/render/doctor gates, compile, whitespace and unchanged M4 runtime-schema digest checks pass; release metadata is `0.7.0`.
-- Hosted CI evidence will be appended after the release branch is pushed. M6 remains the explicit boundary for network/HA authority, SSO, KMS/HSM, native platform security backends and A3/A4.
+- Local evidence: 474 pytest tests, 474 unittest tests, canonical validate/render/doctor gates, compile, whitespace and unchanged M4 runtime-schema digest checks pass; release metadata is `0.7.0`.
+- Hosted GitHub Actions run [`29513118749`](https://github.com/Pylypko1021/ecosystem/actions/runs/29513118749) passed at commit `527a64030ea384651a2bbd700f72b0fc999beac9`: full Linux regression/offline-wheel verification and focused macOS/Windows M5 portability gates are green. The first release run exposed a latent Windows CRT text-mode read of binary wheel artifacts; byte-exact `O_BINARY` reads and a CRLF/`0x1A` regression test corrected it without weakening the file-identity checks.
+- M6 remains the explicit boundary for network/HA authority, SSO, KMS/HSM, native platform security backends and A3/A4.
 
 ## [2026-07-16] implementation | M5.0–M5.2 team identity and signed-policy foundation
 

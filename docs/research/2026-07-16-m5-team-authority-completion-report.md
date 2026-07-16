@@ -4,7 +4,7 @@
 
 **Release:** `0.7.0`
 
-**Status:** complete for the bounded same-host reference profile; hosted CI evidence is recorded in the wiki log after the release push.
+**Status:** complete for the bounded same-host reference profile; hosted CI run [29513118749](https://github.com/Pylypko1021/ecosystem/actions/runs/29513118749) passed at implementation commit `527a64030ea384651a2bbd700f72b0fc999beac9`.
 
 ## Executive result
 
@@ -78,8 +78,8 @@ Local completion gate:
 
 | Check | Result |
 |---|---|
-| `pytest -q` | 473 passed |
-| `python -m unittest discover -s tests -q` | 473 passed |
+| `pytest -q` | 474 passed |
+| `python -m unittest discover -s tests -q` | 474 passed |
 | `eco validate` | passed |
 | `eco render --check` | passed |
 | `eco doctor` | passed |
@@ -87,8 +87,12 @@ Local completion gate:
 | `git diff --check` | passed |
 | CLI version | `eco 0.7.0` |
 | Built-wheel install/import smoke | passed; M5 modules and all three new schemas present |
+| Native Windows distribution regression | 19 passed, 2 skipped platform-only primitives |
+| Hosted GitHub Actions | Linux full/offline-wheel plus focused macOS/Windows passed in run `29513118749` at `527a640` |
 
 Adversarial tests cover malformed/ambiguous schemas, signature and digest tampering, actor impersonation and assertion substitution, runtime-decision replay/concurrency/reopen, stale CAS, competing SQLite writers, post-open revocation tamper, revocation carry-forward/reintroduction, emergency denial and authenticated recovery, insufficient/duplicate/requester/wrong-role approvals, forged permits, effect-boundary changes, unsafe store and input paths, backup target races, dual-anchor rotation, crash-resume, sequential/concurrent successor-fork attempts and lineage tamper.
+
+The first hosted release run exposed a latent Windows-only distribution-reader defect: CRT text mode translated CRLF and treated byte `0x1A` as EOF, so a valid wheel appeared truncated. Both the installed and standalone readers now request `O_BINARY`; all existing bounded-read, regular-file, one-link, reparse-point and before/open/after identity checks remain in place. A byte-exact CRLF/`0x1A` digest regression passes on native Windows and POSIX.
 
 M5 authority schemas remain separate from M4 runtime schemas. The unchanged runtime schema bundle digest is:
 
