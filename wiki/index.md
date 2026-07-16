@@ -3,7 +3,7 @@
 > Curated operational knowledge. Canonical executable truth lives under `.ai/`; generated vendor files are projections.
 
 **Updated:** 2026-07-15
-**Status:** M1, embedded M2 read-only, bounded M3 Linux/WSL controlled writes, and M3.5 integration/reproducibility are complete locally; trust bootstrap and M4 evaluation/promotion are next.
+**Status:** M1, embedded M2 read-only, bounded M3 Linux/WSL controlled writes, and M3.5 integration/reproducibility are complete; trust bootstrap and M4 evaluation/promotion are next.
 
 ## Pages
 

@@ -8,7 +8,7 @@
 | M1 | Schemas, CLI, projections, audit, lock, tests | Implemented |
 | M2 | Read-only PEP/broker, local+cloud adapters, sanitized run events | Complete for the embedded Linux/WSL reference profile; 187 tests plus passing live local/cloud evidence |
 | M3 | Controlled writes, sandbox boundary, approvals, idempotency | Complete for bounded Linux/WSL one-file create/replace profile; 258 tests |
-| M3.5 | Integration, reproducibility, governance reconciliation | Complete locally: `eco runtime doctor`, declared test extra, honest hosted-CI isolation scope, ADR-018; execution remains trust-bootstrap blocked |
+| M3.5 | Integration, reproducibility, governance reconciliation | Complete: `eco runtime doctor`, declared test extra, honest hosted-CI isolation scope, ADR-018; execution remains trust-bootstrap blocked |
 | M4 | L0–L4 evals and promotion | Pending |
 | M5 | Team state, signed policy, RBAC | Deferred |
 | M6 | Enterprise topology options | Deferred |
