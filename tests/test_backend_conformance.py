@@ -101,7 +101,10 @@ class BackendConformanceTests(unittest.TestCase):
 
     def setUp(self) -> None:
         self.temporary = tempfile.TemporaryDirectory(prefix="eco-backend-conformance-")
-        self.workspace = Path(self.temporary.name)
+        # macOS exposes /var through /private/var and Windows runners may
+        # normalize temporary roots.  The production contract requires the
+        # caller to supply the canonical absolute path, so fixtures must do so.
+        self.workspace = Path(self.temporary.name).resolve(strict=True)
         self.repository = self.workspace / "repository with spaces та юнікод"
         self.test_root = self.workspace / "isolated test root"
         self.repository.mkdir()
