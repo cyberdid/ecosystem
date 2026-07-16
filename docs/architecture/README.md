@@ -1,6 +1,6 @@
 # Architecture
 
-**Status:** M1, embedded M2 read-only, bounded M3 Linux/WSL controlled writes, M3.5/M3.6 integration/trust, the fixed M4 no-model L0–L2 reference loop, and M4.5.1 safe project adoption are implemented.
+**Status:** M1, embedded M2 read-only, bounded M3 Linux/WSL controlled writes, M3.5/M3.6 integration/trust, the fixed M4 no-model L0–L2 reference loop, M4.5.1 safe project adoption, and the passive M4.5.2 platform/adapter profile boundary are implemented.
 
 **Updated:** 2026-07-16
 
@@ -11,6 +11,7 @@ flowchart TB
     R["Existing repository"] --> A["eco audit / adopt preview"]
     A --> AP["Preview-bound adoption + ownership receipt"]
     AP --> C["Canonical .ai contracts"]
+    A --> PLATFORM["Passive platform doctor + non-authorizing profiles"]
     C --> V["Schema and cross-contract validation"]
     V --> P["Projection compiler"]
     P --> H["Codex / Claude / Copilot / Gemini / Cursor"]
@@ -121,6 +122,12 @@ A dedicated private external SQLite journal authenticates plan/event/head state 
 
 This filesystem bootstrap has focused Linux/macOS/Windows CI. It does not make the Linux/WSL read broker, isolation launcher, M3 write broker, or M4 loop executor portable.
 
+### M4.5.2 platform and adapter boundary
+
+`eco platform doctor --json` now reports a bounded OS/context, allowlisted executable-name, and fixed client-surface inventory. It never executes a discovered binary, reads projection content, contacts an adapter, resolves a credential, writes a file, or creates runtime authority. Mutable hints cannot prove WSL/container/CI identity, and overlapping strong contexts fail as ambiguous.
+
+The closed `PlatformProfile` and `AdapterCapabilityProfile` schemas separate declaration, passive detection, and authenticated proof. In this passive version, profile proof is null, every runtime-security capability is `not-tested`, and effective capability sets are structurally empty. Existing externally signed runtime `AdapterConformanceProfile` evidence remains the only proof form consumed by policy. See [M4.5.2 platform and adapter conformance](platform-adapter-conformance.md).
+
 ### Remaining beyond M4
 
 - endpoint-specific network allowlist backend;
@@ -132,7 +139,7 @@ This filesystem bootstrap has focused Linux/macOS/Windows CI. It does not make t
 - full-wiki link/staleness/duplicate-semantic lint over a separately signed larger scope;
 - loop scheduling, autonomous retry, and L3–L5 promotion profiles.
 - durable adoption crash recovery and hostile concurrent parent-swap protection;
-- versioned platform/adapter capability profiles, native conformance evidence, and portable packaging.
+- active native platform/adapter conformance runners and portable packaging.
 
 The embedded capability guards remain process-local and the executable filesystem/isolation/write proof is Linux/WSL-specific. Evidence and reference-approval HMACs authenticate configured embedded boundaries but are not remote third-party identities. See [M2 runtime contracts](runtime-contracts.md), [Read-only repository broker](read-only-broker.md), [Durable runtime store](durable-runtime-store.md), [M3 controlled writes](controlled-writes.md), [M3 completion report](../research/2026-07-15-m3-completion-report.md), and [D/A/Z/P semantics](policy-semantics.md).
 
@@ -162,7 +169,7 @@ client without credentials
 
 ## Next milestone
 
-The next slice is M4.5.2 platform and adapter conformance: versioned platform profiles, declared-versus-observed capability evidence, and read-only probes for Windows, macOS, Linux, WSL, containers, and hosted CI. Unsupported runtime controls must remain unavailable without fallback. M4.5.3 may add packaging/install adapters only after that evidence boundary is stable.
+The next slice is M4.5.3 portable packaging and installer adapters. It must preserve M4.5.1 preview/ownership/reversibility and consume the M4.5.2 profile boundary without turning declaration or passive detection into proof. Native security backends remain unavailable until a separate controlled conformance runner produces authenticated exact-bound evidence.
 
 M5 team authority—signed policy distribution, RBAC/identity, independently authenticated evidence consumption, revocation/rotation, and shared-state conformance—follows the portability work. It must preserve the completed M4 profile without turning L2 evidence into implicit scheduling, model, network, or write authority.
 

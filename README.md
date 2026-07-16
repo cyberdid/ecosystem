@@ -81,7 +81,18 @@ See [M4 no-model wiki health](docs/architecture/no-model-wiki-health.md) and the
 
 See [M4.5.1 project adoption](docs/architecture/project-adoption.md) and the [M4.5.1 completion report](docs/research/2026-07-16-m4.5.1-adoption-bootstrap-report.md).
 
-**Not implemented and not claimed:** durable adoption crash recovery, hostile parent-swap/reparse/case-fold security on every filesystem, portable packaging, platform/adapter capability profiles, Windows/macOS M4 read-broker conformance or executable isolation/write backends, endpoint-specific network allowlists, descendant-exec/seccomp/cgroup/device containment, asymmetric evidence or approval signatures, delete/rename/mkdir/batch/arbitrary-command writes, A3/A4 external actions, a bundled database-plus-CAS disaster-recovery package, caller-independent external anchoring, scheduled/autonomous loops, full wiki link/staleness lint, or production autonomy.
+**M4.5.2 platform and adapter conformance boundary complete:**
+
+- closed `platform.ai.ecosystem/v1alpha1` `PlatformProfile` and `AdapterCapabilityProfile` contracts;
+- `eco platform doctor --json` emits deterministic categorical inventory without invoking executables, contacting adapters, reading projection contents, writing files, or creating authority;
+- operator declaration, passive detection, authenticated proof, and effective capability state remain separate;
+- passive platform and adapter profiles structurally forbid proven/effective runtime capabilities;
+- Linux, WSL, macOS, Windows, container, and hosted-CI fixtures cover spoofing, nested ambiguity, schema closure, privacy, and zero-side-effect behavior;
+- focused platform/adoption portability gates run on hosted Linux, macOS, and Windows.
+
+See [M4.5.2 platform and adapter conformance](docs/architecture/platform-adapter-conformance.md) and the [M4.5.2 completion report](docs/research/2026-07-16-m4.5.2-platform-adapter-conformance-report.md).
+
+**Not implemented and not claimed:** durable adoption crash recovery, hostile parent-swap/reparse/case-fold security on every filesystem, portable packaging, active native platform/adapter conformance runners, Windows/macOS M4 read-broker conformance or executable isolation/write backends, endpoint-specific network allowlists, descendant-exec/seccomp/cgroup/device containment, asymmetric evidence or approval signatures, delete/rename/mkdir/batch/arbitrary-command writes, A3/A4 external actions, a bundled database-plus-CAS disaster-recovery package, caller-independent external anchoring, scheduled/autonomous loops, full wiki link/staleness lint, or production autonomy.
 
 ## Architecture in one sentence
 
@@ -102,6 +113,7 @@ python -m pip install -e ".[test]"
 eco validate
 eco render --check
 eco doctor
+eco platform doctor --json
 eco runtime trust doctor --json
 python -m unittest discover -s tests -v
 ```

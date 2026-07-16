@@ -29,7 +29,7 @@ jobs:
           echo "Hosted CI runs fail-closed unit coverage. Live namespace/Landlock conformance runs only where the host supports that kernel profile; skipped tests are not a security-pass claim." >> "$GITHUB_STEP_SUMMARY"
 
   adoption-portability:
-    name: adoption-${{ matrix.os }}
+    name: portability-${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -43,7 +43,7 @@ jobs:
           cache: pip
       - run: python -m pip install --upgrade pip
       - run: python -m pip install -e ".[test]"
-      - run: python -m unittest tests.test_cli tests.test_adoption_fixtures tests.test_adoption_safety -v
+      - run: python -m unittest tests.test_cli tests.test_adoption_fixtures tests.test_adoption_safety tests.test_platform_conformance -v
       - run: eco validate
       - run: eco render --check
       - run: eco doctor

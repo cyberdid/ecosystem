@@ -12,8 +12,8 @@
 | M3.6 | Verification-only trust bootstrap | Complete: canonical external-trust policy and `eco runtime trust doctor`; consumed by M4 without self-signing |
 | M4 | L0–L5 evaluation/promotion contract | Complete for fixed `wiki-health-check`: L0–L2 eligible after five attempts + replay; L3–L5 structurally ineligible |
 | M4.5.1 | Safe project-adoption bootstrap | Complete: deterministic preview/apply, ownership receipt, reversible projections, adversarial uninstall, focused Linux/macOS/Windows CI |
-| M4.5.2 | Platform and adapter capability profiles | Next: versioned declared/detected/proven capability contracts and read-only conformance probes |
-| M4.5.3 | Portable packaging and installer adapters | Planned after M4.5.2 evidence boundary |
+| M4.5.2 | Platform and adapter capability profiles | Complete: closed non-authorizing profiles, passive doctor, six-platform fixtures and focused portability CI |
+| M4.5.3 | Portable packaging and installer adapters | Next: package/install without widening adoption or proof authority |
 | M5 | Team state, signed policy, RBAC | Deferred |
 | M6 | Enterprise topology options | Deferred |
 
@@ -97,15 +97,26 @@ All criteria pass for the embedded Linux/WSL reference profile. See the [M4 repo
 
 All criteria pass for the bounded filesystem bootstrap. It has no durable crash journal and makes no hostile concurrent-parent-swap, reparse/case-fold, packaging, or non-Linux runtime-backend claim. See the [architecture](../docs/architecture/project-adoption.md), [completion report](../docs/research/2026-07-16-m4.5.1-adoption-bootstrap-report.md), and [ADR-021](../docs/decisions/README.md#adr-021--preview-bound-receipt-owned-project-adoption).
 
-## M4.5.2 detailed next gate
+## M4.5.2 exit criteria
 
 1. Define `PlatformProfile` and `AdapterCapabilityProfile` JSON Schemas.
 2. Separate operator declaration, read-only detection, and conformance-proven capability state.
 3. Implement sanitized `eco platform doctor --json` with no installation or authority side effect.
 4. Add Windows-native, macOS, Linux, WSL, container, and hosted-CI fixture profiles.
-5. Prove filesystem semantics, executable discovery, environment references, shell/process behavior, and client projection availability per profile.
+5. Report executable/client inventory categorically while filesystem security, environment-reference, shell/process and active adapter semantics remain explicit `not-tested` until independently proven.
 6. Keep read broker, isolation, controlled writes, credentials, model routing, and loops unavailable whenever their backend-specific conformance is absent.
 7. Freeze packaging requirements only after the capability contract survives adversarial review.
+
+All criteria pass for the passive description boundary. The doctor never accepts unsigned proof, and both profile contracts structurally forbid proven/effective runtime state. Six fixtures cover Linux, WSL, macOS, Windows, container, and hosted CI; hosted cross-OS jobs prove portable contract behavior, not native runtime-security backends. See the [architecture](../docs/architecture/platform-adapter-conformance.md), [completion report](../docs/research/2026-07-16-m4.5.2-platform-adapter-conformance-report.md), and [ADR-022](../docs/decisions/README.md#adr-022--passive-platform-and-adapter-description-cannot-mint-runtime-proof).
+
+## M4.5.3 detailed next gate
+
+1. Define supported wheel/zipapp/standalone bootstrap artifacts and their signed checksum/provenance metadata.
+2. Preserve the M4.5.1 preview/apply digest, ownership receipt, byte-exact backup, and complete-preflight uninstall lifecycle.
+3. Make installers consume M4.5.2 profile descriptions without installing from detection or elevating declared/detected capability state.
+4. Add clean-environment install, upgrade, rollback, uninstall, offline, path-with-spaces, read-only-target, interrupted-install, and package-tamper fixtures.
+5. Run focused packaging gates on Linux, macOS, and Windows; keep all native broker/isolation/write/adapter capabilities unavailable without separate authenticated conformance.
+6. Publish an exact support matrix and migration/non-claim document before any convenient one-line installer is advertised.
 
 ## Loop rollout
 

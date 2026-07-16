@@ -1,0 +1,31 @@
+{
+  "declaredProfile": "macos",
+  "probeInputs": {
+    "version": 1,
+    "os": {"name": "posix", "system": "Darwin"},
+    "signals": {
+      "wsl": {"environment": false, "kernel": false},
+      "container": {"environment": false, "filesystem": false},
+      "hostedCi": {"environment": false, "provider": false}
+    },
+    "executables": [
+      {"name": "claude", "present": true},
+      {"name": "codex", "present": true},
+      {"name": "cursor", "present": true},
+      {"name": "docker", "present": true},
+      {"name": "gemini", "present": true},
+      {"name": "git", "present": true},
+      {"name": "node", "present": true},
+      {"name": "nvidia-smi", "present": false},
+      {"name": "ollama", "present": true},
+      {"name": "python", "present": true}
+    ],
+    "clients": [
+      {"id": "claude", "available": true},
+      {"id": "codex", "available": true},
+      {"id": "copilot", "available": false},
+      {"id": "cursor", "available": false},
+      {"id": "gemini", "available": false}
+    ]
+  }
+}

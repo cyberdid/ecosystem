@@ -77,6 +77,31 @@ def _parser() -> argparse.ArgumentParser:
     )
     runtime_doctor.add_argument("--json", action="store_true", dest="json_output")
 
+    platform_command = commands.add_parser(
+        "platform", help="Inspect passive platform and adapter-capability inventory"
+    )
+    platform_commands = platform_command.add_subparsers(
+        dest="platform_command", required=True
+    )
+    platform_doctor_command = platform_commands.add_parser(
+        "doctor", help="Report sanitized platform facts without creating authority"
+    )
+    platform_doctor_command.add_argument(
+        "--json", action="store_true", dest="json_output"
+    )
+    platform_doctor_command.add_argument(
+        "--declared-profile",
+        choices=(
+            "linux-native",
+            "wsl",
+            "macos",
+            "windows-native",
+            "container",
+            "hosted-ci",
+        ),
+        help="Operator-declared profile to compare with passive detection",
+    )
+
     runtime_trust = runtime_commands.add_parser(
         "trust", help="Verify external runtime trust evidence without enabling execution"
     )
@@ -482,6 +507,25 @@ def command_runtime(args: argparse.Namespace) -> int:
     return 0 if result["available"] else 1
 
 
+def command_platform(args: argparse.Namespace) -> int:
+    if args.platform_command != "doctor":
+        raise EcoError(f"Unknown platform command: {args.platform_command}")
+    from .platform_profiles import platform_doctor
+
+    result = platform_doctor(args.declared_profile, repository=_repo(args))
+    if args.json_output:
+        print(stable_json(result), end="")
+    else:
+        print(f"Platform inventory: {result['status']} ({result['code']})")
+        print(
+            "Profile: "
+            f"declared={result['profile']['declared']} "
+            f"detected={result['profile']['detected']} proven=none"
+        )
+        print("Execution: not ready; no authority, mutation, or network access was created")
+    return 0 if result["available"] else 1
+
+
 def command_run(args: argparse.Namespace) -> int:
     if args.run_command != "wiki-health-check":
         raise EcoError(f"Unknown fixed workflow: {args.run_command}")
@@ -589,6 +633,7 @@ COMMANDS = {
     "diff": command_diff,
     "doctor": command_doctor,
     "runtime": command_runtime,
+    "platform": command_platform,
     "run": command_run,
     "eval": command_eval,
     "lock": command_lock,

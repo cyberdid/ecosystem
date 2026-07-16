@@ -23,6 +23,7 @@
 | ADR-019 | Verification-only external trust bootstrap for live read-only workflows | Accepted for the embedded local-shared-key bridge; asymmetric external attestation remains a future profile |
 | ADR-020 | Separate no-model A1 lifecycle and fixed L0–L2 promotion gate | Implemented for the Linux/WSL `wiki-health-check` reference profile; L3–L5 remain ineligible |
 | ADR-021 | Preview-bound, receipt-owned project adoption | Implemented for the M4.5.1 `.ai` bootstrap; runtime-platform portability remains separate |
+| ADR-022 | Passive platform/adapter description cannot mint runtime proof | Implemented for M4.5.2; active native conformance remains separate |
 
 ## ADR-001 — Contracts-first
 
@@ -225,6 +226,24 @@ Discovery may initialize descriptive language/build metadata but cannot infer or
 **Consequences.** Adoption behavior can be tested on Linux, macOS, and Windows without claiming that runtime enforcement is portable. The receipt and render state are strict local ownership metadata, not cryptographically authenticated team identity. M4.5.1 does not provide a durable crash journal: an uncatchable process/host failure may leave a partial install requiring a new preview or manual recovery. It also does not prove hostile parent-directory swaps, complete Windows reparse/case-fold safety, packaging, or any non-Linux runtime broker. M4.5.2 must define platform/adapter capability profiles and conformance evidence; unsupported controls remain unavailable rather than using a weaker fallback.
 
 **Evidence.** Byte-exact Python and TypeScript-monorepo fixtures cover fresh/existing/reinstall, CRLF/no-final-newline restoration, stale plans, secret minimization, path escape, symlink/hardlink/non-UTF-8 rejection, schema validity, no-op mtimes, backup/state tampering, ownership forgery, concurrent-edit rollback conflict, full-removal preflight, and lock contention. See [M4.5.1 project adoption](../architecture/project-adoption.md) and the [completion report](../research/2026-07-16-m4.5.1-adoption-bootstrap-report.md).
+
+## ADR-022 — Passive platform and adapter description cannot mint runtime proof
+
+**Date:** 2026-07-16
+
+**Context.** M4.5.1 can install the canonical contracts and projections on Linux, macOS, and Windows, but portable file installation does not make the Linux/WSL read broker, process isolation, controlled-write backend, credentials, routing, or loops portable. A conventional platform doctor often runs installed tools, reads environment state, contacts endpoints, or treats a discovered binary/container/GPU as proof of a capability. It could then become both the producer and consumer of the evidence that authorizes it.
+
+**Decision.** M4.5.2 introduces the separate `platform.ai.ecosystem/v1alpha1` `PlatformProfile` and `AdapterCapabilityProfile` contracts. Both are content-minimized description records. Operator declaration, passive detection, authenticated proof, and effective policy capability remain distinct states. In this passive contract version, profile proof is null, adapter/runtime proven state is forbidden, every effective flag is false, and aggregate effective-capability lists are empty.
+
+`eco platform doctor --json` performs bounded categorical inventory only. It derives a coarse OS/context, resolves ten allowlisted executable names without invoking or opening them, and checks five fixed client projection locations using regular-file metadata without reading content. Search-path resolution may consult the process `PATH`/platform equivalent, but those values and resolved locations are never emitted or digested. It emits no command output, host identity, endpoint, model, credential, package list, device details, or raw exception. It creates no broker, adapter, model, loop, process, network access, write, or runtime authority. Mutable context hints without corroboration and overlapping strong contexts fail closed.
+
+The new `AdapterCapabilityProfile` does not replace or weaken runtime `AdapterConformanceProfile`. The former is fixed to declaration/inventory authority and cannot contain proven/effective capabilities. The latter remains externally produced, authenticated, freshness-bounded, deployment/suite/identity-bound evidence which the runtime must re-verify at its authorization boundary. A doctor report or semantic digest is not a signature, attestation, or capability token.
+
+**Consequences.** The same profile classification and schema behavior can run in hosted Linux/macOS/Windows tests without claiming that native security controls exist on those hosts. Executable presence does not prove version, provenance, safety, or usability; client-surface presence does not prove client loading or compliance. Hosted-CI classification in the current matrix is a normalized fixture rule rather than trusted public-runner attestation. Environment-reference resolution, shell/process behavior, filesystem race semantics, model/CUDA/NIM functionality, and native broker/isolation/write safety remain `not-tested` until separate controlled runners produce exact-bound authenticated evidence.
+
+M4.5.3 packaging may consume these descriptors but cannot turn detection into installation authority or runtime proof. It must preserve the M4.5.1 preview/ownership/uninstall boundary and leave unsupported controls unavailable without fallback.
+
+**Evidence.** Six deterministic fixtures cover Linux native, WSL, macOS, Windows native, container, and hosted CI. Adversarial tests reject unknown/duplicate/spoofed/nested inputs and unsigned evidence, verify schema/digest/identity closure, trap process/network/write/secret access, and compare repository bytes and mtimes before/after the CLI call. See [M4.5.2 architecture](../architecture/platform-adapter-conformance.md) and the [completion report](../research/2026-07-16-m4.5.2-platform-adapter-conformance-report.md).
 
 ## Supersession
 

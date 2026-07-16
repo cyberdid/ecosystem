@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai.ecosystem.local/schemas/platform/adapter-capability-profile.schema.json",
+  "title": "AdapterCapabilityProfile",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "platform.ai.ecosystem/v1alpha1" },
+    "kind": { "const": "AdapterCapabilityProfile" },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "adapterId", "profileDigest"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "adapterId": { "$ref": "#/$defs/id" },
+        "profileDigest": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "authority",
+        "platformProfileDigest",
+        "deploymentIdentityDigest",
+        "capabilities",
+        "effectiveCapabilities",
+        "safety"
+      ],
+      "properties": {
+        "authority": { "const": "declaration-and-inventory-only" },
+        "platformProfileDigest": { "$ref": "#/$defs/sha256" },
+        "deploymentIdentityDigest": { "$ref": "#/$defs/sha256" },
+        "capabilities": {
+          "type": "array",
+          "maxItems": 128,
+          "items": { "$ref": "#/$defs/capabilityState" }
+        },
+        "effectiveCapabilities": {
+          "type": "array",
+          "maxItems": 0,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/capabilityId" }
+        },
+        "safety": { "$ref": "#/$defs/safety" }
+      }
+    }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$" },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "capabilityId": { "type": "string", "pattern": "^[a-z][a-z0-9._-]{1,127}$" },
+    "capabilityState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "declared", "detected", "proven", "effective"],
+      "properties": {
+        "id": { "$ref": "#/$defs/capabilityId" },
+        "declared": { "enum": ["declared", "not-declared", "blocked"] },
+        "detected": { "enum": ["detected", "not-detected", "not-tested", "blocked"] },
+        "proven": { "enum": ["not-proven", "not-tested", "blocked"] },
+        "effective": { "const": false }
+      }
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["authorityCreated", "executionReady"],
+      "properties": {
+        "authorityCreated": { "const": false },
+        "executionReady": { "const": false }
+      }
+    }
+  }
+}

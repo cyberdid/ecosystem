@@ -1,11 +1,11 @@
 # Current architecture
 
 **Updated:** 2026-07-16
-**Status:** M1–M4 plus M4.5.1 implemented; M4 is fixed no-model L2 observe-only and M4.5.1 is safe filesystem adoption
+**Status:** M1–M4 plus M4.5.1–M4.5.2 implemented; M4.5.2 is passive platform/adapter description, not runtime proof
 
 ## TL;DR
 
-The repository implements canonical contracts/compiler plus an embedded default-deny policy, trusted evidence ingestion, durable Linux/WSL repository reads, exact-approved one-file controlled writes, governed model-adapter identities, direct-egress isolation, signed local/cloud evaluation evidence, one fixed no-model `wiki-health-check` promoted only through L2, and a preview-bound adoption bootstrap for other repositories. Cloud aliases are observable routing identities, not immutable-weight pins.
+The repository implements canonical contracts/compiler plus an embedded default-deny policy, trusted evidence ingestion, durable Linux/WSL repository reads, exact-approved one-file controlled writes, governed model-adapter identities, direct-egress isolation, signed local/cloud evaluation evidence, one fixed no-model `wiki-health-check` promoted only through L2, a preview-bound adoption bootstrap, and passive non-authorizing platform/adapter profiles. Cloud aliases are observable routing identities, not immutable-weight pins.
 
 ## Implemented
 
@@ -29,6 +29,7 @@ The repository implements canonical contracts/compiler plus an embedded default-
 → deterministic three-page wiki health report
 → five-attempt + zero-read replay L0–L2 promotion gate
 → deterministic adoption preview + ownership receipt + reversible uninstall
+→ passive platform doctor + declaration/inventory-only profiles
 ```
 
 ## Explicitly not implemented
@@ -44,7 +45,7 @@ The repository implements canonical contracts/compiler plus an embedded default-
 - caller-independent external anchor storage.
 - full-wiki link/staleness lint, scheduler, autonomous retry, and L3–L5 loop authority.
 - durable adoption crash journal and hostile filesystem-race proof;
-- platform/adapter profiles, cross-platform runtime backends, and portable packaging.
+- active native platform/adapter conformance runners, cross-platform runtime backends, and portable packaging.
 
 The implemented M2–M4 boundary has negative, concurrency, process-crash, artifact, migration, backup, key-rotation, anchor, adapter, isolation, evidence, parity, exact-approval, CAS-recovery, no-model replay, state-integrity, repository-nonmutation, and promotion tests. See the [M2 completion report](../docs/research/2026-07-15-m2-completion-report.md), [M3 completion report](../docs/research/2026-07-15-m3-completion-report.md), and [M4 report](../docs/research/2026-07-16-m4-no-model-wiki-health-completion-report.md).
 
@@ -58,7 +59,11 @@ The implemented M2–M4 boundary has negative, concurrency, process-crash, artif
 
 Focused adoption tests run on hosted Linux, macOS, and Windows. This does not port the M2–M4 security backends. See [safe project adoption](../docs/architecture/project-adoption.md).
 
-The next vertical slice is M4.5.2 platform/adapter conformance, followed by packaging in M4.5.3 and then M5 team identity/signed-policy/RBAC. Scheduling, autonomous retry, full-wiki lint, and every L3–L5 profile remain separate future gates. Every new write backend must independently preserve root/path semantics, exact approval, durable recovery, M2 trusted evidence, isolation, no fallback, and parity.
+## Current M4.5.2 platform/adapter slice
+
+`eco platform doctor --json` emits only coarse OS/context, allowlisted executable-name, fixed client-surface, and explicit `not-tested` semantic state. It does not invoke tools, contact adapters, read projection content, resolve credentials, mutate the repository, or create authority. `PlatformProfile` and `AdapterCapabilityProfile` are closed, digest-bound, and structurally forbid proven/effective state; existing signed runtime `AdapterConformanceProfile` remains the proof boundary. Six fixtures cover Linux, WSL, macOS, Windows, container, and hosted CI, while nested contexts and mutable-hint spoofing fail closed.
+
+The next vertical slice is portable packaging in M4.5.3 and then M5 team identity/signed-policy/RBAC. Scheduling, autonomous retry, full-wiki lint, active native conformance runners, and every L3–L5 profile remain separate future gates. Every new write backend must independently preserve root/path semantics, exact approval, durable recovery, M2 trusted evidence, isolation, no fallback, and parity.
 
 ## Sources
 
@@ -66,4 +71,5 @@ The next vertical slice is M4.5.2 platform/adapter conformance, followed by pack
 - [Decisions](../docs/decisions/README.md)
 - [Loop engineering](loops.md)
 - [Safe project adoption](../docs/architecture/project-adoption.md)
+- [Platform and adapter conformance](../docs/architecture/platform-adapter-conformance.md)
 - [Roadmap](roadmap.md)

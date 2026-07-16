@@ -4,6 +4,16 @@ Append-only хронологічний лог операцій. Формат: `#
 
 ---
 
+## [2026-07-16] implementation | M4.5.2 passive platform and adapter conformance completed
+
+- Added closed `platform.ai.ecosystem/v1alpha1` `PlatformProfile` and `AdapterCapabilityProfile` contracts with semantic digests, exact inventory/identity checks, and structurally empty effective-capability state.
+- Added deterministic `eco platform doctor --json` with optional operator-declared profile comparison, coarse OS/context classification, allowlisted executable-name resolution, fixed client-surface metadata, and fixed safety flags.
+- The doctor cannot accept unsigned evidence, invoke an executable, contact a network or adapter, read secret/projection content, write files, or create runtime authority. Existing externally signed runtime `AdapterConformanceProfile` remains the separate proof boundary.
+- Six fixtures cover Linux native, WSL, macOS, Windows native, container, and hosted CI. Spoofed hints, unsupported/inconsistent OS, duplicates, unknown fields, declaration mismatch, and nested WSL/container/CI contexts fail closed.
+- Multi-agent review found and closed unsigned effective-capability schema elevation, incomplete exact-inventory reconciliation, and a Python 3.12 test nesting limit. Canary traps cover process, shell, network, HTTP, secret reads, and filesystem mutation.
+- Local verification: 8 focused platform tests and 357 complete `unittest` tests pass. Hosted Linux/macOS/Windows evidence is recorded after the final pushed CI run.
+- Added ADR-022, architecture documentation, completion research, and the M4.5.3 portable-packaging handoff. Active native security conformance remains a separate non-claim.
+
 ## [2026-07-16] implementation | M4.5.1 safe project-adoption bootstrap completed
 
 - Added schema-valid `ProjectAdoptionPlan` and `ProjectAdoptionReceipt` contracts plus mandatory `eco adopt --dry-run` / exact-digest `--apply` lifecycle for fresh, explicit existing-config, and reinstall modes.
