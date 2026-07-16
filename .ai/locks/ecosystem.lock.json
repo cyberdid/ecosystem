@@ -27,15 +27,19 @@
     },
     "instructions": {
       "path": "instructions.yaml",
-      "sha256": "a8ec549144f97ac0420a36597fdb7b63d6bba131ceb4f09deff35881e1c2e539"
+      "sha256": "f5ace45850162c507df65d774d4e8db864083ea4ebdf7d7d855cbb364343215f"
     },
     "project": {
       "path": "project.yaml",
-      "sha256": "6a6c0bb766b9b7d7aadef70b00fdf3762149b7113b4ff76ba83f053c50c7210b"
+      "sha256": "508aca11a750b7b6f7ce91002579692187f1568411f9b313b65b9a51f8de0b51"
     },
     "tools": {
       "path": "tools.yaml",
       "sha256": "0f513028b369a35c751b9536111136ef9cbc1860fcb2f95baf88ff2ae3d4f652"
+    },
+    "trust": {
+      "path": "trust.yaml",
+      "sha256": "2bc9d6088b3a3734d156f14219b657a3a07014371630117d168b2845c6f0b200"
     }
   }
 }

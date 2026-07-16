@@ -3,7 +3,7 @@
 > Curated operational knowledge. Canonical executable truth lives under `.ai/`; generated vendor files are projections.
 
 **Updated:** 2026-07-15
-**Status:** M1, embedded M2 read-only, bounded M3 Linux/WSL controlled writes, and M3.5 integration/reproducibility are complete; trust bootstrap and M4 evaluation/promotion are next.
+**Status:** M1, embedded M2 read-only, bounded M3 Linux/WSL controlled writes, M3.5 integration/reproducibility and M3.6 verification-only trust bootstrap are complete; no-model M4 execution and evaluation/promotion are next.
 
 ## Pages
 
@@ -20,6 +20,7 @@
 | [M3 controlled writes](../docs/architecture/controlled-writes.md) | Exact approval, A2 one-file CAS apply/rollback and restart recovery boundary | 2026-07-15 |
 | [M3 completion report](../docs/research/2026-07-15-m3-completion-report.md) | Exit-criteria evidence, multi-agent review, 258-test gate and exact limitations | 2026-07-15 |
 | [M3.5 integration and reproducibility](../docs/research/2026-07-16-m3.5-integration-reproducibility-report.md) | Installed runtime composition, honest isolation-conformance scope, declared test dependency and governance reconciliation | 2026-07-16 |
+| [M3.6 verification-only trust bootstrap](../docs/research/2026-07-16-m3.6-verification-only-trust-bootstrap-report.md) | Canonical external trust policy and fail-closed evidence verification; no execution authority | 2026-07-16 |
 | [M2.5 completion report](../docs/research/2026-07-15-m2.5-completion-report.md) | Implemented slices, evidence matrix, and exact proof boundary | 2026-07-15 |
 | [M2 completion report](../docs/research/2026-07-15-m2-completion-report.md) | Exit-criteria evidence, test gate, and exact limitations | 2026-07-15 |
 | [M2 evaluation report](../docs/research/2026-07-15-m2-cross-deployment-evaluation-report.md) | Identical suite runner, governed local/cloud evidence, cloud-alias and renewal boundaries | 2026-07-15 |

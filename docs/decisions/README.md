@@ -20,6 +20,7 @@
 | ADR-016 | Hardware-neutral local/cloud substitution and observable cloud identity | Accepted; supersedes ADR-007 as the active deployment rule |
 | ADR-017 | Controlled workspace writes use exact human approvals, a trusted CAS broker, and compare-and-swap rollback | Accepted for the M3 Linux/WSL single-file profile |
 | ADR-018 | Reconcile the Phase-0 constitution with canonical authority, verified memory, and bounded-loop terminology | Accepted; supersedes the Phase-0 `AGENTS.md` as an authority source while preserving its universal guarantees |
+| ADR-019 | Verification-only external trust bootstrap for live read-only workflows | Accepted for the embedded local-shared-key bridge; asymmetric external attestation remains a future profile |
 
 ## ADR-001 — Contracts-first
 
@@ -165,6 +166,25 @@ The machine-specific LiteLLM/DGX endpoint, exact role aliases, and the claim tha
 **Migration and contract impact.** The `InstructionGraph` schema stays at `ai.ecosystem/v1alpha1`; this decision strengthens canonical content without changing its wire shape or runtime authorization semantics. All managed client projections are regenerated from `.ai/instructions.yaml`, yielding a new source digest. Existing runtime journals, M2/M3 contracts, and signed evidence are unaffected. Future documents must qualify ecosystem stack levels as `E*` and loop maturity levels as `L*`; ambiguous bare `L0–L4` architecture references should be migrated when their owning documents are next revised.
 
 **Evidence.** `eco validate`, deterministic projection rendering, `eco render --check`, and projection-focused regression tests verify that the canonical graph and all managed surfaces agree. These checks establish governance consistency; they do not by themselves prove runtime enforcement, which remains covered by the broker, policy, store, and isolation tests.
+
+## ADR-019 — Verification-only external trust bootstrap
+
+**Date:** 2026-07-16
+
+**Context.** M3.5 made the complete embedded runtime composition reachable, but intentionally stopped before a live repository read. That gate requires a repository snapshot and deployment-conformance observations which are both authentic, fresh, bound to the exact project/deployment/suite, and provisioned without committing credentials. Letting the executable workflow generate and sign its own snapshot or a passing conformance record would make the claimed trust boundary circular: a compromised runtime could manufacture the evidence it needs to authorize itself.
+
+**Decision.** `.ai/trust.yaml` is the canonical, declarative bootstrap policy for a future deterministic read-only workflow. It contains no private key, signed envelope, provider credential, endpoint, prompt, response, or evidence body. It declares only:
+
+- strict external environment references for verification keys and envelope files;
+- bounded issuer/key allowlists for `RepositorySnapshot` and `AdapterConformanceProfile` records;
+- the one external operator identity expected to issue a repository snapshot, its maximum file size, and explicitly classified repository entries;
+- immutable trusted evaluation-suite digests and the exact deployment/suite/envelope inputs a workflow must verify.
+
+The executable runtime is verification-only. It must resolve only the exact `env:ECO_*_EVIDENCE_KEY` and `env:ECO_*_ENVELOPE_FILE` references declared by this policy; it must not enumerate environment variables, echo their names or values in diagnostics, or accept an arbitrary path/issuer/key selected by a model or task. An envelope-file resolver is a trusted adapter: it must apply its own ownership, permission, size, canonical-byte, and symlink/reparse safety checks before supplying bytes to `EvidenceTrustStore` and `TrustedEvidenceIngestor`. The existing policy engine then re-verifies canonical signed bytes and their project/root/deployment/suite/identity/time bindings at authorization boundaries.
+
+The current executable compatibility profile is explicitly `HMAC-SHA256` / `local-shared-key`. Its signing ceremony is external to the workflow and belongs to the operator-controlled evidence authority. The runtime receives the verification material only through the configured external resolver and may never invoke `HmacEvidenceSigner` as part of trust bootstrap, runtime doctor, `wiki-health-check`, or policy execution. HMAC can authenticate an embedded shared boundary but does not provide third-party non-repudiation, compromise separation between a signer and verifier that possess the same key, or provider-model provenance. A signed `AdapterConformanceProfile` means only that the configured authority observed the bounded suite against the declared deployment identity; it must not be described as an attestation of immutable provider weights, general model quality, or provider-origin evidence.
+
+**Consequences.** A missing envelope, missing externally provisioned key, malformed/noncanonical evidence, unlisted issuer, unbound project/deployment/suite, expired observation, mismatched root identity, or insecure evidence-file resolution must leave execution blocked. A valid canonical trust manifest alone grants no model access, repository read, write authority, egress, or provider claim. The next integration slice may add a verification-only `eco runtime trust doctor` and then an actual read-only workflow only after it consumes real externally signed evidence. Asymmetric verification keys, hardware-backed/operator identity, rotation/revocation, and Windows/macOS evidence-file safety require separately versioned contracts and conformance evidence.
 
 ## Supersession
 

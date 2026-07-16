@@ -48,6 +48,14 @@ The project owns stable contracts, deterministic instruction projections, valida
 
 See [M3 controlled writes](docs/architecture/controlled-writes.md) and the [M3 completion report](docs/research/2026-07-15-m3-completion-report.md).
 
+**M3.6 verification-only trust bootstrap complete:**
+
+- canonical `.ai/trust.yaml` declares only external verification-key/evidence references and fixed repository scope;
+- `eco runtime trust doctor --json` verifies externally signed snapshot/conformance evidence without creating a run, store, broker, model request, network egress, or write authority;
+- the embedded HMAC profile is explicitly local-shared-key, not remote/provider provenance or third-party non-repudiation.
+
+See the [M3.6 trust-bootstrap report](docs/research/2026-07-16-m3.6-verification-only-trust-bootstrap-report.md).
+
 **Not implemented and not claimed:** endpoint-specific network allowlists, Windows/macOS executable isolation/write backends, descendant-exec/seccomp/cgroup/device containment, asymmetric evidence or approval signatures, durable evidence replay IDs, delete/rename/mkdir/batch/arbitrary-command writes, A3/A4 external actions, a bundled database-plus-CAS disaster-recovery package, caller-independent external anchoring, or production autonomy.
 
 ## Architecture in one sentence
@@ -115,6 +123,7 @@ eco --repo /path/to/project uninstall --remove-config --yes
 | `eco render --check` | Detect projection drift for CI | No |
 | `eco doctor` | Validate configuration and projection health | No |
 | `eco runtime doctor` | Probe the embedded runtime composition; does not enable execution | No |
+| `eco runtime trust doctor` | Verify externally signed trust inputs; does not enable execution | No |
 | `eco lock` | Record deterministic input hashes and deployment identities | Yes |
 | `eco uninstall` | Remove/restore only eco-owned projections | Yes |
 

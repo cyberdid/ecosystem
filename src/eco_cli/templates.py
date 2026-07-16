@@ -17,6 +17,7 @@ def starter_bundle(name: str) -> dict[str, dict[str, Any]]:
                 "capabilities": "capabilities.yaml",
                 "deployments": "deployments.yaml",
                 "tools": "tools.yaml",
+                "trust": "trust.yaml",
             },
             "policy": {
                 "defaultDecision": "deny",
@@ -155,5 +156,36 @@ def starter_bundle(name: str) -> dict[str, dict[str, Any]]:
                     "enabled": False,
                 }
             ],
+        },
+        "trust": {
+            "apiVersion": API_VERSION,
+            "kind": "RuntimeTrustBootstrap",
+            "evidence": {
+                "algorithm": "HMAC-SHA256",
+                "profile": "local-shared-key",
+                "issuers": [
+                    {
+                        "id": "local-snapshot-authority",
+                        "keyId": "local-snapshot-v1",
+                        "verificationKeyRef": "env:ECO_SNAPSHOT_EVIDENCE_KEY",
+                        "allowedKinds": ["RepositorySnapshot"],
+                        "allowedProjects": [name],
+                        "allowedDeployments": [],
+                        "allowedSuiteDigests": [],
+                    }
+                ],
+            },
+            "repositorySnapshot": {
+                "issuer": {
+                    "id": "local-snapshot-authority",
+                    "keyId": "local-snapshot-v1",
+                    "recordIssuerType": "operator",
+                },
+                "envelopeRef": "env:ECO_REPOSITORY_SNAPSHOT_ENVELOPE_FILE",
+                "trust": "P1",
+                "maximumFileBytes": 16777216,
+                "entries": [],
+            },
+            "conformance": {"trustedSuites": [], "requiredObservations": []},
         },
     }

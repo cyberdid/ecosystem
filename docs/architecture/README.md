@@ -96,7 +96,7 @@ This provides ownership and reversibility. It does not prove that different AI c
 
 ### M3.5 integration boundary
 
-`eco runtime doctor --json` now proves that the installed CLI can construct the embedded policy, private store, artifact store, descriptor-anchored snapshot, read broker, and orchestrator as one read-only composition. The probe neither executes a plan nor creates a write authority: it is deliberately blocked until signed deployment/snapshot evidence and production trust-key provisioning exist. This turns the former test-only runtime into a verifiable integration boundary without weakening M2/M3 authorization.
+`eco runtime doctor --json` now proves that the installed CLI can construct the embedded policy, private store, artifact store, descriptor-anchored snapshot, read broker, and orchestrator as one read-only composition. The probe neither executes a plan nor creates a write authority. `eco runtime trust doctor --json` separately verifies externally signed snapshot/conformance evidence against the canonical `.ai/trust.yaml` policy, with no runtime state, broker or model operation. This turns the former test-only runtime into a verifiable integration boundary without weakening M2/M3 authorization.
 
 Hosted CI validates deterministic contracts and fail-closed unsupported-isolation behavior. Live user/net/pid namespace plus Landlock conformance is exercised only on capable Linux/WSL hosts; an unavailable profile is a visible “not performed” result, never a portable security claim. See the [M3.5 report](../research/2026-07-16-m3.5-integration-reproducibility-report.md).
 
@@ -137,7 +137,7 @@ client without credentials
 
 ## Next milestone
 
-First, bootstrap a real signed read-only execution profile: provision trust keys outside Git, configure an enabled governed deployment, ingest current signed conformance evidence and a signed repository snapshot, then run deterministic `wiki-health-check` through the composition root. M4 then adds repeated L0–L5 evaluation and promotion gates around that evidence-producing workflow before any scheduling or controlled apply. M2 deployment observations still require renewal after their validity window before current routing or promotion.
+M3.6 provides a verification-only external trust bootstrap. Next, define a versioned no-model A1 plan/lifecycle contract, then use the verified snapshot to run deterministic `wiki-health-check` through the policy/store/broker composition without a model adapter or egress. M4 then adds repeated L0–L5 evaluation and promotion gates around that evidence-producing workflow before any scheduling or controlled apply. M2 deployment observations still require renewal after their validity window before current routing or promotion.
 
 ## Sources
 

@@ -120,6 +120,30 @@ class RuntimeIntegrationTests(unittest.TestCase):
         self.assertNotIn(str(self.repository), stdout.getvalue())
         self.assertNotIn("eco-runtime-doctor-", stdout.getvalue())
 
+    def test_runtime_trust_doctor_is_reachable_and_blocks_without_external_bootstrap(self) -> None:
+        stdout, stderr = StringIO(), StringIO()
+        with redirect_stdout(stdout), redirect_stderr(stderr), mock.patch.dict(
+            "os.environ", {}, clear=True
+        ):
+            code = main(
+                [
+                    "--repo",
+                    str(self.repository),
+                    "runtime",
+                    "trust",
+                    "doctor",
+                    "--json",
+                ]
+            )
+
+        result = json.loads(stdout.getvalue())
+        self.assertEqual(code, 1)
+        self.assertEqual(stderr.getvalue(), "")
+        self.assertFalse(result["available"])
+        self.assertFalse(result["executionReady"])
+        self.assertEqual(result["safety"]["repositoryRead"], "not-started")
+        self.assertEqual(result["safety"]["modelEgress"], "not-used")
+
     def test_invalid_configuration_fails_before_runtime_construction(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             repository = Path(temporary)

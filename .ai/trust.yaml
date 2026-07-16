@@ -1,0 +1,39 @@
+apiVersion: ai.ecosystem/v1alpha1
+kind: RuntimeTrustBootstrap
+evidence:
+  algorithm: HMAC-SHA256
+  profile: local-shared-key
+  issuers:
+    - id: local-snapshot-authority
+      keyId: local-snapshot-v1
+      verificationKeyRef: env:ECO_SNAPSHOT_EVIDENCE_KEY
+      allowedKinds:
+        - RepositorySnapshot
+      allowedProjects:
+        - ecosystem
+      allowedDeployments: []
+      allowedSuiteDigests: []
+repositorySnapshot:
+  issuer:
+    id: local-snapshot-authority
+    keyId: local-snapshot-v1
+    recordIssuerType: operator
+  envelopeRef: env:ECO_WIKI_SNAPSHOT_ENVELOPE_FILE
+  trust: P1
+  maximumFileBytes: 16777216
+  entries:
+    - path: wiki/index.md
+      dataClass: D0
+      trust: P1
+      classificationAuthority: policy
+    - path: wiki/architecture.md
+      dataClass: D0
+      trust: P1
+      classificationAuthority: policy
+    - path: wiki/roadmap.md
+      dataClass: D0
+      trust: P1
+      classificationAuthority: policy
+conformance:
+  trustedSuites: []
+  requiredObservations: []

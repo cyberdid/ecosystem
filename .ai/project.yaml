@@ -23,6 +23,7 @@ references:
   capabilities: capabilities.yaml
   deployments: deployments.yaml
   tools: tools.yaml
+  trust: trust.yaml
 policy:
   defaultDecision: deny
   unknownDataClass: D2
@@ -34,4 +35,3 @@ runtime:
   telemetry:
     enabled: false
     includeSensitiveContent: false
-

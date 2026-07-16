@@ -32,12 +32,13 @@
     "references": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["instructions", "capabilities", "deployments", "tools"],
+      "required": ["instructions", "capabilities", "deployments", "tools", "trust"],
       "properties": {
         "instructions": { "type": "string", "pattern": "^[^/].*\\.ya?ml$" },
         "capabilities": { "type": "string", "pattern": "^[^/].*\\.ya?ml$" },
         "deployments": { "type": "string", "pattern": "^[^/].*\\.ya?ml$" },
-        "tools": { "type": "string", "pattern": "^[^/].*\\.ya?ml$" }
+        "tools": { "type": "string", "pattern": "^[^/].*\\.ya?ml$" },
+        "trust": { "type": "string", "pattern": "^[^/].*\\.ya?ml$" }
       }
     },
     "policy": {
@@ -74,4 +75,3 @@
     }
   }
 }
-

@@ -59,6 +59,15 @@ def _parser() -> argparse.ArgumentParser:
     )
     runtime_doctor.add_argument("--json", action="store_true", dest="json_output")
 
+    runtime_trust = runtime_commands.add_parser(
+        "trust", help="Verify external runtime trust evidence without enabling execution"
+    )
+    runtime_trust_commands = runtime_trust.add_subparsers(dest="runtime_trust_command", required=True)
+    runtime_trust_doctor = runtime_trust_commands.add_parser(
+        "doctor", help="Verify the externally signed repository snapshot bootstrap"
+    )
+    runtime_trust_doctor.add_argument("--json", action="store_true", dest="json_output")
+
     commands.add_parser("lock", help="Write a deterministic lock of canonical configuration inputs")
 
     uninstall = commands.add_parser("uninstall", help="Remove only eco-managed vendor projections")
@@ -237,13 +246,54 @@ def command_lock(args: argparse.Namespace) -> int:
 
 
 def command_runtime(args: argparse.Namespace) -> int:
-    if args.runtime_command != "doctor":
+    if args.runtime_command not in {"doctor", "trust"}:
         raise EcoError(f"Unknown runtime command: {args.runtime_command}")
     repo = _repo(args)
     try:
         errors, bundle, paths = _validate(repo, args.config_root)
     except EcoError:
         errors, bundle, paths = ["configuration unavailable"], {}, {}
+    if args.runtime_command == "trust":
+        if args.runtime_trust_command != "doctor":
+            raise EcoError(f"Unknown runtime trust command: {args.runtime_trust_command}")
+        if errors:
+            result = {
+                "available": False,
+                "executionReady": False,
+                "mode": "embedded-trust-bootstrap-verification",
+                "checks": [
+                    {
+                        "component": "trust-config",
+                        "status": "blocked",
+                        "code": "ECO_CONFIG_INVALID",
+                    }
+                ],
+                "evidence": {"verifiedSnapshotEntries": 0},
+                "execution": {
+                    "status": "blocked",
+                    "code": "ECO_RUNTIME_NO_MODEL_PLAN_CONTRACT_REQUIRED",
+                },
+                "safety": {
+                    "repositoryRead": "not-started",
+                    "repositoryMutation": "denied",
+                    "modelEgress": "not-used",
+                    "writeAuthority": "not-created",
+                    "runtimeState": "not-created",
+                },
+            }
+        else:
+            from eco_runtime.trust_diagnostics import runtime_trust_diagnostics
+
+            result = runtime_trust_diagnostics(repo, bundle)
+        if args.json_output:
+            print(stable_json(result), end="")
+        else:
+            for item in result["checks"]:
+                print(f"{item['status'].upper()}: {item['component']} ({item['code']})")
+            print("Trust bootstrap: ready" if result["available"] else "Trust bootstrap: blocked")
+            print("Execution: blocked until an explicit no-model A1 plan contract exists")
+        return 0 if result["available"] else 1
+
     if errors:
         result = {
             "available": False,

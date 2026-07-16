@@ -91,6 +91,116 @@ class EcoCliTests(unittest.TestCase):
         self.assertIn("credentialRef", error)
         self.assertNotIn("literal-super-secret-value", error)
 
+    def test_trust_bootstrap_rejects_literal_verification_key_without_echoing_it(self) -> None:
+        self.init()
+        path = self.repo / ".ai/trust.yaml"
+        document = yaml.safe_load(path.read_text(encoding="utf-8"))
+        document["evidence"]["issuers"][0]["verificationKeyRef"] = "literal-trust-key-must-not-leak"
+        path.write_text(yaml.safe_dump(document, sort_keys=False), encoding="utf-8")
+        code, _, error = self.run_cli("validate")
+        self.assertEqual(code, 1)
+        self.assertIn("verificationKeyRef", error)
+        self.assertNotIn("literal-trust-key-must-not-leak", error)
+
+    def test_trust_bootstrap_rejects_unbound_snapshot_issuer_and_noncanonical_entry(self) -> None:
+        self.init()
+        path = self.repo / ".ai/trust.yaml"
+        document = yaml.safe_load(path.read_text(encoding="utf-8"))
+        document["repositorySnapshot"]["issuer"]["id"] = "unbound-snapshot-authority"
+        document["repositorySnapshot"]["entries"] = [
+            {"path": "../outside.md", "dataClass": "D0", "trust": "P1", "classificationAuthority": "policy"},
+            {"path": "../outside.md", "dataClass": "D0", "trust": "P1", "classificationAuthority": "policy"},
+        ]
+        path.write_text(yaml.safe_dump(document, sort_keys=False), encoding="utf-8")
+        code, _, error = self.run_cli("validate")
+        self.assertEqual(code, 1)
+        self.assertIn("not present in evidence issuer policies", error)
+        self.assertIn("canonical repository-relative path", error)
+
+    def test_trust_bootstrap_requires_exact_deployment_and_suite_issuer_binding(self) -> None:
+        self.init()
+        deployments_path = self.repo / ".ai/deployments.yaml"
+        deployments = yaml.safe_load(deployments_path.read_text(encoding="utf-8"))
+        deployments["deployments"] = [
+            {
+                "id": "local-test",
+                "provider": "local",
+                "adapter": "test",
+                "model": "test-model",
+                "zone": "Z1",
+                "allowedDataClasses": ["D0"],
+                "artifactTrust": "P1",
+                "declaredCapabilities": ["model.text"],
+                "enabled": False,
+            }
+        ]
+        deployments_path.write_text(yaml.safe_dump(deployments, sort_keys=False), encoding="utf-8")
+        path = self.repo / ".ai/trust.yaml"
+        document = yaml.safe_load(path.read_text(encoding="utf-8"))
+        digest = "a" * 64
+        document["conformance"] = {
+            "trustedSuites": [{"id": "read-only", "version": "1", "digest": digest}],
+            "requiredObservations": [
+                {
+                    "deploymentId": "local-test",
+                    "suiteDigest": digest,
+                    "envelopeRef": "env:ECO_LOCAL_TEST_ENVELOPE_FILE",
+                }
+            ],
+        }
+        path.write_text(yaml.safe_dump(document, sort_keys=False), encoding="utf-8")
+        code, _, error = self.run_cli("validate")
+        self.assertEqual(code, 1)
+        self.assertIn("no issuer is exactly allowlisted", error)
+
+    def test_trust_bootstrap_rejects_duplicate_entries_suites_and_observations(self) -> None:
+        self.init()
+        deployments_path = self.repo / ".ai/deployments.yaml"
+        deployments = yaml.safe_load(deployments_path.read_text(encoding="utf-8"))
+        deployments["deployments"] = [
+            {
+                "id": "local-test",
+                "provider": "local",
+                "adapter": "test",
+                "model": "test-model",
+                "zone": "Z1",
+                "allowedDataClasses": ["D0"],
+                "artifactTrust": "P1",
+                "declaredCapabilities": ["model.text"],
+                "enabled": False,
+            }
+        ]
+        deployments_path.write_text(yaml.safe_dump(deployments, sort_keys=False), encoding="utf-8")
+        path = self.repo / ".ai/trust.yaml"
+        document = yaml.safe_load(path.read_text(encoding="utf-8"))
+        document["repositorySnapshot"]["entries"] = [
+            {"path": "README.md", "dataClass": "D0", "trust": "P1", "classificationAuthority": "policy"},
+            {"path": "README.md", "dataClass": "D0", "trust": "P1", "classificationAuthority": "policy"},
+        ]
+        digest = "a" * 64
+        issuer = document["evidence"]["issuers"][0]
+        issuer["allowedKinds"].append("AdapterConformanceProfile")
+        issuer["allowedDeployments"] = ["local-test"]
+        issuer["allowedSuiteDigests"] = [digest]
+        observation = {
+            "deploymentId": "local-test",
+            "suiteDigest": digest,
+            "envelopeRef": "env:ECO_LOCAL_TEST_ENVELOPE_FILE",
+        }
+        document["conformance"] = {
+            "trustedSuites": [
+                {"id": "read-only", "version": "1", "digest": digest},
+                {"id": "read-only-duplicate", "version": "1", "digest": digest},
+            ],
+            "requiredObservations": [observation, observation.copy()],
+        }
+        path.write_text(yaml.safe_dump(document, sort_keys=False), encoding="utf-8")
+        code, _, error = self.run_cli("validate")
+        self.assertEqual(code, 1)
+        self.assertIn("duplicate snapshot path", error)
+        self.assertIn("duplicate suite digest", error)
+        self.assertIn("duplicate deployment observation", error)
+
     def test_cross_contract_capability_mismatch_is_rejected(self) -> None:
         self.init()
         path = self.repo / ".ai/tools.yaml"

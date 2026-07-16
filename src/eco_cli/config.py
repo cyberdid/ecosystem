@@ -5,6 +5,7 @@ import json
 import os
 import re
 import tempfile
+import unicodedata
 from importlib import resources
 from pathlib import Path
 from typing import Any
@@ -15,7 +16,10 @@ from jsonschema import Draft202012Validator
 from .constants import CONFIG_FILES, SCHEMA_FILES
 from .errors import EcoError
 
-SECRET_KEY_RE = re.compile(r"(?:password|passwd|secret|token|api[_-]?key|credential)", re.I)
+SECRET_KEY_RE = re.compile(
+    r"(?:password|passwd|secret|token|api[_-]?key|credential|verification[_-]?key|signing[_-]?key|proof[_-]?key|audit[_-]?key|path[_-]?key)",
+    re.I,
+)
 SAFE_REFERENCE_RE = re.compile(r"^(?:env:|config:|secret://|\$\{|<|placeholder$|none$)", re.I)
 ARTIFACT_TRUST_ORDER = {f"P{level}": level for level in range(5)}
 
@@ -86,7 +90,7 @@ def load_bundle(repo: Path, config_root: str) -> tuple[Path, dict[str, dict[str,
     paths: dict[str, Path] = {"project": project_path}
     bundle: dict[str, dict[str, Any]] = {"project": project}
 
-    for key in ("instructions", "capabilities", "deployments", "tools"):
+    for key in ("instructions", "capabilities", "deployments", "tools", "trust"):
         relative = references.get(key, CONFIG_FILES[key])
         if not isinstance(relative, str):
             raise EcoError(f"project.references.{key} must be a relative path")
@@ -132,6 +136,122 @@ def _duplicate_ids(items: list[dict[str, Any]], label: str) -> list[str]:
             errors.append(f"{label}: duplicate id {identifier!r}")
         if isinstance(identifier, str):
             seen.add(identifier)
+    return errors
+
+
+def _canonical_repository_path(value: object) -> bool:
+    if not isinstance(value, str):
+        return False
+    return not (
+        len(value.encode("utf-8")) > 4096
+        or value == "."
+        or value.startswith("./")
+        or value.endswith("/")
+        or "//" in value
+        or any(segment in {"", ".", ".."} for segment in value.split("/"))
+        or any(ord(character) < 32 or ord(character) == 127 for character in value)
+        or unicodedata.normalize("NFC", value) != value
+    )
+
+
+def _trust_bootstrap_errors(bundle: dict[str, dict[str, Any]]) -> list[str]:
+    """Validate cross-contract bindings without resolving keys or envelopes.
+
+    Trust material is intentionally external. This validator checks only the
+    bounded declarations that the runtime will later bind to canonical evidence.
+    """
+
+    trust = bundle.get("trust", {})
+    project_id = bundle.get("project", {}).get("metadata", {}).get("name")
+    deployments = bundle.get("deployments", {}).get("deployments", [])
+    deployment_ids = {
+        item.get("id") for item in deployments if isinstance(item, dict) and isinstance(item.get("id"), str)
+    }
+    errors: list[str] = []
+    evidence = trust.get("evidence", {}) if isinstance(trust, dict) else {}
+    issuers = evidence.get("issuers", []) if isinstance(evidence, dict) else []
+    issuer_by_key: dict[tuple[str, str], dict[str, Any]] = {}
+    for index, issuer in enumerate(issuers if isinstance(issuers, list) else []):
+        if not isinstance(issuer, dict):
+            continue
+        issuer_id, key_id = issuer.get("id"), issuer.get("keyId")
+        if isinstance(issuer_id, str) and isinstance(key_id, str):
+            key = (issuer_id, key_id)
+            if key in issuer_by_key:
+                errors.append(f"trust.evidence.issuers[{index}]: duplicate issuer/key pair")
+            issuer_by_key[key] = issuer
+        for deployment_id in issuer.get("allowedDeployments", []):
+            if deployment_id not in deployment_ids:
+                errors.append(
+                    f"trust.evidence.issuers[{index}].allowedDeployments: unknown deployment {deployment_id!r}"
+                )
+
+    snapshot = trust.get("repositorySnapshot", {}) if isinstance(trust, dict) else {}
+    if isinstance(snapshot, dict):
+        snapshot_issuer = snapshot.get("issuer", {})
+        if isinstance(snapshot_issuer, dict):
+            key = (snapshot_issuer.get("id"), snapshot_issuer.get("keyId"))
+            issuer = issuer_by_key.get(key)
+            if issuer is None:
+                errors.append("trust.repositorySnapshot.issuer: not present in evidence issuer policies")
+            else:
+                if "RepositorySnapshot" not in issuer.get("allowedKinds", []):
+                    errors.append("trust.repositorySnapshot.issuer: is not allowed to sign repository snapshots")
+                if project_id not in issuer.get("allowedProjects", []):
+                    errors.append("trust.repositorySnapshot.issuer: is not bound to this project")
+        snapshot_trust = ARTIFACT_TRUST_ORDER.get(snapshot.get("trust"), -1)
+        paths: set[str] = set()
+        entries = snapshot.get("entries", [])
+        for index, entry in enumerate(entries if isinstance(entries, list) else []):
+            if not isinstance(entry, dict):
+                continue
+            path = entry.get("path")
+            if not _canonical_repository_path(path):
+                errors.append(f"trust.repositorySnapshot.entries[{index}].path: is not a canonical repository-relative path")
+            elif path in paths:
+                errors.append(f"trust.repositorySnapshot.entries[{index}].path: duplicate snapshot path")
+            else:
+                paths.add(path)
+            if ARTIFACT_TRUST_ORDER.get(entry.get("trust"), -1) > snapshot_trust:
+                errors.append(f"trust.repositorySnapshot.entries[{index}].trust: exceeds snapshot trust")
+
+    conformance = trust.get("conformance", {}) if isinstance(trust, dict) else {}
+    suites = conformance.get("trustedSuites", []) if isinstance(conformance, dict) else []
+    suite_digests: set[str] = set()
+    for index, suite in enumerate(suites if isinstance(suites, list) else []):
+        if not isinstance(suite, dict):
+            continue
+        digest = suite.get("digest")
+        if isinstance(digest, str):
+            if digest in suite_digests:
+                errors.append(f"trust.conformance.trustedSuites[{index}].digest: duplicate suite digest")
+            suite_digests.add(digest)
+
+    observations = conformance.get("requiredObservations", []) if isinstance(conformance, dict) else []
+    observed_deployments: set[str] = set()
+    for index, observation in enumerate(observations if isinstance(observations, list) else []):
+        if not isinstance(observation, dict):
+            continue
+        deployment_id = observation.get("deploymentId")
+        suite_digest = observation.get("suiteDigest")
+        if deployment_id not in deployment_ids:
+            errors.append(f"trust.conformance.requiredObservations[{index}]: unknown deployment {deployment_id!r}")
+        elif deployment_id in observed_deployments:
+            errors.append(f"trust.conformance.requiredObservations[{index}]: duplicate deployment observation")
+        else:
+            observed_deployments.add(deployment_id)
+        if suite_digest not in suite_digests:
+            errors.append(f"trust.conformance.requiredObservations[{index}].suiteDigest: is not a trusted suite")
+        supported = any(
+            "AdapterConformanceProfile" in issuer.get("allowedKinds", [])
+            and deployment_id in issuer.get("allowedDeployments", [])
+            and suite_digest in issuer.get("allowedSuiteDigests", [])
+            for issuer in issuer_by_key.values()
+        )
+        if not supported:
+            errors.append(
+                f"trust.conformance.requiredObservations[{index}]: no issuer is exactly allowlisted for its deployment and suite"
+            )
     return errors
 
 
@@ -248,6 +368,8 @@ def validate_bundle(
                 f"deployments[{deployment.get('id')}]: observed capability record does not exist"
             )
 
+    errors.extend(_trust_bootstrap_errors(bundle))
+
     projections = bundle["instructions"].get("projections", {})
     for client, relative in projections.items():
         if not isinstance(relative, str):
@@ -257,7 +379,7 @@ def validate_bundle(
         except EcoError as exc:
             errors.append(f"instructions.projections.{client}: {exc}")
 
-    for name in ("instructions", "capabilities", "deployments", "tools"):
+    for name in ("instructions", "capabilities", "deployments", "tools", "trust"):
         if bundle[name].get("apiVersion") != bundle["project"].get("apiVersion"):
             errors.append(f"{name}: apiVersion differs from project")
 

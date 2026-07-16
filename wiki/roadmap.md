@@ -9,7 +9,8 @@
 | M2 | Read-only PEP/broker, local+cloud adapters, sanitized run events | Complete for the embedded Linux/WSL reference profile; 187 tests plus passing live local/cloud evidence |
 | M3 | Controlled writes, sandbox boundary, approvals, idempotency | Complete for bounded Linux/WSL one-file create/replace profile; 258 tests |
 | M3.5 | Integration, reproducibility, governance reconciliation | Complete: `eco runtime doctor`, declared test extra, honest hosted-CI isolation scope, ADR-018; execution remains trust-bootstrap blocked |
-| M4 | L0–L4 evals and promotion | Pending |
+| M3.6 | Verification-only trust bootstrap | Complete: canonical external-trust policy and `eco runtime trust doctor`; no-model A1 execution contract still required |
+| M4 | L0–L5 evals and promotion | Pending |
 | M5 | Team state, signed policy, RBAC | Deferred |
 | M6 | Enterprise topology options | Deferred |
 
@@ -57,6 +58,15 @@ This profile does not authorize delete, rename, directory creation, multi-file b
 5. The Phase-0 constitution has a dated canonical supersession decision and generated client projections agree with its retained universal guarantees.
 
 See the [M3.5 report](../docs/research/2026-07-16-m3.5-integration-reproducibility-report.md) and [ADR-018](../docs/decisions/README.md#adr-018--reconcile-the-phase-0-constitution-with-canonical-authority-and-bounded-loops).
+
+## M3.6 verification-only trust-bootstrap exit criteria
+
+1. Canonical configuration declares verification references and exact evidence bindings without committing signing keys, evidence bodies, provider credentials, or runtime state.
+2. The executable can verify only externally prepared canonical evidence and cannot self-sign a snapshot or conformance observation.
+3. Missing, stale, malformed, changed, insecure, symlinked, or repository-resident evidence leaves execution blocked without raw-data leakage.
+4. A successful trust doctor remains verification-only: no repository read, model request, network egress, store, artifact, run, approval, or write authority is created.
+
+The next M4 gate is a separate no-model A1 plan/lifecycle contract and then a fixed-scope, report-only `wiki-health-check`; the existing model-routed RunPlan must not be repurposed for that workflow. See the [M3.6 report](../docs/research/2026-07-16-m3.6-verification-only-trust-bootstrap-report.md) and [ADR-019](../docs/decisions/README.md#adr-019--verification-only-external-trust-bootstrap).
 
 ## Loop rollout
 
