@@ -12,6 +12,7 @@ Append-only хронологічний лог операцій. Формат: `#
 - Added `eco eval wiki-health-check`: five fixed independent journals plus a zero-read recovery proof, frozen thresholds, deterministic promotion report, maximum L2 eligibility, and structural L3–L5 denial.
 - Multi-agent adversarial review reproduced and closed forged recovery authority, adapter/lifecycle entry, duplicate-scope success, unauthenticated journal rewrite, symlink repository mutation, timestamp replay conflict, concurrent journal ownership, recovery-without-reauthorization, partial-recovery evidence loss, ambiguous post-read reread, parser-deadline, and frozen policy-time gaps.
 - Full local acceptance gate: 320 `unittest` tests plus pytest, compile, canonical validation, render drift, doctor, and diff checks. Exact proof limits are in the M4 completion report and ADR-020.
+- Hosted Linux GitHub Actions run `29486870506` passed all declared gates for implementation commit `3092f1f4e62622ced8e7047ad39243ed5a11a5be`.
 
 ## [2026-07-15] implementation | M3 bounded controlled-write profile completed
 

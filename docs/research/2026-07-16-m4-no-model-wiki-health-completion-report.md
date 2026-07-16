@@ -154,7 +154,7 @@ eco doctor                                 passed
 git diff --check                           passed
 ```
 
-The live command path is exercised against temporary externally signed fixtures and private external state. No signing API is called by production runtime code. Hosted CI result is recorded in the final evidence update after push.
+The live command path is exercised against temporary externally signed fixtures and private external state. No signing API is called by production runtime code. GitHub Actions run [29486870506](https://github.com/Pylypko1021/ecosystem/actions/runs/29486870506) passed the hosted Linux gate for implementation commit `3092f1f4e62622ced8e7047ad39243ed5a11a5be`: unittest, pytest, canonical validation, projection drift, doctor, and the explicit isolation-conformance scope report all passed.
 
 ## Exact non-claims
 
