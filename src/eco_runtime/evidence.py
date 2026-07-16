@@ -127,6 +127,10 @@ class EvidenceIssuerPolicy:
     allowed_projects: frozenset[str] = frozenset()
     allowed_deployments: frozenset[str] = frozenset()
     allowed_suite_digests: frozenset[str] = frozenset()
+    allowed_platform_profiles: frozenset[str] = frozenset()
+    allowed_backend_instances: frozenset[str] = frozenset()
+    allowed_runner_digests: frozenset[str] = frozenset()
+    allowed_backend_implementation_digests: frozenset[str] = frozenset()
 
     def __post_init__(self) -> None:
         if any(
@@ -136,6 +140,10 @@ class EvidenceIssuerPolicy:
                 self.allowed_projects,
                 self.allowed_deployments,
                 self.allowed_suite_digests,
+                self.allowed_platform_profiles,
+                self.allowed_backend_instances,
+                self.allowed_runner_digests,
+                self.allowed_backend_implementation_digests,
             )
         ):
             raise ValueError("evidence issuer allowlists must be immutable frozensets")
@@ -146,6 +154,7 @@ class EvidenceIssuerPolicy:
         if not self.allowed_kinds or not self.allowed_kinds <= {
             "RepositorySnapshot",
             "AdapterConformanceProfile",
+            "PlatformBackendConformanceProfile",
         }:
             raise ValueError("evidence issuer kind allowlist is invalid")
         if any(PROJECT_RE.fullmatch(item) is None for item in self.allowed_projects):
@@ -154,6 +163,17 @@ class EvidenceIssuerPolicy:
             raise ValueError("evidence deployment allowlist is invalid")
         if any(DIGEST_RE.fullmatch(item) is None for item in self.allowed_suite_digests):
             raise ValueError("evidence suite allowlist is invalid")
+        if any(ID_RE.fullmatch(item) is None for item in self.allowed_platform_profiles):
+            raise ValueError("evidence platform profile allowlist is invalid")
+        if any(DIGEST_RE.fullmatch(item) is None for item in self.allowed_backend_instances):
+            raise ValueError("evidence backend instance allowlist is invalid")
+        if any(DIGEST_RE.fullmatch(item) is None for item in self.allowed_runner_digests):
+            raise ValueError("evidence runner digest allowlist is invalid")
+        if any(
+            DIGEST_RE.fullmatch(item) is None
+            for item in self.allowed_backend_implementation_digests
+        ):
+            raise ValueError("evidence backend implementation allowlist is invalid")
 
 
 class HmacEvidenceSigner:
@@ -385,6 +405,79 @@ class TrustedEvidenceIngestor:
             or valid_until - tested > timedelta(seconds=self._observation_age)
         ):
             raise RuntimePolicyError("ECO_OBSERVATION_EVIDENCE_MISMATCH", "Observation evidence does not match trust context")
+        return _verified_evidence(record, body, encoded)
+
+    def ingest_platform_backend_conformance(
+        self,
+        encoded: bytes,
+        *,
+        expected_platform_profile_id: str,
+        expected_platform_profile_digest: str,
+        expected_backend_instance_digest: str,
+        expected_backend_implementation_digest: str,
+        expected_runner_digest: str,
+        expected_distribution_manifest_digest: str,
+        trusted_suite_digests: frozenset[str],
+        now: datetime,
+    ) -> VerifiedEvidence:
+        """Authenticate exact-bound backend evidence without consuming it as authority."""
+
+        record, policy, body = self._open(encoded, now=now)
+        if record["kind"] != "PlatformBackendConformanceProfile":
+            raise RuntimePolicyError(
+                "ECO_EVIDENCE_KIND_INVALID", "Evidence is not backend conformance"
+            )
+        tested = _parse_timestamp(record["metadata"]["testedAt"])
+        valid_until = _parse_timestamp(record["metadata"]["validUntil"])
+        current = now.astimezone(timezone.utc)
+        suite_digest = record["spec"]["suite"]["digest"]
+        backend_instance = record["spec"]["backend"]["instanceDigest"]
+        backend_implementation = record["spec"]["backend"]["implementationDigest"]
+        runner_digest = record["spec"]["runnerDigest"]
+        if (
+            record["metadata"]["platformProfileId"]
+            != expected_platform_profile_id
+            or record["spec"]["platform"]["id"] != expected_platform_profile_id
+            or record["spec"]["platformProfileDigest"]
+            != expected_platform_profile_digest
+            or backend_instance != expected_backend_instance_digest
+            or backend_implementation != expected_backend_implementation_digest
+            or runner_digest != expected_runner_digest
+            or record["spec"]["distributionManifestDigest"]
+            != expected_distribution_manifest_digest
+            or suite_digest not in trusted_suite_digests
+            or (
+                policy.allowed_suite_digests
+                and suite_digest not in policy.allowed_suite_digests
+            )
+            or (
+                policy.allowed_platform_profiles
+                and expected_platform_profile_id
+                not in policy.allowed_platform_profiles
+            )
+            or (
+                policy.allowed_backend_instances
+                and backend_instance not in policy.allowed_backend_instances
+            )
+            or (
+                policy.allowed_runner_digests
+                and runner_digest not in policy.allowed_runner_digests
+            )
+            or (
+                policy.allowed_backend_implementation_digests
+                and backend_implementation
+                not in policy.allowed_backend_implementation_digests
+            )
+            or valid_until <= tested
+            or tested > current + timedelta(seconds=self._clock_skew)
+            or current >= valid_until
+            or current - tested > timedelta(seconds=self._observation_age)
+            or valid_until - tested > timedelta(seconds=self._observation_age)
+        ):
+            raise RuntimePolicyError(
+                "ECO_PLATFORM_CONFORMANCE_EVIDENCE_MISMATCH",
+                "Backend conformance evidence does not match trust context",
+            )
         return _verified_evidence(record, body, encoded)
 
 

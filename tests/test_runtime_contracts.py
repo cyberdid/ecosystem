@@ -436,6 +436,70 @@ def adapter_conformance_profile() -> dict:
     }
 
 
+def platform_backend_conformance_profile() -> dict:
+    probe_ids = [
+        "clean-environment-and-fs-boundary",
+        "network-namespace-deny",
+        "output-and-deadline-bounds",
+        "read-only-workdir",
+        "stdin-closed",
+    ]
+    return {
+        "apiVersion": API_VERSION,
+        "kind": "PlatformBackendConformanceProfile",
+        "metadata": {
+            "id": "linux-native-linux-namespace-boundary-1",
+            "platformProfileId": "linux-native",
+            "testedAt": NOW,
+            "validUntil": "2026-07-15T13:00:00Z",
+        },
+        "spec": {
+            "platformProfileDigest": DIGEST,
+            "platform": {
+                "id": "linux-native",
+                "operatingSystem": "linux",
+                "architecture": "x86_64",
+                "context": "native",
+            },
+            "distributionManifestDigest": DIGEST,
+            "backend": {
+                "id": "linux-namespace-landlock",
+                "version": "1",
+                "implementationDigest": DIGEST,
+                "instanceDigest": DIGEST,
+            },
+            "runnerDigest": DIGEST,
+            "suite": {
+                "id": "linux-namespace-boundary",
+                "version": "1",
+                "digest": DIGEST,
+                "probeIds": probe_ids,
+            },
+            "status": "pass",
+            "observedCapabilities": [
+                "backend.clean-environment",
+                "backend.landlock-workdir-boundary",
+                "backend.network-namespace-deny",
+                "backend.output-deadline-bounded",
+                "backend.read-only-workdir",
+                "backend.stdin-closed",
+            ],
+            "probes": [
+                {"id": item, "status": "pass", "evidenceDigest": DIGEST}
+                for item in probe_ids
+            ],
+            "deviationCodes": [],
+            "safety": {
+                "authenticated": False,
+                "authorityCreated": False,
+                "runtimeConsumed": False,
+                "projectMutation": False,
+                "rawOutputPersisted": False,
+            },
+        },
+    }
+
+
 def endpoint_binding() -> dict:
     return {
         "apiVersion": API_VERSION,
@@ -662,6 +726,7 @@ class RuntimeContractTests(unittest.TestCase):
             artifact_record(),
             error_record(),
             adapter_conformance_profile(),
+            platform_backend_conformance_profile(),
             endpoint_binding(),
             model_request(),
             model_result(),

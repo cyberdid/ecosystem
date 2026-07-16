@@ -4,6 +4,16 @@ Append-only хронологічний лог операцій. Формат: `#
 
 ---
 
+## [2026-07-16] implementation | Remaining bounded M4 portability completed
+
+- Added M4.5.3 closed distribution integrity metadata, installed + standard-library offline verifiers, exact main/dependency/lock/schema binding, wheel-internal validation and non-executable package-manager previews.
+- Added a real `0.6.0` build/verify/private-venv `--no-index` install smoke and focused Linux/macOS/Windows contract gates. Package installation remains separate from project adoption; checksum integrity remains separate from publisher provenance.
+- Added M4.6 `eco conformance run`, separate from passive doctor, with one fixed synthetic Linux/WSL namespace + Landlock suite and a private external test-root boundary.
+- Added `PlatformBackendConformanceProfile`, exact external HMAC envelope ingestion and narrow observed capabilities. No policy/store/broker/model/adapter/loop consumes the record; unsupported/failure profiles expose no capabilities.
+- Multi-agent review found and closed an ignored `uv.lock` tamper path, fake/non-PEP-427 wheel acceptance, missing main metadata/entry-point checks, dependency-wheel non-validation, verifier reopen races, archive-budget/file-type gaps, numeric JSON aliases, active-context relabeling, unpinned runner/implementation evidence, an unseeded environment canary, non-object CLI input, and standalone contract divergence.
+- Local evidence: 381 complete tests, 17 distribution tests, 7 backend-conformance tests, 7 live isolation tests, one real WSL conformance pass, compile/schema/diff gates, and real eight-artifact offline installation pass.
+- Added ADR-023/024, architecture pages, combined completion report and wiki handoff to M5 team identity/signed policy/RBAC.
+
 ## [2026-07-16] implementation | M4.5.2 passive platform and adapter conformance completed
 
 - Added closed `platform.ai.ecosystem/v1alpha1` `PlatformProfile` and `AdapterCapabilityProfile` contracts with semantic digests, exact inventory/identity checks, and structurally empty effective-capability state.

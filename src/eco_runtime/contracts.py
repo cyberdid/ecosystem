@@ -28,6 +28,7 @@ SCHEMA_BY_KIND = {
     "ArtifactRecord": "artifact-record.schema.json",
     "ErrorRecord": "error-record.schema.json",
     "AdapterConformanceProfile": "adapter-conformance.schema.json",
+    "PlatformBackendConformanceProfile": "platform-backend-conformance.schema.json",
     "EndpointBinding": "endpoint-binding.schema.json",
     "ModelRequest": "model-request.schema.json",
     "ModelResult": "model-result.schema.json",
@@ -55,6 +56,22 @@ RFC3339_RE = re.compile(
     r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$"
 )
 FORMAT_CHECKER = FormatChecker()
+
+PLATFORM_BACKEND_PROBE_IDS = (
+    "clean-environment-and-fs-boundary",
+    "network-namespace-deny",
+    "output-and-deadline-bounds",
+    "read-only-workdir",
+    "stdin-closed",
+)
+PLATFORM_BACKEND_CAPABILITIES = (
+    "backend.clean-environment",
+    "backend.landlock-workdir-boundary",
+    "backend.network-namespace-deny",
+    "backend.output-deadline-bounded",
+    "backend.read-only-workdir",
+    "backend.stdin-closed",
+)
 
 
 @FORMAT_CHECKER.checks("date-time")
@@ -132,10 +149,62 @@ def contract_errors(document: Any) -> list[str]:
         validator.iter_errors(document),
         key=lambda item: (list(item.absolute_path), str(item.validator)),
     )
-    return [
+    structural = [
         f"{kind}{_json_path(error.absolute_path)}: {_sanitized_message(error.validator)}"
         for error in errors
     ]
+    if structural or kind != "PlatformBackendConformanceProfile":
+        return structural
+
+    metadata = document["metadata"]
+    spec = document["spec"]
+    probes = spec["probes"]
+    probe_ids = [item["id"] for item in probes]
+    status = spec["status"]
+    semantic: list[str] = []
+    if metadata["platformProfileId"] != spec["platform"]["id"]:
+        semantic.append(f"{kind}$.metadata.platformProfileId: failed validation")
+    platform = spec["platform"]
+    expected_context = {
+        "linux-native": "native",
+        "wsl": "wsl",
+        "macos": "native",
+        "windows-native": "native",
+        "container": "container",
+        "hosted-ci": "hosted-ci",
+    }[platform["id"]]
+    if platform["context"] != expected_context:
+        semantic.append(f"{kind}$.spec.platform.context: failed validation")
+    if status in {"pass", "fail"} and not (
+        platform["id"] in {"linux-native", "wsl"}
+        and platform["operatingSystem"] == "linux"
+        and platform["architecture"] in {"x86_64", "aarch64"}
+    ):
+        semantic.append(f"{kind}$.spec.platform: failed validation")
+    if spec["suite"]["probeIds"] != list(PLATFORM_BACKEND_PROBE_IDS):
+        semantic.append(f"{kind}$.spec.suite.probeIds: failed validation")
+    if probe_ids != list(PLATFORM_BACKEND_PROBE_IDS):
+        semantic.append(f"{kind}$.spec.probes: failed validation")
+    if status == "pass" and (
+        any(item["status"] != "pass" for item in probes)
+        or spec["observedCapabilities"] != list(PLATFORM_BACKEND_CAPABILITIES)
+        or spec["deviationCodes"]
+    ):
+        semantic.append(f"{kind}$.spec.status: failed validation")
+    if status == "fail" and (
+        not any(item["status"] == "fail" for item in probes)
+        or any(item["status"] == "not-run" for item in probes)
+        or spec["observedCapabilities"]
+        or not spec["deviationCodes"]
+    ):
+        semantic.append(f"{kind}$.spec.status: failed validation")
+    if status == "unsupported" and (
+        any(item["status"] != "not-run" for item in probes)
+        or spec["observedCapabilities"]
+        or not spec["deviationCodes"]
+    ):
+        semantic.append(f"{kind}$.spec.status: failed validation")
+    return semantic
 
 
 def validate_record(document: Any) -> dict[str, Any]:

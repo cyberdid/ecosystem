@@ -1,0 +1,45 @@
+{
+  "version": "0.4.0",
+  "sourceRevision": "0123456789abcdef0123456789abcdef01234567",
+  "lock": {
+    "path": "uv.lock",
+    "content": "version = 1\nrevision = 3\nrequires-python = \">=3.11\"\n"
+  },
+  "mainWheel": {
+    "path": "ai_ecosystem_harness-0.4.0-py3-none-any.whl",
+    "entries": [
+      {"path": "eco_cli/__init__.py", "content": "VERSION = \"0.4.0\"\n"},
+      {"path": "eco_cli/cli.py", "content": "# fixture CLI\n"},
+      {"path": "eco_cli/distribution.py", "content": "# fixture distribution boundary\n"},
+      {"path": "eco_cli/platform_profiles.py", "content": "# fixture platform boundary\n"},
+      {"path": "eco_runtime/__init__.py", "content": "# fixture runtime\n"},
+      {"path": "eco_cli/schemas/distribution-manifest.schema.json", "content": "{\"title\":\"DistributionManifest fixture\"}\n"},
+      {"path": "eco_cli/schemas/platform-profile.schema.json", "content": "{\"title\":\"PlatformProfile fixture\"}\n"},
+      {"path": "eco_cli/schemas/adapter-capability-profile.schema.json", "content": "{\"title\":\"AdapterCapabilityProfile fixture\"}\n"},
+      {"path": "ai_ecosystem_harness-0.4.0.dist-info/METADATA", "content": "Metadata-Version: 2.1\nName: ai-ecosystem-harness\nVersion: 0.4.0\nRequires-Python: >=3.11\n\n"},
+      {"path": "ai_ecosystem_harness-0.4.0.dist-info/WHEEL", "content": "Wheel-Version: 1.0\nGenerator: eco-fixture\nRoot-Is-Purelib: true\nTag: py3-none-any\n"},
+      {"path": "ai_ecosystem_harness-0.4.0.dist-info/entry_points.txt", "content": "[console_scripts]\neco = eco_cli.cli:main\n"},
+      {"path": "ai_ecosystem_harness-0.4.0.dist-info/RECORD", "content": "eco_cli/__init__.py,,\neco_cli/cli.py,,\neco_cli/distribution.py,,\neco_cli/platform_profiles.py,,\neco_runtime/__init__.py,,\neco_cli/schemas/distribution-manifest.schema.json,,\neco_cli/schemas/platform-profile.schema.json,,\neco_cli/schemas/adapter-capability-profile.schema.json,,\nai_ecosystem_harness-0.4.0.dist-info/METADATA,,\nai_ecosystem_harness-0.4.0.dist-info/WHEEL,,\nai_ecosystem_harness-0.4.0.dist-info/entry_points.txt,,\nai_ecosystem_harness-0.4.0.dist-info/RECORD,,\n"}
+    ]
+  },
+  "dependencyWheels": [
+    {
+      "path": "jsonschema-4.25.1-py3-none-any.whl",
+      "entries": [
+        {"path": "jsonschema/__init__.py", "content": "# fixture jsonschema\n"},
+        {"path": "jsonschema-4.25.1.dist-info/METADATA", "content": "Metadata-Version: 2.1\nName: jsonschema\nVersion: 4.25.1\n\n"},
+        {"path": "jsonschema-4.25.1.dist-info/WHEEL", "content": "Wheel-Version: 1.0\nRoot-Is-Purelib: true\nTag: py3-none-any\n"},
+        {"path": "jsonschema-4.25.1.dist-info/RECORD", "content": "jsonschema/__init__.py,,\njsonschema-4.25.1.dist-info/METADATA,,\njsonschema-4.25.1.dist-info/WHEEL,,\njsonschema-4.25.1.dist-info/RECORD,,\n"}
+      ]
+    },
+    {
+      "path": "pyyaml-6.0.2-py3-none-any.whl",
+      "entries": [
+        {"path": "yaml/__init__.py", "content": "# fixture pyyaml\n"},
+        {"path": "pyyaml-6.0.2.dist-info/METADATA", "content": "Metadata-Version: 2.1\nName: PyYAML\nVersion: 6.0.2\n\n"},
+        {"path": "pyyaml-6.0.2.dist-info/WHEEL", "content": "Wheel-Version: 1.0\nRoot-Is-Purelib: true\nTag: py3-none-any\n"},
+        {"path": "pyyaml-6.0.2.dist-info/RECORD", "content": "yaml/__init__.py,,\npyyaml-6.0.2.dist-info/METADATA,,\npyyaml-6.0.2.dist-info/WHEEL,,\npyyaml-6.0.2.dist-info/RECORD,,\n"}
+      ]
+    }
+  ]
+}

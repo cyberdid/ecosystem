@@ -3,7 +3,7 @@
 > Curated operational knowledge. Canonical executable truth lives under `.ai/`; generated vendor files are projections.
 
 **Updated:** 2026-07-16
-**Status:** M1–M4 and M4.5.1–M4.5.2 are complete. M4 provides fixed manual no-model `wiki-health-check` execution through L2; M4.5.1 adds safe adoption and M4.5.2 adds passive non-authorizing platform/adapter profiles. Portable packaging is next.
+**Status:** The bounded M1–M4 sequence is complete through M4.6. M4 provides fixed manual no-model `wiki-health-check` execution through L2; M4.5.1 adds safe adoption, M4.5.2 passive profiles, M4.5.3 verified wheel-only offline distribution, and M4.6 active Linux/WSL backend observation without runtime authority. M5 team identity/policy is next.
 
 ## Pages
 
@@ -19,6 +19,9 @@
 | [M4.5.1 completion report](../docs/research/2026-07-16-m4.5.1-adoption-bootstrap-report.md) | Threat model, multi-agent review, adversarial fixtures, verification gate and handoff | 2026-07-16 |
 | [M4.5.2 platform/adapter conformance](../docs/architecture/platform-adapter-conformance.md) | Passive doctor, declared/detected/proven boundary, schemas and exact non-claims | 2026-07-16 |
 | [M4.5.2 completion report](../docs/research/2026-07-16-m4.5.2-platform-adapter-conformance-report.md) | Threat model, multi-agent review, six-profile matrix, verification and M4.5.3 handoff | 2026-07-16 |
+| [M4.5.3 portable distribution](../docs/architecture/portable-distribution.md) | Exact offline wheelhouse/lock/schema verification, installer previews, real private-venv smoke and non-claims | 2026-07-16 |
+| [M4.6 backend conformance](../docs/architecture/platform-backend-conformance.md) | Fixed Linux/WSL synthetic suite, content-free observed capabilities and authenticated ingestion without authority | 2026-07-16 |
+| [M4 portability completion report](../docs/research/2026-07-16-m4-portability-completion-report.md) | Multi-agent threat review, adversarial tests, live WSL evidence, real offline install and exact remaining limits | 2026-07-16 |
 | [Read-only broker](../docs/architecture/read-only-broker.md) | Snapshot-bound Linux/WSL A1 enforcement and proof limits | 2026-07-15 |
 | [Durable runtime store](../docs/architecture/durable-runtime-store.md) | Schema-v3 event/plan/budget/operation authority and operational durability | 2026-07-15 |
 | [M3 controlled writes](../docs/architecture/controlled-writes.md) | Exact approval, A2 one-file CAS apply/rollback and restart recovery boundary | 2026-07-15 |
@@ -51,12 +54,13 @@
 5. `docs/architecture/runtime-contracts.md`, `read-only-broker.md`, `controlled-writes.md`, and `no-model-wiki-health.md` for the current M2–M4 boundary
 6. `docs/architecture/project-adoption.md` for installing the harness into another project
 7. `docs/architecture/platform-adapter-conformance.md` for the portable passive profile boundary
-8. `wiki/loops.md` for bounded automation, evaluation, proposal, and controlled-apply rules
-9. `wiki/openresearcher.md` for the current external research-node snapshot
-10. `wiki/labs-molt.md` for the external agentic-RL training-node snapshot
-11. `wiki/ai-legal-claude.md` for the external legal-prompt corpus and its safety limits
-12. `docs/research/README.md` for source reviews and raw-source provenance
-13. This wiki for current operational status
+8. `docs/architecture/portable-distribution.md` and `platform-backend-conformance.md` for the final bounded M4 portability surfaces
+9. `wiki/loops.md` for bounded automation, evaluation, proposal, and controlled-apply rules
+10. `wiki/openresearcher.md` for the current external research-node snapshot
+11. `wiki/labs-molt.md` for the external agentic-RL training-node snapshot
+12. `wiki/ai-legal-claude.md` for the external legal-prompt corpus and its safety limits
+13. `docs/research/README.md` for source reviews and raw-source provenance
+14. This wiki for current operational status
 
 ## Knowledge boundaries
 

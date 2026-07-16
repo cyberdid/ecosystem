@@ -24,6 +24,8 @@
 | ADR-020 | Separate no-model A1 lifecycle and fixed L0–L2 promotion gate | Implemented for the Linux/WSL `wiki-health-check` reference profile; L3–L5 remain ineligible |
 | ADR-021 | Preview-bound, receipt-owned project adoption | Implemented for the M4.5.1 `.ai` bootstrap; runtime-platform portability remains separate |
 | ADR-022 | Passive platform/adapter description cannot mint runtime proof | Implemented for M4.5.2; active native conformance remains separate |
+| ADR-023 | Distribution integrity, package installation and project adoption are separate boundaries | Implemented for the M4.5.3 wheel-only offline profile |
+| ADR-024 | Active backend conformance produces observation, never effective authority | Implemented for the M4.6 Linux/WSL fixed suite; no runtime consumer |
 
 ## ADR-001 — Contracts-first
 
@@ -244,6 +246,30 @@ The new `AdapterCapabilityProfile` does not replace or weaken runtime `AdapterCo
 M4.5.3 packaging may consume these descriptors but cannot turn detection into installation authority or runtime proof. It must preserve the M4.5.1 preview/ownership/uninstall boundary and leave unsupported controls unavailable without fallback.
 
 **Evidence.** Six deterministic fixtures cover Linux native, WSL, macOS, Windows native, container, and hosted CI. Adversarial tests reject unknown/duplicate/spoofed/nested inputs and unsigned evidence, verify schema/digest/identity closure, trap process/network/write/secret access, and compare repository bytes and mtimes before/after the CLI call. See [M4.5.2 architecture](../architecture/platform-adapter-conformance.md) and the [completion report](../research/2026-07-16-m4.5.2-platform-adapter-conformance-report.md).
+
+## ADR-023 — Distribution integrity, package installation and project adoption are separate boundaries
+
+**Date:** 2026-07-16
+
+**Context.** A convenient installer can blur download provenance, package-manager effects, project bootstrap and runtime capability. Passive platform detection must not select an installer or turn a successful Python install into native security proof.
+
+**Decision.** M4.5.3 defines a closed wheel-only `DistributionManifest` and verifies an exact local wheelhouse, lock digest, package/schema inventory and wheel internals before any package-manager execution. `eco distribution verify` and the standard-library verifier perform no install, network, process, project mutation or authority creation. `eco distribution plan` emits argv previews with `executionReady: false`; only the Linux private-venv `pip --no-index --find-links` path is exercised as a real reference smoke. Installing/upgrading/removing the Python package and preview/apply/removing a repository adoption remain independent lifecycles.
+
+Manifest SHA-256 proves integrity, not publisher identity. `originAuthentication: not-attested` is mandatory in this profile. Public provenance, revocation, SBOM and immutable verified-byte staging require later authenticated release infrastructure and cannot be inferred from the package verifying itself.
+
+**Consequences.** A portable CLI install does not create broker, adapter, model, write, loop or native-backend authority. `pipx` and `uv tool` are non-executable plan adapters until separate manager/platform gates exist. See [portable distribution](../architecture/portable-distribution.md) and the [M4 portability report](../research/2026-07-16-m4-portability-completion-report.md).
+
+## ADR-024 — Active backend conformance produces observation, never effective authority
+
+**Date:** 2026-07-16
+
+**Context.** M4.5.2 intentionally cannot prove a platform, while native security controls need controlled live tests. Allowing a runtime to choose, run, sign and consume its own suite would create circular authority.
+
+**Decision.** M4.6 adds the separate explicit `eco conformance run` surface. It accepts only the fixed `linux-namespace-boundary` suite, an exact suite digest, a private empty external test root and exact platform/distribution/backend-instance bindings. Synthetic probes test only the existing namespace/Landlock launcher's exact seeded clean environment, work-directory boundary, network denial, output/deadline bound, read-only mode and closed stdin. Live context detection is independent of the supplied profile. The runner emits an unsigned `PlatformBackendConformanceProfile` with `observedCapabilities`; failure/unsupported results have none. External evidence ingestion additionally pins the runner and backend-implementation digests and remains non-authorizing.
+
+An external controller may sign the exact record. Dedicated ingestion re-verifies issuer, freshness, suite, platform, distribution and backend-instance binding but has no runtime-policy consumer in M4.6. HMAC means local shared-key authentication, not third-party identity. Windows, macOS, containers and hosted CI remain negative fixture profiles.
+
+**Consequences.** Passive doctor remains process/network/write-free. Conformance cannot create effective capability, route, broker, adapter, model, store, approval, write or loop authority. See [platform backend conformance](../architecture/platform-backend-conformance.md) and the [M4 portability report](../research/2026-07-16-m4-portability-completion-report.md).
 
 ## Supersession
 

@@ -2,7 +2,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+import stat
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -101,6 +104,48 @@ def _parser() -> argparse.ArgumentParser:
         ),
         help="Operator-declared profile to compare with passive detection",
     )
+
+    distribution = commands.add_parser(
+        "distribution", help="Verify or preview a portable offline distribution"
+    )
+    distribution_commands = distribution.add_subparsers(
+        dest="distribution_command", required=True
+    )
+    distribution_verify = distribution_commands.add_parser(
+        "verify", help="Verify a complete local wheelhouse without installing it"
+    )
+    distribution_verify.add_argument("--manifest", required=True, type=Path)
+    distribution_verify.add_argument("--bundle-root", required=True, type=Path)
+    distribution_verify.add_argument("--json", action="store_true", dest="json_output")
+    distribution_plan = distribution_commands.add_parser(
+        "plan", help="Emit a deterministic non-executable installer preview"
+    )
+    distribution_plan.add_argument("--manifest", required=True, type=Path)
+    distribution_plan.add_argument(
+        "--adapter", required=True, choices=("pipx", "uv-tool", "venv-pip")
+    )
+    distribution_plan.add_argument(
+        "--operation", default="install", choices=("install", "upgrade", "uninstall")
+    )
+    distribution_plan.add_argument("--json", action="store_true", dest="json_output")
+
+    conformance = commands.add_parser(
+        "conformance", help="Run an explicit active platform-backend conformance suite"
+    )
+    conformance_commands = conformance.add_subparsers(
+        dest="conformance_command", required=True
+    )
+    conformance_run = conformance_commands.add_parser(
+        "run", help="Run the fixed synthetic Linux/WSL namespace suite"
+    )
+    conformance_run.add_argument("--active", action="store_true", required=True)
+    conformance_run.add_argument("--platform-profile", required=True, type=Path)
+    conformance_run.add_argument("--test-root", required=True, type=Path)
+    conformance_run.add_argument("--suite", required=True, choices=("linux-namespace-boundary",))
+    conformance_run.add_argument("--suite-digest", required=True)
+    conformance_run.add_argument("--distribution-manifest-digest", required=True)
+    conformance_run.add_argument("--backend-instance-digest", required=True)
+    conformance_run.add_argument("--json", action="store_true", dest="json_output")
 
     runtime_trust = runtime_commands.add_parser(
         "trust", help="Verify external runtime trust evidence without enabling execution"
@@ -526,6 +571,166 @@ def command_platform(args: argparse.Namespace) -> int:
     return 0 if result["available"] else 1
 
 
+def command_distribution(args: argparse.Namespace) -> int:
+    from .distribution import (
+        installer_plan,
+        load_distribution_manifest,
+        verify_distribution,
+    )
+
+    def error_code(error: Exception) -> str:
+        code = getattr(error, "code", "")
+        return (
+            code
+            if isinstance(code, str) and code.startswith("ECO_DISTRIBUTION_")
+            else "ECO_DISTRIBUTION_FAILED"
+        )
+
+    try:
+        manifest = load_distribution_manifest(args.manifest)
+        if args.distribution_command == "verify":
+            if not args.bundle_root.is_absolute():
+                raise EcoError("ECO_DISTRIBUTION_PATH_INVALID")
+            result = verify_distribution(manifest, args.bundle_root)
+            available = bool(result["available"])
+        elif args.distribution_command == "plan":
+            result = installer_plan(manifest, args.adapter, args.operation)
+            available = True
+        else:
+            raise EcoError("ECO_DISTRIBUTION_COMMAND_INVALID")
+    except Exception as exc:
+        code = str(exc) if isinstance(exc, EcoError) else error_code(exc)
+        result = {
+            "available": False,
+            "status": "blocked",
+            "code": code,
+            "safety": {
+                "authorityCreated": False,
+                "installationPerformed": False,
+                "projectMutation": False,
+                "networkAccessed": False,
+            },
+        }
+        available = False
+
+    if args.json_output:
+        print(stable_json(result), end="")
+    elif available:
+        print(
+            "Distribution verified"
+            if args.distribution_command == "verify"
+            else "Installer preview created; nothing was executed"
+        )
+    else:
+        print(f"Distribution blocked ({result['code']})", file=sys.stderr)
+    return 0 if available else 1
+
+
+def command_conformance(args: argparse.Namespace) -> int:
+    if args.conformance_command != "run":
+        raise EcoError("ECO_CONFORMANCE_COMMAND_INVALID")
+    from eco_runtime.backend_conformance import run_backend_conformance
+    from eco_runtime.errors import RuntimePolicyError
+
+    def load_profile(path: Path) -> dict[str, Any]:
+        def no_duplicates(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+            result: dict[str, Any] = {}
+            for key, value in pairs:
+                if key in result:
+                    raise EcoError("ECO_CONFORMANCE_PLATFORM_PROFILE_INVALID")
+                result[key] = value
+            return result
+
+        if not path.is_absolute():
+            raise EcoError("ECO_CONFORMANCE_PLATFORM_PROFILE_INVALID")
+        descriptor = -1
+        try:
+            before = path.lstat()
+            if (
+                not stat.S_ISREG(before.st_mode)
+                or before.st_nlink != 1
+                or not 1 <= before.st_size <= 2 * 1024 * 1024
+                or path.resolve(strict=True) != path
+                or getattr(before, "st_file_attributes", 0)
+                & getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0)
+            ):
+                raise EcoError("ECO_CONFORMANCE_PLATFORM_PROFILE_INVALID")
+            descriptor = os.open(
+                path,
+                os.O_RDONLY
+                | getattr(os, "O_CLOEXEC", 0)
+                | getattr(os, "O_NOFOLLOW", 0),
+            )
+            opened = os.fstat(descriptor)
+            fields = ("st_dev", "st_ino", "st_mode", "st_nlink", "st_size", "st_mtime_ns")
+            if any(getattr(before, field) != getattr(opened, field) for field in fields):
+                raise EcoError("ECO_CONFORMANCE_PLATFORM_PROFILE_INVALID")
+            raw = b""
+            while len(raw) <= 2 * 1024 * 1024:
+                block = os.read(descriptor, 65_536)
+                if not block:
+                    break
+                raw += block
+            after = os.fstat(descriptor)
+            if len(raw) != after.st_size or any(
+                getattr(opened, field) != getattr(after, field) for field in fields
+            ):
+                raise EcoError("ECO_CONFORMANCE_PLATFORM_PROFILE_INVALID")
+            document = json.loads(
+                raw.decode("utf-8"), object_pairs_hook=no_duplicates
+            )
+            if not isinstance(document, dict):
+                raise EcoError("ECO_CONFORMANCE_PLATFORM_PROFILE_INVALID")
+            return document
+        finally:
+            if descriptor >= 0:
+                os.close(descriptor)
+
+    try:
+        profile = load_profile(args.platform_profile)
+        result = run_backend_conformance(
+            profile,
+            test_root=args.test_root,
+            repository=_repo(args),
+            distribution_manifest_digest=args.distribution_manifest_digest,
+            backend_instance_digest=args.backend_instance_digest,
+            suite_digest=args.suite_digest,
+            active=args.active,
+            now=datetime.now(timezone.utc),
+        )
+    except (EcoError, RuntimePolicyError, OSError, UnicodeError, json.JSONDecodeError) as exc:
+        code = getattr(
+            exc,
+            "code",
+            str(exc)
+            if isinstance(exc, EcoError) and str(exc).startswith("ECO_")
+            else "ECO_CONFORMANCE_FAILED",
+        )
+        result = {
+            "available": False,
+            "status": "blocked",
+            "code": code,
+            "safety": {
+                "authenticated": False,
+                "authorityCreated": False,
+                "runtimeConsumed": False,
+                "projectMutation": False,
+                "rawOutputPersisted": False,
+            },
+        }
+    available = result.get("spec", {}).get("status") == "pass"
+    if args.json_output:
+        print(stable_json(result), end="")
+    elif available:
+        print("Backend conformance passed; unsigned evidence candidate emitted")
+    else:
+        code = result.get("code") or result.get("spec", {}).get(
+            "deviationCodes", ["ECO_CONFORMANCE_FAILED"]
+        )[0]
+        print(f"Backend conformance unavailable ({code})", file=sys.stderr)
+    return 0 if available else 1
+
+
 def command_run(args: argparse.Namespace) -> int:
     if args.run_command != "wiki-health-check":
         raise EcoError(f"Unknown fixed workflow: {args.run_command}")
@@ -634,6 +839,8 @@ COMMANDS = {
     "doctor": command_doctor,
     "runtime": command_runtime,
     "platform": command_platform,
+    "distribution": command_distribution,
+    "conformance": command_conformance,
     "run": command_run,
     "eval": command_eval,
     "lock": command_lock,

@@ -1,6 +1,6 @@
 # Architecture
 
-**Status:** M1, embedded M2 read-only, bounded M3 Linux/WSL controlled writes, M3.5/M3.6 integration/trust, the fixed M4 no-model L0–L2 reference loop, M4.5.1 safe project adoption, and the passive M4.5.2 platform/adapter profile boundary are implemented.
+**Status:** M1, embedded M2 read-only, bounded M3 Linux/WSL controlled writes, M3.5/M3.6 integration/trust, the fixed M4 no-model L0–L2 reference loop, M4.5.1 safe project adoption, M4.5.2 passive platform profiles, M4.5.3 wheel-only offline distribution, and M4.6 controlled Linux/WSL backend conformance are implemented.
 
 **Updated:** 2026-07-16
 
@@ -12,6 +12,9 @@ flowchart TB
     A --> AP["Preview-bound adoption + ownership receipt"]
     AP --> C["Canonical .ai contracts"]
     A --> PLATFORM["Passive platform doctor + non-authorizing profiles"]
+    PLATFORM --> DIST["Offline distribution verification + installer preview"]
+    PLATFORM --> CONF["Explicit fixed backend conformance runner"]
+    CONF --> PEVIDENCE["Externally signable observed-capability record"]
     C --> V["Schema and cross-contract validation"]
     V --> P["Projection compiler"]
     P --> H["Codex / Claude / Copilot / Gemini / Cursor"]
@@ -128,6 +131,14 @@ This filesystem bootstrap has focused Linux/macOS/Windows CI. It does not make t
 
 The closed `PlatformProfile` and `AdapterCapabilityProfile` schemas separate declaration, passive detection, and authenticated proof. In this passive version, profile proof is null, every runtime-security capability is `not-tested`, and effective capability sets are structurally empty. Existing externally signed runtime `AdapterConformanceProfile` evidence remains the only proof form consumed by policy. See [M4.5.2 platform and adapter conformance](platform-adapter-conformance.md).
 
+### M4.5.3 distribution boundary
+
+The wheel-only `DistributionManifest` binds the exact main/dependency wheelhouse, `uv.lock`, source revision and packaged schema inventory. Both installed and standard-library verifiers are offline/read-only; package-manager adapters are deterministic previews with `executionReady: false`. A real Linux CI gate builds, verifies and installs a fresh private virtual environment without an index. Manifest integrity is explicitly not publisher authentication, and installing the CLI remains separate from project adoption. See [M4.5.3 portable distribution](portable-distribution.md).
+
+### M4.6 active conformance boundary
+
+`eco conformance run` accepts only a fixed synthetic Linux/WSL namespace + Landlock suite in an operator-created external private root. The resulting `PlatformBackendConformanceProfile` binds exact platform/distribution/backend/runner/suite identities and uses `observedCapabilities`, never effective authority. External envelope ingestion verifies the record but no policy/store/broker/adapter/loop consumes it in M4.6. See [M4.6 platform backend conformance](platform-backend-conformance.md).
+
 ### Remaining beyond M4
 
 - endpoint-specific network allowlist backend;
@@ -139,7 +150,8 @@ The closed `PlatformProfile` and `AdapterCapabilityProfile` schemas separate dec
 - full-wiki link/staleness/duplicate-semantic lint over a separately signed larger scope;
 - loop scheduling, autonomous retry, and L3–L5 promotion profiles.
 - durable adoption crash recovery and hostile concurrent parent-swap protection;
-- active native platform/adapter conformance runners and portable packaging.
+- publisher-authenticated release provenance, immutable verified-byte installer staging and transactional multi-manager rollback;
+- native Windows/macOS backend runners and any runtime consumer of M4.6 observations.
 
 The embedded capability guards remain process-local and the executable filesystem/isolation/write proof is Linux/WSL-specific. Evidence and reference-approval HMACs authenticate configured embedded boundaries but are not remote third-party identities. See [M2 runtime contracts](runtime-contracts.md), [Read-only repository broker](read-only-broker.md), [Durable runtime store](durable-runtime-store.md), [M3 controlled writes](controlled-writes.md), [M3 completion report](../research/2026-07-15-m3-completion-report.md), and [D/A/Z/P semantics](policy-semantics.md).
 
@@ -169,9 +181,7 @@ client without credentials
 
 ## Next milestone
 
-The next slice is M4.5.3 portable packaging and installer adapters. It must preserve M4.5.1 preview/ownership/reversibility and consume the M4.5.2 profile boundary without turning declaration or passive detection into proof. Native security backends remain unavailable until a separate controlled conformance runner produces authenticated exact-bound evidence.
-
-M5 team authority—signed policy distribution, RBAC/identity, independently authenticated evidence consumption, revocation/rotation, and shared-state conformance—follows the portability work. It must preserve the completed M4 profile without turning L2 evidence into implicit scheduling, model, network, or write authority.
+M5 team authority—signed policy and release distribution, RBAC/identity, independent evidence consumption, revocation/rotation, and shared-state conformance—follows the completed bounded M4 portability work. It must preserve the M4 authority separation: neither L2 history, a passive profile, a package checksum nor an M4.6 observation may become implicit scheduling, model, network or write authority.
 
 ## Sources
 

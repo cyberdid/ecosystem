@@ -13,7 +13,8 @@
 | M4 | L0–L5 evaluation/promotion contract | Complete for fixed `wiki-health-check`: L0–L2 eligible after five attempts + replay; L3–L5 structurally ineligible |
 | M4.5.1 | Safe project-adoption bootstrap | Complete: deterministic preview/apply, ownership receipt, reversible projections, adversarial uninstall, focused Linux/macOS/Windows CI |
 | M4.5.2 | Platform and adapter capability profiles | Complete: closed non-authorizing profiles, passive doctor, six-platform fixtures and focused portability CI |
-| M4.5.3 | Portable packaging and installer adapters | Next: package/install without widening adoption or proof authority |
+| M4.5.3 | Portable packaging and installer adapters | Complete for exact wheel-only offline integrity, preview-only adapters and real Linux private-venv install smoke |
+| M4.6 | Controlled native backend conformance | Complete for fixed Linux/WSL namespace + Landlock observations; no runtime consumer |
 | M5 | Team state, signed policy, RBAC | Deferred |
 | M6 | Enterprise topology options | Deferred |
 
@@ -109,14 +110,29 @@ All criteria pass for the bounded filesystem bootstrap. It has no durable crash 
 
 All criteria pass for the passive description boundary. The doctor never accepts unsigned proof, and both profile contracts structurally forbid proven/effective runtime state. Six fixtures cover Linux, WSL, macOS, Windows, container, and hosted CI; hosted cross-OS jobs prove portable contract behavior, not native runtime-security backends. See the [architecture](../docs/architecture/platform-adapter-conformance.md), [completion report](../docs/research/2026-07-16-m4.5.2-platform-adapter-conformance-report.md), and [ADR-022](../docs/decisions/README.md#adr-022--passive-platform-and-adapter-description-cannot-mint-runtime-proof).
 
-## M4.5.3 detailed next gate
+## M4.5.3 exit criteria
 
-1. Define supported wheel/zipapp/standalone bootstrap artifacts and their signed checksum/provenance metadata.
-2. Preserve the M4.5.1 preview/apply digest, ownership receipt, byte-exact backup, and complete-preflight uninstall lifecycle.
-3. Make installers consume M4.5.2 profile descriptions without installing from detection or elevating declared/detected capability state.
-4. Add clean-environment install, upgrade, rollback, uninstall, offline, path-with-spaces, read-only-target, interrupted-install, and package-tamper fixtures.
-5. Run focused packaging gates on Linux, macOS, and Windows; keep all native broker/isolation/write/adapter capabilities unavailable without separate authenticated conformance.
-6. Publish an exact support matrix and migration/non-claim document before any convenient one-line installer is advertised.
+1. A closed deterministic manifest binds the main wheel, every dependency wheel, lock, source revision and packaged schema inventory.
+2. Installed and standard-library verifiers are offline/read-only and reject malformed manifests, byte tampering, missing/extra artifacts, unsafe aliases and invalid wheel/archive structure.
+3. Main/dependency fixtures are structurally valid wheels; the hosted gate builds and verifies the real distribution rather than trusting filenames.
+4. Package-manager adapters are argv previews with `executionReady: false`; detection cannot select an installer or create runtime proof.
+5. The Linux reference gate installs a verified complete wheelhouse into a clean private virtual environment with no package index and runs the installed `eco 0.6.0`.
+6. Python package lifecycle remains separate from M4.5.1 repository adoption ownership/removal.
+7. The support matrix states that publisher authentication, CAS handoff, manager rollback transactions, zipapp/standalone and OS-native packages are not implemented.
+
+All criteria pass for the bounded integrity profile. See [architecture](../docs/architecture/portable-distribution.md), [completion report](../docs/research/2026-07-16-m4-portability-completion-report.md), and [ADR-023](../docs/decisions/README.md#adr-023--distribution-integrity-package-installation-and-project-adoption-are-separate-boundaries).
+
+## M4.6 exit criteria
+
+1. Passive `platform doctor` remains zero-process/zero-network/zero-write; active execution is a separate explicit command requiring confirmation and exact suite inputs.
+2. The runner accepts only a fixed packaged synthetic suite, private empty external root and exact platform/distribution/backend bindings.
+3. The Linux/WSL suite proves only clean environment, Landlock workdir boundary, namespace network denial, output/deadline bounds, read-only workdir and closed stdin.
+4. A closed `PlatformBackendConformanceProfile` contains no raw path, canary, output, port, PID, host/user or exception data and uses observations, never effective capabilities.
+5. Failed/unsupported/partial suites expose no observations. Windows/macOS/container/hosted-CI are explicit negative profiles.
+6. External envelope ingestion re-verifies issuer, freshness, suite, platform, distribution, backend-instance, backend-implementation and runner bindings but has no policy/runtime consumer.
+7. Adversarial schema/zero-effect/fake-backend/signing/replay tests, existing isolation tests and a real local WSL suite pass.
+
+All criteria pass for the bounded Linux/WSL backend observation profile. See [architecture](../docs/architecture/platform-backend-conformance.md), [completion report](../docs/research/2026-07-16-m4-portability-completion-report.md), and [ADR-024](../docs/decisions/README.md#adr-024--active-backend-conformance-produces-observation-never-effective-authority).
 
 ## Loop rollout
 

@@ -92,7 +92,26 @@ See [M4.5.1 project adoption](docs/architecture/project-adoption.md) and the [M4
 
 See [M4.5.2 platform and adapter conformance](docs/architecture/platform-adapter-conformance.md) and the [M4.5.2 completion report](docs/research/2026-07-16-m4.5.2-platform-adapter-conformance-report.md).
 
-**Not implemented and not claimed:** durable adoption crash recovery, hostile parent-swap/reparse/case-fold security on every filesystem, portable packaging, active native platform/adapter conformance runners, Windows/macOS M4 read-broker conformance or executable isolation/write backends, endpoint-specific network allowlists, descendant-exec/seccomp/cgroup/device containment, asymmetric evidence or approval signatures, delete/rename/mkdir/batch/arbitrary-command writes, A3/A4 external actions, a bundled database-plus-CAS disaster-recovery package, caller-independent external anchoring, scheduled/autonomous loops, full wiki link/staleness lint, or production autonomy.
+**M4.5.3 portable distribution complete for the wheel-only integrity profile:**
+
+- closed deterministic manifest binds the real main wheel, every dependency wheel, `uv.lock`, source revision and packaged schema inventory;
+- installed and standard-library verifiers are offline, read-only and reject artifact/lock/schema/archive/alias tampering;
+- main and dependency artifacts must be structurally valid wheels; the main wheel additionally binds `Requires-Python`, package modules and the `eco` entry point;
+- installer adapters emit non-executable `venv-pip`, `pipx` and `uv tool` previews;
+- hosted Linux builds, independently verifies and installs the real wheelhouse into a clean offline virtual environment;
+- Python package installation remains separate from preview-bound project adoption and from all runtime authority.
+
+**M4.6 controlled Linux/WSL backend conformance complete:**
+
+- `eco conformance run` is an explicit active surface separate from passive `platform doctor`;
+- one fixed synthetic suite tests the existing namespace/Landlock backend's environment, filesystem, network, read-only, stdin, output and deadline boundaries;
+- the closed `PlatformBackendConformanceProfile` binds platform, distribution, backend instance/implementation, runner and suite digests without raw output or paths;
+- external HMAC envelope ingestion re-verifies exact bindings but has no policy/runtime consumer and creates no effective capability;
+- Windows, macOS, containers and hosted CI remain unsupported negative profiles, never fallback passes.
+
+See [M4.5.3 portable distribution](docs/architecture/portable-distribution.md), [M4.6 platform backend conformance](docs/architecture/platform-backend-conformance.md), and the [combined completion report](docs/research/2026-07-16-m4-portability-completion-report.md).
+
+**Not implemented and not claimed:** durable adoption crash recovery, hostile parent-swap/reparse/case-fold security on every filesystem, publisher-authenticated distribution provenance, immutable verified-byte installer staging, transactional cross-manager rollback, standalone/OS-native packages, Windows/macOS M4 read-broker conformance or executable isolation/write backends, endpoint-specific network allowlists, descendant-exec/seccomp/cgroup/device containment, asymmetric evidence or approval signatures, delete/rename/mkdir/batch/arbitrary-command writes, A3/A4 external actions, a bundled database-plus-CAS disaster-recovery package, caller-independent external anchoring, scheduled/autonomous loops, full wiki link/staleness lint, or production autonomy.
 
 ## Architecture in one sentence
 
@@ -140,7 +159,7 @@ eco --repo /path/to/project adopt --dry-run --json
 eco --repo /path/to/project adopt --apply <planDigest> --json
 ```
 
-`adopt` is the recommended installer path. It preserves existing instruction surfaces and requires a fresh preview digest before mutation. If valid canonical `.ai` contracts already exist, repeat both commands with `--adopt-existing-config`; those canonical files remain user-owned.
+`adopt` is the recommended project-bootstrap path after the Python package is installed. It preserves existing instruction surfaces and requires a fresh preview digest before mutation. If valid canonical `.ai` contracts already exist, repeat both commands with `--adopt-existing-config`; those canonical files remain user-owned.
 
 `eco init`, `diff`, and `render` remain lower-level compiler commands for explicitly managed repositories.
 
@@ -181,6 +200,9 @@ eco --repo /path/to/project uninstall --remove-config --yes
 | `eco doctor` | Validate configuration and projection health | No |
 | `eco runtime doctor` | Probe the embedded runtime composition; does not enable execution | No |
 | `eco runtime trust doctor` | Verify externally signed trust inputs; does not start execution | No |
+| `eco distribution verify` | Verify one exact local offline wheelhouse and lock | No |
+| `eco distribution plan` | Emit a non-executable package-manager argv preview | No |
+| `eco conformance run` | Run the explicit fixed synthetic Linux/WSL backend suite in an external test root | External synthetic root only |
 | `eco run wiki-health-check` | Run the fixed signed-snapshot, no-model A1 health profile | No repository write* |
 | `eco eval wiki-health-check` | Run the fixed five-attempt plus replay L0–L2 promotion gate | No repository write* |
 | `eco lock` | Record deterministic input hashes and deployment identities | Yes |

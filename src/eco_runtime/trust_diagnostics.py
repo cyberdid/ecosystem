@@ -177,6 +177,18 @@ def _issuer_policies(trust: dict[str, Any]) -> tuple[EvidenceIssuerPolicy, ...]:
                 allowed_projects=frozenset(issuer["allowedProjects"]),
                 allowed_deployments=frozenset(issuer["allowedDeployments"]),
                 allowed_suite_digests=frozenset(issuer["allowedSuiteDigests"]),
+                allowed_platform_profiles=frozenset(
+                    issuer.get("allowedPlatformProfiles", [])
+                ),
+                allowed_backend_instances=frozenset(
+                    issuer.get("allowedBackendInstances", [])
+                ),
+                allowed_runner_digests=frozenset(
+                    issuer.get("allowedRunnerDigests", [])
+                ),
+                allowed_backend_implementation_digests=frozenset(
+                    issuer.get("allowedBackendImplementationDigests", [])
+                ),
             )
             for issuer in issuer_specs
         )
@@ -320,6 +332,18 @@ def runtime_trust_diagnostics(
                 allowed_projects=frozenset(issuer["allowedProjects"]),
                 allowed_deployments=frozenset(issuer["allowedDeployments"]),
                 allowed_suite_digests=frozenset(issuer["allowedSuiteDigests"]),
+                allowed_platform_profiles=frozenset(
+                    issuer.get("allowedPlatformProfiles", [])
+                ),
+                allowed_backend_instances=frozenset(
+                    issuer.get("allowedBackendInstances", [])
+                ),
+                allowed_runner_digests=frozenset(
+                    issuer.get("allowedRunnerDigests", [])
+                ),
+                allowed_backend_implementation_digests=frozenset(
+                    issuer.get("allowedBackendImplementationDigests", [])
+                ),
             )
             for issuer in issuer_specs
         )

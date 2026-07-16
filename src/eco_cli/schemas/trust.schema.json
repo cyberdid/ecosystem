@@ -91,7 +91,13 @@
           "type": "array",
           "minItems": 1,
           "uniqueItems": true,
-          "items": { "enum": ["RepositorySnapshot", "AdapterConformanceProfile"] }
+          "items": {
+            "enum": [
+              "RepositorySnapshot",
+              "AdapterConformanceProfile",
+              "PlatformBackendConformanceProfile"
+            ]
+          }
         },
         "allowedProjects": {
           "type": "array",
@@ -104,6 +110,26 @@
           "items": { "$ref": "#/$defs/id" }
         },
         "allowedSuiteDigests": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/sha256" }
+        },
+        "allowedPlatformProfiles": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/id" }
+        },
+        "allowedBackendInstances": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/sha256" }
+        },
+        "allowedRunnerDigests": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/sha256" }
+        },
+        "allowedBackendImplementationDigests": {
           "type": "array",
           "uniqueItems": true,
           "items": { "$ref": "#/$defs/sha256" }

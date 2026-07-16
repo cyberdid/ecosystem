@@ -23,6 +23,28 @@ jobs:
       - run: eco validate
       - run: eco render --check
       - run: eco doctor
+      - name: Build and verify the offline distribution
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .distribution-smoke/bundle .distribution-smoke/manifest
+          python -m pip wheel . --wheel-dir .distribution-smoke/bundle
+          cp uv.lock .distribution-smoke/bundle/uv.lock
+          main_wheel="$(basename "$(find .distribution-smoke/bundle -maxdepth 1 -name 'ai_ecosystem_harness-*.whl' -print -quit)")"
+          python scripts/create_distribution_manifest.py \
+            --bundle-root "$(pwd)/.distribution-smoke/bundle" \
+            --main-wheel "$main_wheel" \
+            --version 0.6.0 \
+            --source-revision "$(git rev-parse HEAD)" \
+            --output "$(pwd)/.distribution-smoke/manifest/distribution-manifest.json"
+          python scripts/verify_distribution.py \
+            --manifest "$(pwd)/.distribution-smoke/manifest/distribution-manifest.json" \
+            --bundle-root "$(pwd)/.distribution-smoke/bundle"
+          python -m venv .distribution-smoke/installed
+          .distribution-smoke/installed/bin/python -m pip install \
+            --no-index --find-links .distribution-smoke/bundle \
+            ai-ecosystem-harness==0.6.0
+          .distribution-smoke/installed/bin/eco --version
       - name: Report isolation-conformance scope
         run: |
           echo "### Isolation conformance" >> "$GITHUB_STEP_SUMMARY"
@@ -43,7 +65,7 @@ jobs:
           cache: pip
       - run: python -m pip install --upgrade pip
       - run: python -m pip install -e ".[test]"
-      - run: python -m unittest tests.test_cli tests.test_adoption_fixtures tests.test_adoption_safety tests.test_platform_conformance -v
+      - run: python -m unittest tests.test_cli tests.test_adoption_fixtures tests.test_adoption_safety tests.test_platform_conformance tests.test_distribution tests.test_backend_conformance -v
       - run: eco validate
       - run: eco render --check
       - run: eco doctor

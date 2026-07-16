@@ -13,6 +13,7 @@ This directory stores project-specific research that informs, but does not by it
 
 | Review | Raw source | Verdict |
 |---|---|---|
+| [M4 portability completion: M4.5.3 + M4.6](2026-07-16-m4-portability-completion-report.md) | Offline wheel distribution, real install smoke, controlled Linux/WSL backend suite and multi-agent adversarial review | Bounded M4 portability complete; publisher provenance, cross-manager transactions, native Windows/macOS backends and runtime evidence consumption remain separate |
 | [M4.5.2 platform/adapter conformance completion](2026-07-16-m4.5.2-platform-adapter-conformance-report.md) | Passive doctor, versioned profiles, six-platform fixtures, multi-agent adversarial review and portability gate | Description layer complete; proven/effective runtime state, active native runners and packaging remain separate |
 | [M4.5.1 adoption-bootstrap completion](2026-07-16-m4.5.1-adoption-bootstrap-report.md) | Preview/apply lifecycle, ownership receipt, byte-exact restoration, adversarial uninstall and platform-focused CI | Universal filesystem bootstrap implemented; runtime backends, durable crash recovery and packaging remain separate |
 | [M4 no-model wiki-health completion](2026-07-16-m4-no-model-wiki-health-completion-report.md) | Fixed no-model contracts/execution, authenticated replay, adversarial review and five-attempt promotion gate | Embedded Linux/WSL profile complete through L2; L3–L5, scheduling, full-wiki lint and production identity remain denied/non-claims |
