@@ -13,6 +13,7 @@ This directory stores project-specific research that informs, but does not by it
 
 | Review | Raw source | Verdict |
 |---|---|---|
+| [M4.5.1 adoption-bootstrap completion](2026-07-16-m4.5.1-adoption-bootstrap-report.md) | Preview/apply lifecycle, ownership receipt, byte-exact restoration, adversarial uninstall and platform-focused CI | Universal filesystem bootstrap implemented; runtime backends, durable crash recovery and packaging remain separate |
 | [M4 no-model wiki-health completion](2026-07-16-m4-no-model-wiki-health-completion-report.md) | Fixed no-model contracts/execution, authenticated replay, adversarial review and five-attempt promotion gate | Embedded Linux/WSL profile complete through L2; L3–L5, scheduling, full-wiki lint and production identity remain denied/non-claims |
 | [M3.6 verification-only trust bootstrap](2026-07-16-m3.6-verification-only-trust-bootstrap-report.md) | Canonical trust policy, external-envelope verification and adversarial negative tests | Verification-only bootstrap remains the trust preflight consumed by the separate M4 command |
 | [M3.5 integration and reproducibility report](2026-07-16-m3.5-integration-reproducibility-report.md) | CLI/runtime composition, clean-install gate, platform-conformance review and ADR-018 | Real read-only runtime composition is reachable from `eco`; execution remains fail-closed pending trust bootstrap and live isolation remains Linux/WSL conformance |

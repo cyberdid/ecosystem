@@ -3,7 +3,7 @@
 > Curated operational knowledge. Canonical executable truth lives under `.ai/`; generated vendor files are projections.
 
 **Updated:** 2026-07-16
-**Status:** M1–M4 reference profiles are complete. M4 provides fixed manual no-model `wiki-health-check` execution and promotion through L2 only; M5 team identity/RBAC is next.
+**Status:** M1–M4 and M4.5.1 are complete. M4 provides fixed manual no-model `wiki-health-check` execution through L2; M4.5.1 adds safe adoption into other projects. Platform/adapter conformance is next.
 
 ## Pages
 
@@ -15,6 +15,8 @@
 | [labs-molt.md](labs-molt.md) | NVIDIA agentic-RL training node, architecture, evidence, risks, and gated role | 2026-07-15 |
 | [ai-legal-claude.md](ai-legal-claude.md) | Claude-specific legal prompt corpus, compatibility audit, legal limits, and safe-adoption gate | 2026-07-15 |
 | [roadmap.md](roadmap.md) | Dependency-ordered M0–M6 delivery plan | 2026-07-16 |
+| [M4.5.1 safe project adoption](../docs/architecture/project-adoption.md) | Preview/apply contract, ownership receipt, reversible projections and exact non-claims | 2026-07-16 |
+| [M4.5.1 completion report](../docs/research/2026-07-16-m4.5.1-adoption-bootstrap-report.md) | Threat model, multi-agent review, adversarial fixtures, verification gate and handoff | 2026-07-16 |
 | [Read-only broker](../docs/architecture/read-only-broker.md) | Snapshot-bound Linux/WSL A1 enforcement and proof limits | 2026-07-15 |
 | [Durable runtime store](../docs/architecture/durable-runtime-store.md) | Schema-v3 event/plan/budget/operation authority and operational durability | 2026-07-15 |
 | [M3 controlled writes](../docs/architecture/controlled-writes.md) | Exact approval, A2 one-file CAS apply/rollback and restart recovery boundary | 2026-07-15 |
@@ -45,12 +47,13 @@
 3. `docs/architecture/README.md`
 4. `docs/decisions/README.md`
 5. `docs/architecture/runtime-contracts.md`, `read-only-broker.md`, `controlled-writes.md`, and `no-model-wiki-health.md` for the current M2–M4 boundary
-6. `wiki/loops.md` for bounded automation, evaluation, proposal, and controlled-apply rules
-7. `wiki/openresearcher.md` for the current external research-node snapshot
-8. `wiki/labs-molt.md` for the external agentic-RL training-node snapshot
-9. `wiki/ai-legal-claude.md` for the external legal-prompt corpus and its safety limits
-10. `docs/research/README.md` for source reviews and raw-source provenance
-11. This wiki for current operational status
+6. `docs/architecture/project-adoption.md` for installing the harness into another project
+7. `wiki/loops.md` for bounded automation, evaluation, proposal, and controlled-apply rules
+8. `wiki/openresearcher.md` for the current external research-node snapshot
+9. `wiki/labs-molt.md` for the external agentic-RL training-node snapshot
+10. `wiki/ai-legal-claude.md` for the external legal-prompt corpus and its safety limits
+11. `docs/research/README.md` for source reviews and raw-source provenance
+12. This wiki for current operational status
 
 ## Knowledge boundaries
 

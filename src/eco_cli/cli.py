@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import shutil
 import sys
 from pathlib import Path
 from typing import Any
@@ -16,6 +15,7 @@ from .config import (
     dump_yaml,
     sha256_file,
     stable_json,
+    validate_bundle,
     validate_repository,
 )
 from .constants import CONFIG_FILES
@@ -40,6 +40,24 @@ def _parser() -> argparse.ArgumentParser:
 
     audit = commands.add_parser("audit", help="Read-only repository discovery and hygiene audit")
     audit.add_argument("--json", action="store_true", dest="json_output")
+
+    adopt = commands.add_parser(
+        "adopt", help="Preview or apply the bounded project-adoption bootstrap"
+    )
+    adopt_mode = adopt.add_mutually_exclusive_group(required=True)
+    adopt_mode.add_argument(
+        "--dry-run", action="store_true", help="Build a deterministic zero-write adoption plan"
+    )
+    adopt_mode.add_argument(
+        "--apply", metavar="PLAN_SHA256", help="Apply exactly a previously previewed plan digest"
+    )
+    adopt.add_argument("--name", help="Canonical project identifier for a fresh adoption")
+    adopt.add_argument(
+        "--adopt-existing-config",
+        action="store_true",
+        help="Explicitly retain and register an already valid canonical configuration",
+    )
+    adopt.add_argument("--json", action="store_true", dest="json_output")
 
     render = commands.add_parser("render", help="Render deterministic vendor instruction projections")
     mode = render.add_mutually_exclusive_group()
@@ -114,8 +132,24 @@ def command_init(args: argparse.Namespace) -> int:
     if directory.exists():
         raise EcoError(f"Canonical config already exists: {directory}")
     bundle = starter_bundle(args.name or repo.name.lower().replace(" ", "-"))
-    for name, document in bundle.items():
-        atomic_write(directory / CONFIG_FILES[name], dump_yaml(document))
+    errors = validate_bundle(repo, directory, bundle)
+    if errors:
+        _print_errors(errors)
+        raise EcoError("Starter configuration is invalid")
+    written: list[Path] = []
+    try:
+        for name, document in bundle.items():
+            path = directory / CONFIG_FILES[name]
+            atomic_write(path, dump_yaml(document))
+            written.append(path)
+    except OSError as exc:
+        for path in reversed(written):
+            path.unlink(missing_ok=True)
+        try:
+            directory.rmdir()
+        except OSError:
+            pass
+        raise EcoError("Unable to initialize canonical configuration") from exc
     print(f"Initialized {directory.relative_to(repo)}")
     if args.render:
         errors, loaded, paths = _validate(repo, args.config_root)
@@ -158,6 +192,103 @@ def command_audit(args: argparse.Namespace) -> int:
     for item in findings:
         location = f"{item['path']}:{item['line']}" if item.get("line") else item["path"]
         print(f"  - {location}: {item['reason']}")
+    return 0
+
+
+def command_adopt(args: argparse.Namespace) -> int:
+    from .adoption import apply_adoption, plan_adoption
+
+    def failure_code(error: Exception) -> str:
+        if isinstance(error, EcoError):
+            code = str(error)
+            if code.startswith("ECO_ADOPTION_") and code.replace("_", "").isalnum():
+                return code
+        return "ECO_ADOPTION_FAILED"
+
+    if args.dry_run:
+        try:
+            repo = _repo(args)
+            plan = plan_adoption(
+                repo,
+                args.config_root,
+                args.name,
+                args.adopt_existing_config,
+            )
+        except Exception as exc:
+            code = failure_code(exc)
+            result = {
+                "available": False,
+                "operation": "adopt",
+                "status": "blocked",
+                "code": code,
+                "planDigest": None,
+                "plan": None,
+            }
+            if args.json_output:
+                print(stable_json(result), end="")
+                return 1
+            raise EcoError(code) from exc
+        available = plan["status"]["state"] != "blocked"
+        result = {
+            "available": available,
+            "operation": "adopt",
+            "status": "planned" if available else "blocked",
+            "planDigest": plan["planDigest"],
+            "plan": plan,
+        }
+        if not available:
+            result["code"] = plan["status"]["blockers"][0]
+        if args.json_output:
+            print(stable_json(result), end="")
+        else:
+            print(f"Adoption: {result['status']}")
+            print(f"Plan digest: {plan['planDigest']}")
+            for item in plan["status"]["warnings"]:
+                print(f"WARNING: {item}")
+            for item in plan["status"]["blockers"]:
+                print(f"BLOCKED: {item}")
+            for item in plan["spec"]["operations"]:
+                print(f"{item['action']}: {item['path']}")
+        return 0 if available else 1
+
+    try:
+        repo = _repo(args)
+        applied = apply_adoption(
+            repo,
+            expected_plan_digest=args.apply,
+            config_root=args.config_root,
+            name=args.name,
+            adopt_existing_config=args.adopt_existing_config,
+        )
+    except Exception as exc:
+        code = failure_code(exc)
+        result = {
+            "available": False,
+            "operation": "adopt",
+            "status": "blocked",
+            "code": code,
+            "planDigest": args.apply,
+            "changed": False,
+        }
+        if args.json_output:
+            print(stable_json(result), end="")
+            return 1
+        raise EcoError(code) from exc
+
+    changed = bool(applied["applied"])
+    result = {
+        "available": True,
+        "operation": "adopt",
+        "status": "applied" if changed else "no-op",
+        "planDigest": applied["planDigest"],
+        "changed": changed,
+    }
+    if args.json_output:
+        print(stable_json(result), end="")
+    else:
+        print(f"Adoption: {result['status']}")
+        print(f"Plan digest: {result['planDigest']}")
+        print(f"Operations: {applied['operationCount']}")
     return 0
 
 
@@ -416,15 +547,36 @@ def command_eval(args: argparse.Namespace) -> int:
 def command_uninstall(args: argparse.Namespace) -> int:
     repo = _repo(args)
     directory = config_directory(repo, args.config_root)
-    removed = uninstall_projections(repo, directory)
+    if not args.remove_config:
+        from .adoption import _exclusive_adoption_lock
+
+        with _exclusive_adoption_lock(repo):
+            removed = uninstall_projections(repo, directory)
+        for item in removed:
+            print(item)
+        return 0
+    if not args.yes:
+        raise EcoError("--remove-config requires --yes")
+
+    from .adoption import _exclusive_adoption_lock, remove_owned_adoption_config
+
+    with _exclusive_adoption_lock(repo):
+        removal = remove_owned_adoption_config(
+            repo,
+            args.config_root,
+            dry_run=True,
+            allow_projection_state=True,
+        )
+        if removal["status"] != "ready":
+            raise EcoError(removal["blockers"][0])
+        removed = uninstall_projections(repo, directory)
+        removal = remove_owned_adoption_config(repo, args.config_root)
+        if removal["status"] != "removed":
+            raise EcoError(removal["blockers"][0])
+
     for item in removed:
         print(item)
-    if args.remove_config:
-        if not args.yes:
-            raise EcoError("--remove-config requires --yes")
-        if directory.exists():
-            shutil.rmtree(directory)
-            print(f"deleted {directory.relative_to(repo)}")
+    print(f"deleted {directory.relative_to(repo)} ({removal['removedCount']} owned files)")
     return 0
 
 
@@ -432,6 +584,7 @@ COMMANDS = {
     "init": command_init,
     "validate": command_validate,
     "audit": command_audit,
+    "adopt": command_adopt,
     "render": command_render,
     "diff": command_diff,
     "doctor": command_doctor,

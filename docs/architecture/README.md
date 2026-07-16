@@ -1,6 +1,6 @@
 # Architecture
 
-**Status:** M1, embedded M2 read-only, bounded M3 Linux/WSL controlled writes, M3.5/M3.6 integration/trust, and the fixed M4 no-model L0–L2 reference loop are implemented.
+**Status:** M1, embedded M2 read-only, bounded M3 Linux/WSL controlled writes, M3.5/M3.6 integration/trust, the fixed M4 no-model L0–L2 reference loop, and M4.5.1 safe project adoption are implemented.
 
 **Updated:** 2026-07-16
 
@@ -8,8 +8,9 @@
 
 ```mermaid
 flowchart TB
-    R["Existing repository"] --> A["eco audit / init"]
-    A --> C["Canonical .ai contracts"]
+    R["Existing repository"] --> A["eco audit / adopt preview"]
+    A --> AP["Preview-bound adoption + ownership receipt"]
+    AP --> C["Canonical .ai contracts"]
     C --> V["Schema and cross-contract validation"]
     V --> P["Projection compiler"]
     P --> H["Codex / Claude / Copilot / Gemini / Cursor"]
@@ -68,6 +69,8 @@ eco:managed:end
 
 This provides ownership and reversibility. It does not prove that different AI clients interpret identical text identically; that requires conformance evaluation.
 
+For installation into another repository, M4.5.1 adds a mandatory zero-write adoption preview, an exact stale-plan digest, byte-bound backup state, and a portable ownership receipt. Full removal validates the complete owned set before the first mutation and never recursively deletes an ambiguous `.ai` tree. See [M4.5.1 safe project adoption](project-adoption.md).
+
 ## Trust boundaries
 
 ### Implemented now
@@ -112,6 +115,12 @@ A dedicated private external SQLite journal authenticates plan/event/head state 
 
 `eco eval wiki-health-check --json` evaluates five fixed independent journals plus one zero-read replay. Frozen gates can promote only L0–L2. L3–L5 remain explicit ineligible states and create no M3 write, model, network, retry, or scheduling authority. See [M4 no-model wiki health](no-model-wiki-health.md).
 
+### M4.5.1 adoption boundary
+
+`eco adopt --dry-run` discovers descriptive repository metadata and emits a schema-valid content-minimized plan. `eco adopt --apply` serializes cooperating installers, recomputes the plan, preserves unmanaged instruction bytes, validates the completed canonical bundle, and records exact ownership. A clean reinstall is a byte/mtime no-op. Uninstall requires strict projection state and verified backup digest/size; marker text alone grants no ownership. Full config removal refuses drift, unknown entries, and pre-existing canonical files before cleaning any projection.
+
+This filesystem bootstrap has focused Linux/macOS/Windows CI. It does not make the Linux/WSL read broker, isolation launcher, M3 write broker, or M4 loop executor portable.
+
 ### Remaining beyond M4
 
 - endpoint-specific network allowlist backend;
@@ -122,6 +131,8 @@ A dedicated private external SQLite journal authenticates plan/event/head state 
 - asymmetric team-verifiable evidence identity.
 - full-wiki link/staleness/duplicate-semantic lint over a separately signed larger scope;
 - loop scheduling, autonomous retry, and L3–L5 promotion profiles.
+- durable adoption crash recovery and hostile concurrent parent-swap protection;
+- versioned platform/adapter capability profiles, native conformance evidence, and portable packaging.
 
 The embedded capability guards remain process-local and the executable filesystem/isolation/write proof is Linux/WSL-specific. Evidence and reference-approval HMACs authenticate configured embedded boundaries but are not remote third-party identities. See [M2 runtime contracts](runtime-contracts.md), [Read-only repository broker](read-only-broker.md), [Durable runtime store](durable-runtime-store.md), [M3 controlled writes](controlled-writes.md), [M3 completion report](../research/2026-07-15-m3-completion-report.md), and [D/A/Z/P semantics](policy-semantics.md).
 
@@ -151,7 +162,9 @@ client without credentials
 
 ## Next milestone
 
-The next milestone is M5 team authority: signed policy distribution, RBAC/identity, independently authenticated evidence consumption, revocation/rotation, and shared-state conformance. It must preserve the completed M4 fixed no-model profile without turning L2 evidence into implicit scheduling, model, network, or write authority. Full-wiki lint and any new loop profile require their own signed scope, fixtures, thresholds, and promotion evidence. M2 deployment observations still require renewal after their validity window before current model routing or promotion.
+The next slice is M4.5.2 platform and adapter conformance: versioned platform profiles, declared-versus-observed capability evidence, and read-only probes for Windows, macOS, Linux, WSL, containers, and hosted CI. Unsupported runtime controls must remain unavailable without fallback. M4.5.3 may add packaging/install adapters only after that evidence boundary is stable.
+
+M5 team authority—signed policy distribution, RBAC/identity, independently authenticated evidence consumption, revocation/rotation, and shared-state conformance—follows the portability work. It must preserve the completed M4 profile without turning L2 evidence into implicit scheduling, model, network, or write authority.
 
 ## Sources
 

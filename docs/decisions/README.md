@@ -22,6 +22,7 @@
 | ADR-018 | Reconcile the Phase-0 constitution with canonical authority, verified memory, and bounded-loop terminology | Accepted; supersedes the Phase-0 `AGENTS.md` as an authority source while preserving its universal guarantees |
 | ADR-019 | Verification-only external trust bootstrap for live read-only workflows | Accepted for the embedded local-shared-key bridge; asymmetric external attestation remains a future profile |
 | ADR-020 | Separate no-model A1 lifecycle and fixed L0–L2 promotion gate | Implemented for the Linux/WSL `wiki-health-check` reference profile; L3–L5 remain ineligible |
+| ADR-021 | Preview-bound, receipt-owned project adoption | Implemented for the M4.5.1 `.ai` bootstrap; runtime-platform portability remains separate |
 
 ## ADR-001 — Contracts-first
 
@@ -206,6 +207,24 @@ Promotion is a second versioned contract. Exactly five independent fixed journal
 **Consequences.** `eco run wiki-health-check` and `eco eval wiki-health-check` are executable only with externally provisioned signed evidence, verification material, a private external state directory, and a distinct journal key. They expose no caller-controlled path, model, deployment, endpoint, workflow file, retry count, or threshold. The completed profile is Linux/WSL-specific because it relies on the existing `openat2` broker. It does not implement full-wiki link crawling, semantic staleness detection, edits, scheduling, autonomous retries, or production/team evidence identity. Any wider scope or L3–L5 behavior requires a new contract and evaluation corpus rather than modification through prompt data.
 
 **Evidence.** Contract, policy, state, journal, execution, recovery, mutation-resistance, repository-nonmutation, deadline, structural-health, five-attempt stability, recovery, threshold-tampering, and explicit L3–L5 denial tests pass with the complete project suite. See [M4 no-model wiki health](../architecture/no-model-wiki-health.md) and the [M4 completion report](../research/2026-07-16-m4-no-model-wiki-health-completion-report.md).
+
+## ADR-021 — Preview-bound, receipt-owned project adoption
+
+**Date:** 2026-07-16
+
+**Context.** The ecosystem must be usable in arbitrary projects and by different AI clients, but the original `eco init/render/uninstall` workflow was an expert-oriented compiler interface rather than a safe installer contract. A generic recursive copy or deletion would silently claim existing `.ai` files, overwrite instruction surfaces, normalize their bytes, leak discovery data, or make uninstall unable to distinguish user-owned and ecosystem-owned state. Platform portability also cannot be inferred from the fact that Python can write files: the Linux/WSL broker, isolation, and controlled-write backends have independent security proofs.
+
+**Decision.** M4.5.1 introduces a separate `adoption.ai.ecosystem/v1alpha1` lifecycle. `eco adopt --dry-run` emits a deterministic content-minimized `ProjectAdoptionPlan`; `eco adopt --apply PLAN_SHA256` acquires a per-repository lock, recomputes the plan, and applies only an exact digest match. The digest is a stale-preview guard, not authentication or runtime approval.
+
+Fresh, existing-config, and reinstall modes are distinct. Existing canonical config requires explicit `--adopt-existing-config` and remains `preexisting`. Existing client surfaces are preserved as byte-exact before-images. A schema- and semantics-validated `.ai/adoption.json` records canonical, projection, and generated-file ownership. Render state binds every installed projection digest and every backup path, full digest, and size; backup paths are restricted below `.ai/.state/backups` and must be singly linked regular files. Marker text without valid ownership state never authorizes uninstall.
+
+Full removal first validates the complete receipt/config/projection/state/backup/unknown-entry set without writing. It then uses the projection uninstaller and removes only an enumerated exact-digest owned set plus empty parents. Recursive deletion of an unverified `.ai` tree is prohibited. Apply uses bounded best-effort rollback; every rollback write is conditional on the live file still matching the exact ecosystem-written after-image. A concurrent user edit is preserved and produces `ECO_ADOPTION_ROLLBACK_CONFLICT` rather than being overwritten.
+
+Discovery may initialize descriptive language/build metadata but cannot infer or execute repository commands. Plans and JSON failures contain relative paths, counts, digests, and stable codes only; they exclude source text, secret values, and absolute repository paths. Custom config roots remain unsupported in this contract version.
+
+**Consequences.** Adoption behavior can be tested on Linux, macOS, and Windows without claiming that runtime enforcement is portable. The receipt and render state are strict local ownership metadata, not cryptographically authenticated team identity. M4.5.1 does not provide a durable crash journal: an uncatchable process/host failure may leave a partial install requiring a new preview or manual recovery. It also does not prove hostile parent-directory swaps, complete Windows reparse/case-fold safety, packaging, or any non-Linux runtime broker. M4.5.2 must define platform/adapter capability profiles and conformance evidence; unsupported controls remain unavailable rather than using a weaker fallback.
+
+**Evidence.** Byte-exact Python and TypeScript-monorepo fixtures cover fresh/existing/reinstall, CRLF/no-final-newline restoration, stale plans, secret minimization, path escape, symlink/hardlink/non-UTF-8 rejection, schema validity, no-op mtimes, backup/state tampering, ownership forgery, concurrent-edit rollback conflict, full-removal preflight, and lock contention. See [M4.5.1 project adoption](../architecture/project-adoption.md) and the [completion report](../research/2026-07-16-m4.5.1-adoption-bootstrap-report.md).
 
 ## Supersession
 

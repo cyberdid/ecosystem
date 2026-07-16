@@ -4,6 +4,7 @@ import hashlib
 import json
 import os
 import re
+import stat
 import tempfile
 import unicodedata
 from importlib import resources
@@ -57,20 +58,48 @@ def dump_yaml(value: dict[str, Any]) -> str:
     return yaml.safe_dump(value, allow_unicode=True, sort_keys=False, width=100)
 
 
-def atomic_write(path: Path, content: str) -> None:
+def atomic_write_bytes(path: Path, content: bytes) -> None:
+    """Atomically replace one regular file while preserving an existing mode.
+
+    Callers that cross an ownership boundary must still validate path topology
+    before calling this helper.  This function deliberately never follows a
+    final symlink to write its target: ``os.replace`` replaces the directory
+    entry itself.
+    """
+
     path.parent.mkdir(parents=True, exist_ok=True)
+    existing_mode: int | None = None
+    try:
+        status = path.lstat()
+    except FileNotFoundError:
+        pass
+    else:
+        if stat.S_ISREG(status.st_mode):
+            existing_mode = stat.S_IMODE(status.st_mode)
     fd, temporary = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
     try:
-        with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as stream:
+        with os.fdopen(fd, "wb") as stream:
             stream.write(content)
+            stream.flush()
+            os.fsync(stream.fileno())
+        if existing_mode is not None:
+            os.chmod(temporary, existing_mode)
         os.replace(temporary, path)
     finally:
         if os.path.exists(temporary):
             os.unlink(temporary)
 
 
+def atomic_write(path: Path, content: str) -> None:
+    atomic_write_bytes(path, content.encode("utf-8"))
+
+
 def sha256_text(content: str) -> str:
     return hashlib.sha256(content.encode("utf-8")).hexdigest()
+
+
+def sha256_bytes(content: bytes) -> str:
+    return hashlib.sha256(content).hexdigest()
 
 
 def sha256_file(path: Path) -> str:

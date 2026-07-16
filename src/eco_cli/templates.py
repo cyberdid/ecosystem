@@ -5,13 +5,23 @@ from typing import Any
 from .constants import API_VERSION
 
 
-def starter_bundle(name: str) -> dict[str, dict[str, Any]]:
+def starter_bundle(
+    name: str,
+    *,
+    languages: list[str] | None = None,
+    build_files: list[str] | None = None,
+) -> dict[str, dict[str, Any]]:
     return {
         "project": {
             "apiVersion": API_VERSION,
             "kind": "ProjectAIConfig",
             "metadata": {"name": name, "owners": ["project-maintainers"], "riskProfile": "standard"},
-            "project": {"languages": [], "build": [], "test": [], "protectedPaths": [".git/**"]},
+            "project": {
+                "languages": sorted(set(languages or [])),
+                "build": sorted(set(build_files or [])),
+                "test": [],
+                "protectedPaths": [".git/**"],
+            },
             "references": {
                 "instructions": "instructions.yaml",
                 "capabilities": "capabilities.yaml",
@@ -59,7 +69,10 @@ def starter_bundle(name: str) -> dict[str, dict[str, Any]]:
                     "text": "Never write credentials, tokens, passwords, or raw secret values to the repository.",
                 },
             ],
-            "commands": {"validate": "eco validate", "test": "python -m unittest discover -s tests"},
+            "commands": {
+                "validate": "eco validate",
+                "projection-check": "eco render --check",
+            },
             "conventions": {"responseLanguage": "Ukrainian", "commitStyle": "<type>: <description>"},
             "projections": {
                 "codex": "AGENTS.md",

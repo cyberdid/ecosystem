@@ -4,6 +4,16 @@ Append-only хронологічний лог операцій. Формат: `#
 
 ---
 
+## [2026-07-16] implementation | M4.5.1 safe project-adoption bootstrap completed
+
+- Added schema-valid `ProjectAdoptionPlan` and `ProjectAdoptionReceipt` contracts plus mandatory `eco adopt --dry-run` / exact-digest `--apply` lifecycle for fresh, explicit existing-config, and reinstall modes.
+- Added content-minimized discovery, in-memory starter validation, byte-exact projection before-images, deterministic no-op reinstall, an external per-repository apply lock, owned `.ai/adoption.json`, and ignored private render state.
+- Replaced recursive config deletion with complete receipt/state/backup/config/unknown-entry preflight and enumerated removal; marker text without strict ownership state never authorizes a mutation.
+- Multi-agent adversarial review reproduced and closed text-normalized restoration, stale partial apply, symlink/hardlink/path escape, non-UTF-8, unauthenticated backup restore, marker-only ownership forgery, and rollback overwriting a concurrent user edit.
+- Rollback is deliberately bounded and compare-and-swap aware: it restores only exact ecosystem-written after-images and preserves conflicting user bytes. Durable `SIGKILL` recovery, hostile parent swaps, complete reparse/case-fold safety, packaging adapters, and non-Linux runtime backends remain non-claims.
+- Added byte-exact Python and TypeScript-monorepo fixtures, 29 focused adoption tests, Linux/macOS/Windows hosted adoption jobs, ADR-021, architecture documentation, completion research, and wiki handoff to M4.5.2.
+- Final local gate: 349 `unittest`; 349 pytest tests plus 188 subtests; compile, wheel/schema packaging, `uv lock --check`, validation, projection drift, doctor, diff, and whitespace checks all pass.
+
 ## [2026-07-16] implementation | M4 fixed no-model wiki-health L0–L2 profile completed
 
 - Added distinct route-free `NoModelRunRequest`, `NoModelRunPlan`, and `NoModelReadRequest` contracts plus an exact no-model lifecycle; the plan fixes three D0/P1 slots, three reads, 30 seconds, exact input bytes, and zero model/network/write budgets.

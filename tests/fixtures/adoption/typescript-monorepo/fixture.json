@@ -1,0 +1,61 @@
+{
+  "name": "typescript-monorepo",
+  "projectId": "fixture-workspace",
+  "existingInstructionSurfaces": [
+    "CLAUDE.md",
+    ".github/copilot-instructions.md"
+  ],
+  "secretPlaceholders": [
+    "env:FIXTURE_TYPESCRIPT_TOKEN"
+  ],
+  "files": [
+    {
+      "path": ".gitignore",
+      "text": ".env\nnode_modules/\ndist/\n"
+    },
+    {
+      "path": "config/runtime.env",
+      "text": "TOKEN=env:FIXTURE_TYPESCRIPT_TOKEN\n"
+    },
+    {
+      "path": "README.md",
+      "text": "# Workspace\n\nA small TypeScript monorepo fixture.\n"
+    },
+    {
+      "path": "package.json",
+      "text": "{\n  \"name\": \"fixture-workspace\",\n  \"private\": true,\n  \"packageManager\": \"npm@10.8.2\",\n  \"workspaces\": [\"packages/*\"],\n  \"scripts\": {\"test\": \"npm run test --workspaces --if-present\"}\n}\n"
+    },
+    {
+      "path": "tsconfig.json",
+      "text": "{\n  \"files\": [],\n  \"references\": [\n    {\"path\": \"./packages/api\"},\n    {\"path\": \"./packages/web\"}\n  ]\n}\n"
+    },
+    {
+      "path": "packages/api/package.json",
+      "text": "{\"name\":\"@fixture/api\",\"private\":true,\"type\":\"module\"}\n"
+    },
+    {
+      "path": "packages/api/src/index.ts",
+      "text": "export const service = \"api\";\n"
+    },
+    {
+      "path": "packages/web/package.json",
+      "text": "{\"name\":\"@fixture/web\",\"private\":true,\"type\":\"module\"}\n"
+    },
+    {
+      "path": "packages/web/src/index.ts",
+      "text": "export const service = \"web\";\n"
+    },
+    {
+      "path": "CLAUDE.md",
+      "text": "# Workspace Claude rules\r\n\r\nNever edit generated clients directly.\r\n"
+    },
+    {
+      "path": ".github/copilot-instructions.md",
+      "text": "# Existing Copilot guidance\n\nKeep packages independently testable.\n"
+    },
+    {
+      "path": ".cursor/rules/team.mdc",
+      "text": "# Unrelated team rule\n\nThis file is not owned by eco.\n"
+    }
+  ]
+}

@@ -69,7 +69,19 @@ See the [M3.6 trust-bootstrap report](docs/research/2026-07-16-m3.6-verification
 
 See [M4 no-model wiki health](docs/architecture/no-model-wiki-health.md) and the [M4 completion report](docs/research/2026-07-16-m4-no-model-wiki-health-completion-report.md).
 
-**Not implemented and not claimed:** endpoint-specific network allowlists, Windows/macOS M4 read-broker conformance or executable isolation/write backends, descendant-exec/seccomp/cgroup/device containment, asymmetric evidence or approval signatures, delete/rename/mkdir/batch/arbitrary-command writes, A3/A4 external actions, a bundled database-plus-CAS disaster-recovery package, caller-independent external anchoring, scheduled/autonomous loops, full wiki link/staleness lint, or production autonomy.
+**M4.5.1 safe project-adoption bootstrap complete:**
+
+- `eco adopt --dry-run --json` emits a deterministic, content-minimized plan without writing;
+- apply requires the exact recomputed plan digest under a per-repository lock;
+- fresh, explicitly adopted existing-config, and no-op reinstall modes have separate ownership semantics;
+- existing instruction surfaces use byte-exact before-image backups and managed blocks;
+- `.ai/adoption.json` records exact ownership; full removal is receipt-enumerated and complete-preflight;
+- stale state, path escape, symlink/hardlink/non-UTF-8 targets, backup tampering, forged markers, drift, unknown config, and concurrent rollback edits fail closed;
+- focused adoption behavior runs in hosted Linux, macOS, and Windows CI without broadening the Linux/WSL runtime proof.
+
+See [M4.5.1 project adoption](docs/architecture/project-adoption.md) and the [M4.5.1 completion report](docs/research/2026-07-16-m4.5.1-adoption-bootstrap-report.md).
+
+**Not implemented and not claimed:** durable adoption crash recovery, hostile parent-swap/reparse/case-fold security on every filesystem, portable packaging, platform/adapter capability profiles, Windows/macOS M4 read-broker conformance or executable isolation/write backends, endpoint-specific network allowlists, descendant-exec/seccomp/cgroup/device containment, asymmetric evidence or approval signatures, delete/rename/mkdir/batch/arbitrary-command writes, A3/A4 external actions, a bundled database-plus-CAS disaster-recovery package, caller-independent external anchoring, scheduled/autonomous loops, full wiki link/staleness lint, or production autonomy.
 
 ## Architecture in one sentence
 
@@ -112,10 +124,13 @@ Initialize another repository:
 
 ```bash
 eco --repo /path/to/project audit
-eco --repo /path/to/project init --name example-project
-eco --repo /path/to/project diff
-eco --repo /path/to/project render
+eco --repo /path/to/project adopt --dry-run --json
+eco --repo /path/to/project adopt --apply <planDigest> --json
 ```
+
+`adopt` is the recommended installer path. It preserves existing instruction surfaces and requires a fresh preview digest before mutation. If valid canonical `.ai` contracts already exist, repeat both commands with `--adopt-existing-config`; those canonical files remain user-owned.
+
+`eco init`, `diff`, and `render` remain lower-level compiler commands for explicitly managed repositories.
 
 If an instruction surface already exists, `render` refuses to overwrite it:
 
@@ -133,7 +148,7 @@ Remove generated projections while preserving canonical configuration:
 eco --repo /path/to/project uninstall
 ```
 
-Deleting `.ai/` additionally requires explicit confirmation:
+Removing adoption-owned `.ai/` additionally requires explicit confirmation and a valid ownership receipt. Drift, unknown entries, or pre-existing canonical config block the entire operation before any mutation:
 
 ```bash
 eco --repo /path/to/project uninstall --remove-config --yes
@@ -146,6 +161,8 @@ eco --repo /path/to/project uninstall --remove-config --yes
 | `eco init` | Create `.ai/` starter contracts | Yes |
 | `eco validate` | Validate schemas, references, capabilities, and secret fields | No |
 | `eco audit` | Discover repository conventions and potential secret locations | No |
+| `eco adopt --dry-run` | Build a deterministic, content-minimized project-adoption plan | No |
+| `eco adopt --apply` | Apply one exact previewed adoption plan and write its ownership receipt | Yes |
 | `eco diff` | Preview projection changes | No |
 | `eco render` | Apply owned vendor projections | Yes |
 | `eco render --check` | Detect projection drift for CI | No |
