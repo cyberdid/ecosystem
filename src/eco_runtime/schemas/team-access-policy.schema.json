@@ -1,0 +1,151 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai.ecosystem.local/schemas/authority/team-access-policy.schema.json",
+  "title": "TeamAccessPolicy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "authority.ai.ecosystem/v1alpha1" },
+    "kind": { "const": "TeamAccessPolicy" },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "revision", "createdAt", "recordDigest"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "revision": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+        "createdAt": { "$ref": "#/$defs/timestamp" },
+        "recordDigest": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["profile", "defaultEffect", "roles", "bindings", "safety"],
+      "properties": {
+        "profile": { "const": "bounded-team-access-v1" },
+        "defaultEffect": { "const": "deny" },
+        "roles": {
+          "type": "array", "minItems": 1, "maxItems": 256,
+          "items": { "$ref": "#/$defs/role" }
+        },
+        "bindings": {
+          "type": "array", "minItems": 1, "maxItems": 4096,
+          "items": { "$ref": "#/$defs/actorBinding" }
+        },
+        "safety": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["maximumAllowActionClass", "d4AllowDenied", "highImpactAllowDenied", "wildcardsAllowed", "roleInheritanceAllowed", "standaloneAuthorityCreated"],
+          "properties": {
+            "maximumAllowActionClass": { "const": "A2" },
+            "d4AllowDenied": { "const": true },
+            "highImpactAllowDenied": { "const": true },
+            "wildcardsAllowed": { "const": false },
+            "roleInheritanceAllowed": { "const": false },
+            "standaloneAuthorityCreated": { "const": false }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._:@-]{0,127}$" },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "timestamp": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$",
+      "format": "date-time"
+    },
+    "principalBinding": {
+      "type": "object", "additionalProperties": false,
+      "required": ["kind", "id", "digest"],
+      "properties": {
+        "kind": { "const": "PrincipalIdentity" },
+        "id": { "$ref": "#/$defs/id" },
+        "digest": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "membershipBinding": {
+      "type": "object", "additionalProperties": false,
+      "required": ["kind", "id", "digest"],
+      "properties": {
+        "kind": { "const": "MembershipBinding" },
+        "id": { "$ref": "#/$defs/id" },
+        "digest": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "resourceBinding": {
+      "type": "object", "additionalProperties": false,
+      "required": ["kind", "id", "digest"],
+      "properties": {
+        "kind": { "enum": ["identity-record", "policy-record", "deployment", "workflow", "repository-entry", "project", "external-service", "production-target"] },
+        "id": { "$ref": "#/$defs/id" },
+        "digest": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "constraints": {
+      "type": "object", "additionalProperties": false,
+      "required": ["projectId", "environmentId", "dataClasses", "notBefore", "notAfter"],
+      "properties": {
+        "projectId": { "$ref": "#/$defs/id" },
+        "environmentId": { "$ref": "#/$defs/id" },
+        "dataClasses": {
+          "type": "array", "minItems": 1, "maxItems": 5, "uniqueItems": true,
+          "items": { "enum": ["D0", "D1", "D2", "D3", "D4"] }
+        },
+        "notBefore": { "$ref": "#/$defs/timestamp" },
+        "notAfter": { "$ref": "#/$defs/timestamp" }
+      }
+    },
+    "statement": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "effect", "action", "actionClass", "resource", "constraints", "approvalProfile"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "effect": { "enum": ["allow", "deny"] },
+        "action": { "enum": ["identity.inspect", "policy.inspect", "model.invoke", "run.plan", "repository.read", "run.activate", "evaluation.run", "repository.write", "code.execute", "external.write", "production.change"] },
+        "actionClass": { "enum": ["A0", "A1", "A2", "A3", "A4"] },
+        "resource": { "$ref": "#/$defs/resourceBinding" },
+        "constraints": { "$ref": "#/$defs/constraints" },
+        "approvalProfile": {
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["kind", "id", "digest"],
+              "properties": {
+                "kind": { "const": "ApprovalProfile" },
+                "id": { "$ref": "#/$defs/id" },
+                "digest": { "$ref": "#/$defs/sha256" }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "role": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "statements"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "statements": {
+          "type": "array", "minItems": 1, "maxItems": 256,
+          "items": { "$ref": "#/$defs/statement" }
+        }
+      }
+    },
+    "actorBinding": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "principal", "membership", "roleId"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "principal": { "$ref": "#/$defs/principalBinding" },
+        "membership": { "$ref": "#/$defs/membershipBinding" },
+        "roleId": { "$ref": "#/$defs/id" }
+      }
+    }
+  }
+}

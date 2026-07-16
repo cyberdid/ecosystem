@@ -9,8 +9,11 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 from eco_runtime.digests import canonical_json
 from eco_runtime.policy_bundle import PolicyTrustAnchor, policy_signature_message
+from eco_runtime.team_access import team_access_binding_id, team_access_policy_digest
+from eco_runtime.team_approval import approval_record_digest
 from eco_runtime.team_identity import (
     AUTHORITY_API_VERSION,
+    approval_policy_context_digest,
     authority_record_digest,
     identity_key_fingerprint,
     identity_key_id,
@@ -120,7 +123,9 @@ def membership_record(team: dict, principal: dict) -> dict:
     )
 
 
-def key_record(team: dict, public_key: bytes) -> dict:
+def key_record(
+    subject: dict, public_key: bytes, *, purpose: str = "policy-signing"
+) -> dict:
     fingerprint = identity_key_fingerprint(public_key)
     return seal(
         {
@@ -133,8 +138,8 @@ def key_record(team: dict, public_key: bytes) -> dict:
                 "recordDigest": "0" * 64,
             },
             "spec": {
-                "subject": binding(team),
-                "purpose": "policy-signing",
+                "subject": binding(subject),
+                "purpose": purpose,
                 "algorithm": "Ed25519",
                 "publicKey": {"encoding": "raw-base64url", "value": b64url(public_key)},
                 "fingerprint": {"algorithm": "SHA-256", "digest": fingerprint},
@@ -244,3 +249,272 @@ def trust_anchor(signer: Ed25519PrivateKey) -> PolicyTrustAnchor:
         not_before=datetime(2026, 7, 1, tzinfo=timezone.utc),
         not_after=datetime(2026, 9, 1, tzinfo=timezone.utc),
     )
+
+
+def bounded_policy_bundle(
+    *,
+    runtime_subject_digest: str,
+    runtime_write_subject_digest: str | None = None,
+    policy_signer: Ed25519PrivateKey | None = None,
+) -> tuple[
+    dict,
+    Ed25519PrivateKey,
+    dict[str, Ed25519PrivateKey],
+    dict[str, Ed25519PrivateKey],
+]:
+    policy_signer = policy_signer or Ed25519PrivateKey.from_private_bytes(b"p" * 32)
+    approval_signers = {
+        "approver-1": Ed25519PrivateKey.from_private_bytes(b"a" * 32),
+        "approver-2": Ed25519PrivateKey.from_private_bytes(b"b" * 32),
+    }
+    actor_signers = {
+        "approver-1": Ed25519PrivateKey.from_private_bytes(b"c" * 32),
+        "approver-2": Ed25519PrivateKey.from_private_bytes(b"d" * 32),
+        "requester-1": Ed25519PrivateKey.from_private_bytes(b"r" * 32),
+    }
+    team = team_record()
+    principals = [
+        principal_record(identifier=identifier)
+        for identifier in ("approver-1", "approver-2", "requester-1")
+    ]
+    principal_by_id = {item["metadata"]["id"]: item for item in principals}
+    memberships = [membership_record(team, item) for item in principals]
+    membership_by_principal = {
+        item["spec"]["principal"]["id"]: item for item in memberships
+    }
+    policy_public = policy_signer.public_key().public_bytes(
+        encoding=serialization.Encoding.Raw,
+        format=serialization.PublicFormat.Raw,
+    )
+    keys = [key_record(team, policy_public)]
+    for principal_id, signer in approval_signers.items():
+        public_key = signer.public_key().public_bytes(
+            encoding=serialization.Encoding.Raw,
+            format=serialization.PublicFormat.Raw,
+        )
+        keys.append(
+            key_record(
+                principal_by_id[principal_id],
+                public_key,
+                purpose="approval-signing",
+            )
+        )
+    for principal_id, signer in actor_signers.items():
+        public_key = signer.public_key().public_bytes(
+            encoding=serialization.Encoding.Raw,
+            format=serialization.PublicFormat.Raw,
+        )
+        keys.append(
+            key_record(
+                principal_by_id[principal_id],
+                public_key,
+                purpose="workload-authentication",
+            )
+        )
+
+    team_binding = binding(team)
+    policy_context = {
+        "id": "access-project-alpha",
+        "revision": 1,
+        "digest": approval_policy_context_digest(
+            bundle_id="team-policy-alpha",
+            bundle_revision=1,
+            team=team_binding,
+            target_project_ids=[PROJECT_ID],
+            access_policy_id="access-project-alpha",
+            access_policy_revision=1,
+        ),
+        "revocationEpoch": 0,
+    }
+    approval_profile = {
+        "apiVersion": AUTHORITY_API_VERSION,
+        "kind": "ApprovalProfile",
+        "metadata": {
+            "id": "profile-writers",
+            "createdAt": CREATED,
+            "recordDigest": "0" * 64,
+        },
+        "spec": {
+            "purpose": "runtime-action",
+            "team": {"id": team["metadata"]["id"], "digest": team["metadata"]["recordDigest"]},
+            "policy": policy_context,
+            "requiredApproverRole": "approver",
+            "quorum": 2,
+            "validity": {
+                "notBefore": POLICY_NOT_BEFORE,
+                "notAfter": "2026-07-31T00:00:00Z",
+            },
+            "safety": {
+                "permissionsGranted": False,
+                "runtimeAuthorityCreated": False,
+            },
+        },
+    }
+    approval_profile["metadata"]["recordDigest"] = approval_record_digest(
+        approval_profile
+    )
+    recovery_profile = copy.deepcopy(approval_profile)
+    recovery_profile["metadata"]["id"] = "profile-recovery"
+    recovery_profile["metadata"]["recordDigest"] = "0" * 64
+    recovery_profile["spec"]["purpose"] = "emergency-recovery"
+    recovery_profile["metadata"]["recordDigest"] = approval_record_digest(
+        recovery_profile
+    )
+
+    def actor_binding(principal_id: str, role_id: str) -> dict:
+        principal_binding = binding(principal_by_id[principal_id])
+        membership_binding = binding(membership_by_principal[principal_id])
+        return {
+            "id": team_access_binding_id(
+                principal_binding, membership_binding, role_id
+            ),
+            "principal": principal_binding,
+            "membership": membership_binding,
+            "roleId": role_id,
+        }
+
+    def constraints(data_classes: list[str]) -> dict:
+        return {
+            "projectId": PROJECT_ID,
+            "environmentId": "development",
+            "dataClasses": data_classes,
+            "notBefore": POLICY_NOT_BEFORE,
+            "notAfter": "2026-07-31T00:00:00Z",
+        }
+
+    exact_read_resource = {
+        "kind": "repository-entry",
+        "id": "operation-1",
+        "digest": runtime_subject_digest,
+    }
+    exact_write_resource = {
+        "kind": "repository-entry",
+        "id": "operation-1",
+        "digest": runtime_write_subject_digest or runtime_subject_digest,
+    }
+    access_policy = {
+        "apiVersion": AUTHORITY_API_VERSION,
+        "kind": "TeamAccessPolicy",
+        "metadata": {
+            "id": "access-project-alpha",
+            "revision": 1,
+            "createdAt": CREATED,
+            "recordDigest": "0" * 64,
+        },
+        "spec": {
+            "profile": "bounded-team-access-v1",
+            "defaultEffect": "deny",
+            "roles": [
+                {
+                    "id": "approver",
+                    "statements": [
+                        {
+                            "id": "inspect-policy",
+                            "effect": "allow",
+                            "action": "policy.inspect",
+                            "actionClass": "A0",
+                            "resource": {
+                                "kind": "policy-record",
+                                "id": "approval-scope",
+                                "digest": "d" * 64,
+                            },
+                            "constraints": constraints(["D0"]),
+                            "approvalProfile": None,
+                        }
+                    ],
+                },
+                {
+                    "id": "operator",
+                    "statements": [
+                        {
+                            "id": "read-operation",
+                            "effect": "allow",
+                            "action": "repository.read",
+                            "actionClass": "A1",
+                            "resource": copy.deepcopy(exact_read_resource),
+                            "constraints": constraints(["D0", "D1"]),
+                            "approvalProfile": None,
+                        },
+                        {
+                            "id": "write-operation",
+                            "effect": "allow",
+                            "action": "repository.write",
+                            "actionClass": "A2",
+                            "resource": copy.deepcopy(exact_write_resource),
+                            "constraints": constraints(["D0", "D1"]),
+                            "approvalProfile": {
+                                "kind": "ApprovalProfile",
+                                "id": approval_profile["metadata"]["id"],
+                                "digest": approval_profile["metadata"]["recordDigest"],
+                            },
+                        },
+                    ],
+                },
+            ],
+            "bindings": sorted(
+                [
+                    actor_binding("approver-1", "approver"),
+                    actor_binding("approver-2", "approver"),
+                    actor_binding("requester-1", "operator"),
+                ],
+                key=lambda item: item["id"],
+            ),
+            "safety": {
+                "maximumAllowActionClass": "A2",
+                "d4AllowDenied": True,
+                "highImpactAllowDenied": True,
+                "wildcardsAllowed": False,
+                "roleInheritanceAllowed": False,
+                "standaloneAuthorityCreated": False,
+            },
+        },
+    }
+    access_policy["metadata"]["recordDigest"] = team_access_policy_digest(
+        access_policy
+    )
+
+    bundle = seal(
+        {
+            "apiVersion": AUTHORITY_API_VERSION,
+            "kind": "TeamPolicyBundle",
+            "metadata": {
+                "id": "team-policy-alpha",
+                "revision": 1,
+                "createdAt": CREATED,
+                "recordDigest": "0" * 64,
+            },
+            "spec": {
+                "profile": "bounded-team-access-v1",
+                "authorityMode": "narrowing-only",
+                "team": team_binding,
+                "targetProjectIds": [PROJECT_ID],
+                "validity": {
+                    "notBefore": POLICY_NOT_BEFORE,
+                    "notAfter": NOT_AFTER,
+                },
+                "previous": None,
+                "documents": {
+                    "teams": [team],
+                    "principals": sorted(
+                        principals, key=lambda item: item["metadata"]["id"]
+                    ),
+                    "memberships": sorted(
+                        memberships, key=lambda item: item["metadata"]["id"]
+                    ),
+                    "keys": sorted(keys, key=lambda item: item["metadata"]["id"]),
+                    "accessPolicies": [access_policy],
+                    "approvalProfiles": sorted(
+                        [approval_profile, recovery_profile],
+                        key=lambda item: item["metadata"]["id"],
+                    ),
+                },
+                "safety": {
+                    "permissionsGranted": False,
+                    "runtimeAuthorityCreated": False,
+                    "policyActivated": False,
+                    "privateKeyPresent": False,
+                },
+            },
+        }
+    )
+    return bundle, policy_signer, approval_signers, actor_signers

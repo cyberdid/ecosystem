@@ -24,8 +24,8 @@
       "additionalProperties": false,
       "required": ["profile", "authorityMode", "team", "targetProjectIds", "validity", "previous", "documents", "safety"],
       "properties": {
-        "profile": { "const": "identity-catalog-only" },
-        "authorityMode": { "const": "deny-all" },
+        "profile": { "enum": ["identity-catalog-only", "bounded-team-access-v1"] },
+        "authorityMode": { "enum": ["deny-all", "narrowing-only"] },
         "team": { "$ref": "#/$defs/teamBinding" },
         "targetProjectIds": {
           "type": "array",
@@ -57,7 +57,9 @@
             "teams": { "$ref": "#/$defs/teamDocuments" },
             "principals": { "$ref": "#/$defs/principalDocuments" },
             "memberships": { "$ref": "#/$defs/membershipDocuments" },
-            "keys": { "$ref": "#/$defs/keyDocuments" }
+            "keys": { "$ref": "#/$defs/keyDocuments" },
+            "accessPolicies": { "$ref": "#/$defs/accessPolicyDocuments" },
+            "approvalProfiles": { "$ref": "#/$defs/approvalProfileDocuments" }
           }
         },
         "safety": {
@@ -115,6 +117,18 @@
       "type": "array",
       "maxItems": 1024,
       "items": { "$ref": "https://ai.ecosystem.local/schemas/authority/identity-key.schema.json" }
+    },
+    "accessPolicyDocuments": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 64,
+      "items": { "$ref": "https://ai.ecosystem.local/schemas/authority/team-access-policy.schema.json" }
+    },
+    "approvalProfileDocuments": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 64,
+      "items": { "$ref": "https://ai.ecosystem.local/schemas/authority/team-approval.schema.json" }
     }
   }
 }

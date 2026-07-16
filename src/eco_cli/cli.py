@@ -178,6 +178,37 @@ def _parser() -> argparse.ArgumentParser:
     identity_inspect.add_argument("--record", required=True, type=Path)
     identity_inspect.add_argument("--json", action="store_true", dest="json_output")
 
+    team_command = commands.add_parser(
+        "team", help="Operate one externally anchored local team authority"
+    )
+    team_commands = team_command.add_subparsers(dest="team_command", required=True)
+
+    def add_team_authority_arguments(command: argparse.ArgumentParser) -> None:
+        command.add_argument("--database", required=True, type=Path)
+        command.add_argument("--trust-anchor", required=True, type=Path)
+        command.add_argument("--project", required=True)
+        command.add_argument("--audit-key-id", required=True)
+        command.add_argument(
+            "--hmac-env", default="ECO_TEAM_AUTHORITY_HMAC_HEX"
+        )
+        command.add_argument("--store-id")
+        command.add_argument("--json", action="store_true", dest="json_output")
+
+    team_doctor = team_commands.add_parser(
+        "doctor", help="Verify the external authority state and audit chain"
+    )
+    add_team_authority_arguments(team_doctor)
+    team_activate = team_commands.add_parser(
+        "activate", help="Activate one exact externally signed policy revision"
+    )
+    add_team_authority_arguments(team_activate)
+    team_activate.add_argument("--envelope", required=True, type=Path)
+    team_activate.add_argument("--activation-id", required=True)
+    team_activate.add_argument("--expected-revision", required=True, type=int)
+    team_activate.add_argument("--expected-digest", required=True)
+    team_activate.add_argument("--expected-snapshot-digest", required=True)
+    team_activate.add_argument("--apply", action="store_true", required=True)
+
     runtime_trust = runtime_commands.add_parser(
         "trust", help="Verify external runtime trust evidence without enabling execution"
     )
@@ -916,6 +947,80 @@ def command_identity(args: argparse.Namespace) -> int:
     return 0 if result["available"] else 1
 
 
+def command_team(args: argparse.Namespace) -> int:
+    import sqlite3
+
+    from eco_runtime.errors import RuntimePolicyError, RuntimeStoreError
+
+    from .team import activate_team_policy_file, doctor_team_authority
+
+    operation = f"team-{args.team_command}"
+    try:
+        repo = _repo(args)
+        common = {
+            "database_path": args.database,
+            "trust_anchor_path": args.trust_anchor,
+            "forbidden_root": repo,
+            "project_id": args.project,
+            "audit_key_id": args.audit_key_id,
+            "hmac_env": args.hmac_env,
+            "store_id": args.store_id,
+        }
+        if args.team_command == "doctor":
+            result = doctor_team_authority(**common)
+        elif args.team_command == "activate":
+            if not args.apply:
+                raise EcoError("ECO_TEAM_ACTIVATION_CONFIRMATION_REQUIRED")
+            result = activate_team_policy_file(
+                **common,
+                envelope_path=args.envelope,
+                activation_id=args.activation_id,
+                expected_previous=(
+                    args.expected_revision,
+                    args.expected_digest,
+                ),
+                expected_snapshot_digest=args.expected_snapshot_digest,
+            )
+        else:
+            raise EcoError("ECO_AUTHORITY_COMMAND_INVALID")
+    except (
+        EcoError,
+        RuntimePolicyError,
+        RuntimeStoreError,
+        OSError,
+        sqlite3.Error,
+        KeyError,
+        IndexError,
+        TypeError,
+        ValueError,
+    ) as exc:
+        code = getattr(exc, "code", str(exc))
+        result = {
+            "available": False,
+            "operation": operation,
+            "status": "blocked",
+            "code": code if str(code).startswith("ECO_") else "ECO_TEAM_FAILED",
+            "safety": {
+                "secretExposed": False,
+                "pathExposed": False,
+                "rawEnvelopeExposed": False,
+                "repositoryMutation": False,
+                "networkAccessed": False,
+            },
+        }
+    if args.json_output:
+        print(stable_json(result), end="")
+    elif result["available"]:
+        print(
+            "Team authority verified"
+            if args.team_command == "doctor"
+            else f"Team policy {result['status']}"
+        )
+    else:
+        print(f"Team operation blocked ({result['code']})", file=sys.stderr)
+    return 0 if result["available"] else 1
+
+
 def command_run(args: argparse.Namespace) -> int:
     if args.run_command != "wiki-health-check":
         raise EcoError(f"Unknown fixed workflow: {args.run_command}")
@@ -1028,6 +1133,7 @@ COMMANDS = {
     "conformance": command_conformance,
     "policy": command_policy,
     "identity": command_identity,
+    "team": command_team,
     "run": command_run,
     "eval": command_eval,
     "lock": command_lock,

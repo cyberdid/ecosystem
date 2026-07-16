@@ -8,7 +8,7 @@ import json
 import re
 from datetime import datetime, timezone
 from importlib import resources
-from typing import Any
+from typing import Any, Mapping
 
 from jsonschema import Draft202012Validator, FormatChecker
 from referencing import Registry, Resource
@@ -23,6 +23,8 @@ AUTHORITY_SCHEMA_BY_KIND = {
     "TeamIdentity": "team-identity.schema.json",
     "MembershipBinding": "membership-binding.schema.json",
     "IdentityKey": "identity-key.schema.json",
+    "TeamAccessPolicy": "team-access-policy.schema.json",
+    "ApprovalProfile": "team-approval.schema.json",
     "TeamPolicyBundle": "team-policy-bundle.schema.json",
 }
 
@@ -98,6 +100,30 @@ def identity_key_fingerprint(public_key: bytes) -> str:
 
 def identity_key_id(public_key: bytes) -> str:
     return f"ed25519:{identity_key_fingerprint(public_key)}"
+
+
+def approval_policy_context_digest(
+    *,
+    bundle_id: str,
+    bundle_revision: int,
+    team: Mapping[str, Any],
+    target_project_ids: list[str],
+    access_policy_id: str,
+    access_policy_revision: int,
+) -> str:
+    """Bind approvals to one signed bundle context without a digest cycle."""
+
+    return semantic_digest(
+        {
+            "domain": "eco-team-approval-policy-context-v1",
+            "bundleId": bundle_id,
+            "bundleRevision": bundle_revision,
+            "team": dict(team),
+            "targetProjectIds": list(target_project_ids),
+            "accessPolicyId": access_policy_id,
+            "accessPolicyRevision": access_policy_revision,
+        }
+    )
 
 
 def _encode_base64url(value: bytes) -> str:
@@ -261,6 +287,10 @@ def _policy_semantic_errors(document: dict[str, Any]) -> list[str]:
         "memberships": "MembershipBinding",
         "keys": "IdentityKey",
     }
+    if "accessPolicies" in spec["documents"]:
+        expected_kinds["accessPolicies"] = "TeamAccessPolicy"
+    if "approvalProfiles" in spec["documents"]:
+        expected_kinds["approvalProfiles"] = "ApprovalProfile"
     catalogs: dict[str, list[dict[str, Any]]] = spec["documents"]
     all_records: dict[tuple[str, str, str], dict[str, Any]] = {}
     validated_catalogs: dict[str, list[dict[str, Any]]] = {
@@ -296,7 +326,13 @@ def _policy_semantic_errors(document: dict[str, Any]) -> list[str]:
 
     bundle_validity = spec["validity"]
     for record in all_records.values():
-        if not _contains_validity(bundle_validity, record["spec"]["validity"]):
+        record_validity = record["spec"].get("validity")
+        if (
+            record["kind"]
+            in {"TeamIdentity", "PrincipalIdentity", "MembershipBinding", "IdentityKey"}
+            and record_validity is not None
+            and not _contains_validity(bundle_validity, record_validity)
+        ):
             errors.append(f"{kind}$.spec.documents: failed validation")
             break
 
@@ -354,6 +390,138 @@ def _policy_semantic_errors(document: dict[str, Any]) -> list[str]:
             policy_signer_present = True
     if not policy_signer_present:
         errors.append(f"{kind}$.spec.documents.keys: failed validation")
+
+    access_policies = validated_catalogs.get("accessPolicies", [])
+    approval_profiles = validated_catalogs.get("approvalProfiles", [])
+    if spec["profile"] == "identity-catalog-only":
+        if (
+            spec["authorityMode"] != "deny-all"
+            or access_policies
+            or approval_profiles
+        ):
+            errors.append(f"{kind}$.spec.profile: failed validation")
+    else:
+        if spec["authorityMode"] != "narrowing-only" or len(access_policies) != 1:
+            errors.append(f"{kind}$.spec.profile: failed validation")
+        for access_policy in access_policies:
+            if access_policy["metadata"]["revision"] != metadata["revision"]:
+                errors.append(
+                    f"{kind}$.spec.documents.accessPolicies: failed validation"
+                )
+            statement_projects = {
+                statement["constraints"]["projectId"]
+                for role in access_policy["spec"]["roles"]
+                for statement in role["statements"]
+            }
+            if not statement_projects or not statement_projects.issubset(
+                set(spec["targetProjectIds"])
+            ):
+                errors.append(
+                    f"{kind}$.spec.documents.accessPolicies: failed validation"
+                )
+            bundle_start = _parse_timestamp(spec["validity"]["notBefore"])
+            bundle_end = _parse_timestamp(spec["validity"]["notAfter"])
+            if any(
+                not (
+                    bundle_start
+                    <= _parse_timestamp(statement["constraints"]["notBefore"])
+                    < _parse_timestamp(statement["constraints"]["notAfter"])
+                    <= bundle_end
+                )
+                for role in access_policy["spec"]["roles"]
+                for statement in role["statements"]
+            ):
+                errors.append(
+                    f"{kind}$.spec.documents.accessPolicies: failed validation"
+                )
+            for binding in access_policy["spec"]["bindings"]:
+                principal = all_records.get(_binding_tuple(binding["principal"]))
+                membership = all_records.get(_binding_tuple(binding["membership"]))
+                if (
+                    principal is None
+                    or membership is None
+                    or principal["spec"]["status"] != "active"
+                    or membership["spec"]["status"] != "active"
+                    or membership["spec"]["principal"] != binding["principal"]
+                    or membership["spec"]["team"] != spec["team"]
+                ):
+                    errors.append(
+                        f"{kind}$.spec.documents.accessPolicies: failed validation"
+                    )
+                    break
+        access_policy = access_policies[0] if len(access_policies) == 1 else None
+        for approval_profile in approval_profiles:
+            profile_spec = approval_profile["spec"]
+            expected_team = {
+                "id": spec["team"]["id"],
+                "digest": spec["team"]["digest"],
+            }
+            expected_policy = (
+                {
+                    "id": access_policy["metadata"]["id"],
+                    "revision": access_policy["metadata"]["revision"],
+                    "digest": approval_policy_context_digest(
+                        bundle_id=metadata["id"],
+                        bundle_revision=metadata["revision"],
+                        team=spec["team"],
+                        target_project_ids=spec["targetProjectIds"],
+                        access_policy_id=access_policy["metadata"]["id"],
+                        access_policy_revision=access_policy["metadata"]["revision"],
+                    ),
+                    "revocationEpoch": profile_spec["policy"]["revocationEpoch"],
+                }
+                if access_policy is not None
+                else None
+            )
+            if (
+                profile_spec["team"] != expected_team
+                or expected_policy is None
+                or profile_spec["policy"] != expected_policy
+                or profile_spec["requiredApproverRole"]
+                not in {role["id"] for role in access_policy["spec"]["roles"]}
+                or not (
+                    _parse_timestamp(spec["validity"]["notBefore"])
+                    <= _parse_timestamp(profile_spec["validity"]["notBefore"])
+                    < _parse_timestamp(profile_spec["validity"]["notAfter"])
+                    <= _parse_timestamp(spec["validity"]["notAfter"])
+                )
+            ):
+                errors.append(
+                    f"{kind}$.spec.documents.approvalProfiles: failed validation"
+                )
+                break
+        approval_bindings = {
+            (
+                profile["metadata"]["id"],
+                profile["metadata"]["recordDigest"],
+            ): profile["spec"]["purpose"]
+            for profile in approval_profiles
+        }
+        for access_policy in access_policies:
+            if any(
+                statement["approvalProfile"] is not None
+                and (
+                    statement["approvalProfile"]["id"],
+                    statement["approvalProfile"]["digest"],
+                )
+                not in approval_bindings
+                or (
+                    statement["approvalProfile"] is not None
+                    and approval_bindings.get(
+                        (
+                            statement["approvalProfile"]["id"],
+                            statement["approvalProfile"]["digest"],
+                        )
+                    )
+                    != "runtime-action"
+                )
+                for role in access_policy["spec"]["roles"]
+                for statement in role["statements"]
+            ):
+                errors.append(
+                    f"{kind}$.spec.documents.accessPolicies: failed validation"
+                )
+                break
     return errors
 
 
@@ -385,6 +553,14 @@ def authority_contract_errors(document: Any) -> list[str]:
         return _membership_semantic_errors(document)
     if kind == "IdentityKey":
         return _key_semantic_errors(document)
+    if kind == "TeamAccessPolicy":
+        from .team_access import team_access_contract_errors
+
+        return team_access_contract_errors(document)
+    if kind == "ApprovalProfile":
+        from .team_approval import approval_contract_errors
+
+        return approval_contract_errors(document)
     return _policy_semantic_errors(document)
 
 

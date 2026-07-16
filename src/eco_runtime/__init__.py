@@ -21,6 +21,34 @@ from .policy_bundle import (
     TeamPolicyVerifier,
     VerifiedPolicyBundle,
 )
+from .team_access import (
+    TeamAccessDecision,
+    evaluate_team_access,
+    validate_team_access_policy,
+)
+from .team_actor import (
+    AuthenticatedActorAssertion,
+    ActorAuthenticator,
+    actor_assertion_message,
+    recovery_actor_operation_digest,
+    runtime_actor_operation_digest,
+    validate_actor_assertion,
+)
+from .team_approval import (
+    ResolvedApprovalKey,
+    TeamApprovalVerifier,
+    VerifiedActionPermit,
+    validate_team_approval_record,
+)
+from .team_authority import SQLiteTeamAuthority
+from .team_migration import rotate_authority_generation
+from .team_rotation import TeamKeyRotationVerifier, VerifiedTeamKeyRotation
+from .team_runtime import (
+    DurableRuntimeDecisionAuthority,
+    PolicyEngineRuntimeDecisionAuthority,
+    TeamAuthorizationDecision,
+    TeamAuthorizationGate,
+)
 from .broker import RepositoryReadBroker, RepositoryReadResult
 from .adapters import (
     ADAPTER_VERSION,
@@ -76,6 +104,8 @@ __all__ = [
     "AUTHORITY_API_VERSION",
     "ADAPTER_VERSION",
     "AdapterInvocationResult",
+    "AuthenticatedActorAssertion",
+    "ActorAuthenticator",
     "ArtifactAvailabilityProof",
     "ApprovalKeyPolicy",
     "ApprovalSigner",
@@ -106,7 +136,9 @@ __all__ = [
     "PlanningResult",
     "PolicyTrustAnchor",
     "EmbeddedOrchestrator",
+    "DurableRuntimeDecisionAuthority",
     "PolicyEngine",
+    "PolicyEngineRuntimeDecisionAuthority",
     "LinuxWorkspaceWriteBroker",
     "RunEventChain",
     "RepositoryReadBroker",
@@ -117,18 +149,35 @@ __all__ = [
     "RuntimeBudgetError",
     "RuntimeCapabilities",
     "TeamPolicyVerifier",
+    "TeamAccessDecision",
+    "TeamApprovalVerifier",
+    "TeamAuthorizationDecision",
+    "TeamAuthorizationGate",
+    "TeamKeyRotationVerifier",
+    "ResolvedApprovalKey",
+    "SQLiteTeamAuthority",
     "SQLiteRuntimeStore",
     "SQLiteChangeAuthority",
     "SQLiteChangeStore",
     "VerifiedApproval",
     "VerifiedPolicyBundle",
+    "VerifiedActionPermit",
+    "VerifiedTeamKeyRotation",
     "WorkspaceRollbackResult",
     "WorkspaceWriteResult",
     "approval_subject_digest",
+    "actor_assertion_message",
     "build_approval_grant",
     "contract_errors",
+    "evaluate_team_access",
+    "recovery_actor_operation_digest",
+    "rotate_authority_generation",
     "tool_argument_errors",
+    "runtime_actor_operation_digest",
     "validate_record",
+    "validate_team_access_policy",
+    "validate_actor_assertion",
+    "validate_team_approval_record",
     "validate_tool_arguments",
 ]
 

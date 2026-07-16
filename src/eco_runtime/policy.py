@@ -1252,13 +1252,15 @@ class PolicyEngine:
             ),
         )
 
-    def consume_decision(
+    def assert_decision_current(
         self,
         decision: dict[str, Any],
         subject: dict[str, Any],
         *,
         now: datetime,
     ) -> None:
+        """Verify an exact issued, unconsumed decision without consuming it."""
+
         _timestamp(now)
         decision = copy.deepcopy(validate_record(decision))
         subject = copy.deepcopy(validate_record(subject))
@@ -1291,6 +1293,29 @@ class PolicyEngine:
                 raise RuntimePolicyError("ECO_DECISION_UNTRUSTED", "Decision was not issued by this policy engine")
             if issued["consumed"]:
                 raise RuntimePolicyError("ECO_DECISION_REPLAYED", "Decision was already consumed")
+
+    def consume_decision(
+        self,
+        decision: dict[str, Any],
+        subject: dict[str, Any],
+        *,
+        now: datetime,
+    ) -> None:
+        self.assert_decision_current(decision, subject, now=now)
+        normalized = copy.deepcopy(validate_record(decision))
+        decision_id = normalized["metadata"]["id"]
+        decision_digest = semantic_digest(normalized)
+        with self._lock:
+            issued = self._issued_decisions.get(decision_id)
+            if issued is None or issued["digest"] != decision_digest:
+                raise RuntimePolicyError(
+                    "ECO_DECISION_UNTRUSTED",
+                    "Decision was not issued by this policy engine",
+                )
+            if issued["consumed"]:
+                raise RuntimePolicyError(
+                    "ECO_DECISION_REPLAYED", "Decision was already consumed"
+                )
             issued["consumed"] = True
 
     def activate_plan(

@@ -3111,6 +3111,66 @@ class SQLiteRuntimeStore:
         with self._transaction():
             return self._issue_decision_tx(decision, transaction_id=transaction_id)
 
+    def assert_decision_current(
+        self,
+        decision: dict[str, Any],
+        subject: dict[str, Any],
+        *,
+        now: datetime,
+        semantic_config_digest: str,
+        policy_capability: object,
+    ) -> None:
+        """Verify an exact durably issued, unconsumed decision without consuming it."""
+
+        self._require_policy_capability(policy_capability)
+        try:
+            decision = copy.deepcopy(validate_record(decision))
+            subject = copy.deepcopy(validate_record(subject))
+        except ContractValidationError as exc:
+            raise RuntimeStoreError(
+                "ECO_STORE_RECORD_INVALID", "Decision or subject is invalid"
+            ) from exc
+        if decision["kind"] != "PolicyDecision" or decision["spec"]["effect"] != "allow":
+            raise RuntimeStoreError(
+                "ECO_DECISION_DENIED", "Decision cannot authorize execution"
+            )
+        self._require_decision_profile(
+            decision, semantic_config_digest=semantic_config_digest
+        )
+        spec = decision["spec"]
+        subject_digest = semantic_digest(subject)
+        if (
+            decision["metadata"]["runId"] != subject["metadata"].get("runId")
+            or spec["subject"]["kind"] != subject["kind"]
+            or spec["subject"]["id"] != subject["metadata"]["id"]
+            or spec["subject"]["digest"] != subject_digest
+        ):
+            raise RuntimeStoreError(
+                "ECO_DECISION_MISMATCH", "Decision subject does not match"
+            )
+        now_epoch_us = int(now.astimezone(timezone.utc).timestamp() * 1_000_000)
+        with self._lock:
+            row = self._connection.execute(
+                "SELECT * FROM decisions WHERE decision_id = ?",
+                (decision["metadata"]["id"],),
+            ).fetchone()
+            if row is None or row["decision_digest"] != semantic_digest(decision):
+                raise RuntimeStoreError(
+                    "ECO_DECISION_UNTRUSTED", "Decision was not durably issued"
+                )
+            if row["subject_digest"] != subject_digest:
+                raise RuntimeStoreError(
+                    "ECO_DECISION_MISMATCH", "Decision subject does not match"
+                )
+            if row["consumed_at"] is not None:
+                raise RuntimeStoreError(
+                    "ECO_DECISION_REPLAYED", "Decision was already consumed"
+                )
+            if row["expires_at_epoch_us"] <= now_epoch_us:
+                raise RuntimeStoreError(
+                    "ECO_DECISION_EXPIRED", "Decision is expired"
+                )
+
     def _issue_decision_tx(self, decision: dict[str, Any], *, transaction_id: str) -> str:
         record_id, run_id, occurred_at = self._record_identity(decision)
         digest, inserted = self._insert_record(decision)
