@@ -121,7 +121,12 @@ def read_regular(path: Path, maximum: int, code: str) -> bytes:
             & getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0)
         ):
             raise VerificationError(code)
-        flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
+        flags = (
+            os.O_RDONLY
+            | getattr(os, "O_BINARY", 0)
+            | getattr(os, "O_CLOEXEC", 0)
+            | getattr(os, "O_NOFOLLOW", 0)
+        )
         descriptor = os.open(path, flags)
     except VerificationError:
         raise

@@ -20,6 +20,7 @@ from eco_cli.cli import main
 from eco_cli.distribution import (
     MAX_WHEEL_BYTES,
     build_distribution_manifest,
+    distribution_file_digest,
     distribution_manifest_digest,
     installer_plan,
     installer_plan_digest,
@@ -121,6 +122,16 @@ class DistributionTests(unittest.TestCase):
         self.assertFalse(report.get("available", report.get("valid", False)))
         self.assertEqual(report["safety"], VERIFY_SAFETY)
         self.assert_sanitized(report)
+
+    def test_binary_artifact_bytes_are_not_translated_or_truncated(self) -> None:
+        artifact = self.workspace / "binary-marker.bin"
+        content = b"prefix\r\n\x1asuffix\r\n"
+        artifact.write_bytes(content)
+
+        self.assertEqual(
+            distribution_file_digest(artifact, maximum_size=len(content)),
+            sha256_bytes(content),
+        )
 
     def _snapshot(self) -> dict[str, tuple[str, bytes | None, int]]:
         return {
