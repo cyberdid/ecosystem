@@ -18,7 +18,7 @@ from eco_runtime.team_identity import (
     validate_authority_record,
 )
 
-from .m5_fixtures import (
+from tests.m5_fixtures import (
     binding,
     key_record,
     membership_record,

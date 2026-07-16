@@ -15,7 +15,7 @@ from cryptography.hazmat.primitives import serialization
 from eco_cli.cli import main
 from eco_runtime.digests import canonical_json
 
-from .m5_fixtures import (
+from tests.m5_fixtures import (
     PROJECT_ID,
     TEAM_ID,
     b64url,

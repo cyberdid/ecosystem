@@ -12,10 +12,11 @@ from eco_runtime.digests import canonical_json
 from eco_runtime.errors import RuntimePolicyError
 from eco_runtime.policy_bundle import PolicyTrustAnchor, TeamPolicyVerifier
 
-from .m5_fixtures import (
+from tests.m5_fixtures import (
     PROJECT_ID,
     envelope_bytes,
     policy_bundle,
+    seal,
     trust_anchor,
 )
 
@@ -139,8 +140,6 @@ class SignedTeamPolicyTests(unittest.TestCase):
 
         created_after_issue = copy.deepcopy(self.bundle)
         created_after_issue["metadata"]["createdAt"] = "2026-07-16T12:03:00Z"
-        from .m5_fixtures import seal
-
         seal(created_after_issue)
         with self.assertRaises(RuntimePolicyError):
             self.verify(envelope_bytes(created_after_issue, self.signer))
