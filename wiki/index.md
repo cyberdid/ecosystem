@@ -10,7 +10,7 @@
 | Page | Purpose | Updated |
 |---|---|---:|
 | [M5 team authority](../docs/architecture/team-authority.md) | Threat boundary, identity catalog, Ed25519 verification, diagnostic CLI and exact non-claims | 2026-07-16 |
-| [M5.0–M5.2 foundation report](../docs/research/2026-07-16-m5-team-authority-foundation-report.md) | Multi-agent findings, implementation evidence, 405-test gate and M5.3 handoff | 2026-07-16 |
+| [M5.0–M5.2 foundation report](../docs/research/2026-07-16-m5-team-authority-foundation-report.md) | Multi-agent findings, implementation evidence, 406-test gate and M5.3 handoff | 2026-07-16 |
 | [architecture.md](architecture.md) | Current implemented boundary and target runtime flow | 2026-07-16 |
 | [loops.md](loops.md) | Loop contract, safety boundaries, maturity and first executable L2 profile | 2026-07-16 |
 | [openresearcher.md](openresearcher.md) | Downloaded upstream research node, evidence, boundaries, and possible role | 2026-07-15 |

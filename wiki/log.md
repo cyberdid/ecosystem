@@ -12,7 +12,8 @@ Append-only хронологічний лог операцій. Формат: `#
 - Added externally anchored canonical Ed25519 policy-envelope verification with no production signer, no self-bootstrap, fixed project/team/subject bindings and immutable non-authorizing results.
 - Added read-only `eco identity inspect`, `eco policy inspect` and `eco policy verify`; project-controlled trust anchors, unsafe file aliases, duplicate/noncanonical JSON and raw diagnostic leakage fail closed.
 - Multi-agent threat, identity/crypto and shared-state audits fixed the trust/digest/replay boundaries and defined M5.3–M5.7 handoff constraints.
-- Locked `cryptography` and dependencies; focused 24-test M5 gate plus the complete 405-test regression pass.
+- Locked `cryptography` and dependencies; focused 24-test M5 gate plus the complete 406-test regression pass.
+- Extended installed and standalone distribution verification for valid two-component dependency versions (`pycparser 3.0`); 18 distribution tests and a real 11-artifact Linux wheelhouse verification pass.
 - Next: M5.3 bounded RBAC/ABAC as an additional narrowing gate; durable activation/currentness remains M5.4.
 
 ## [2026-07-16] implementation | Remaining bounded M4 portability completed

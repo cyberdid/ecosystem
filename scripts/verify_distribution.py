@@ -30,6 +30,9 @@ MAX_LOCK_BYTES = 16 * 1024 * 1024
 MAX_ENTRY_BYTES = 64 * 1024 * 1024
 MAX_WHEEL_ENTRIES = 4096
 VERSION_RE = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+(?:[A-Za-z0-9._+-]{0,32})?$")
+WHEEL_VERSION_RE = re.compile(
+    r"^[0-9]+(?:\.[0-9]+){1,3}(?:[A-Za-z0-9._+!]{0,32})?$"
+)
 MANIFEST_ID_RE = re.compile(
     r"^ai-ecosystem-harness-[0-9][A-Za-z0-9._+-]{4,63}$"
 )
@@ -321,7 +324,7 @@ def inspect_wheel(
             ).lower()
             if (
                 not str(metadata.get("Name", ""))
-                or VERSION_RE.fullmatch(str(metadata.get("Version", ""))) is None
+                or WHEEL_VERSION_RE.fullmatch(str(metadata.get("Version", ""))) is None
                 or filename_package != metadata_package
                 or filename_version != str(metadata.get("Version", ""))
             ):

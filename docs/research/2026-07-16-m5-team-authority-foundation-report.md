@@ -33,7 +33,8 @@ Three independent read-only reviews covered identity/crypto contracts, shared-st
 | Gate | Result |
 |---|---|
 | Focused identity, signature and CLI suite | 24 tests pass |
-| Full pytest regression | 405 tests pass |
+| Full unittest-discovery and pytest regression | 406 tests pass |
+| Distribution compatibility | 18 tests pass; real 11-artifact Linux wheelhouse manifest verifies |
 | M4 runtime schema digest | Unchanged at `d7ab8041...316d9d` |
 | Python compile | Pass |
 | Lock synchronization | `uv lock` + `uv sync --extra test` pass |

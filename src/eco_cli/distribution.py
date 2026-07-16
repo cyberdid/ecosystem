@@ -33,6 +33,9 @@ MAX_MANIFEST_BYTES = 2 * 1024 * 1024
 _DIGEST_RE = re.compile(r"^[a-f0-9]{64}$")
 _REVISION_RE = re.compile(r"^[a-f0-9]{7,64}$")
 _VERSION_RE = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+(?:[A-Za-z0-9._+-]{0,32})?$")
+_WHEEL_VERSION_RE = re.compile(
+    r"^[0-9]+(?:\.[0-9]+){1,3}(?:[A-Za-z0-9._+!]{0,32})?$"
+)
 _WHEEL_RE = re.compile(
     r"^(?P<distribution>[A-Za-z0-9](?:[A-Za-z0-9_.]*[A-Za-z0-9])?)-"
     r"(?P<version>[A-Za-z0-9][A-Za-z0-9_.!+]*)(?:-[0-9][A-Za-z0-9_]*)?-"
@@ -264,7 +267,7 @@ def _wheel_inventory_bytes(
                 r"[-_.]+", "-", str(metadata.get("Name", ""))
             ).lower()
             version = str(metadata.get("Version", ""))
-            if not package_name or _VERSION_RE.fullmatch(version) is None:
+            if not package_name or _WHEEL_VERSION_RE.fullmatch(version) is None:
                 raise _DistributionError("ECO_DISTRIBUTION_WHEEL_IDENTITY_INVALID")
 
             record_info = archive.getinfo(f"{dist_info}RECORD")

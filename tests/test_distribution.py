@@ -263,6 +263,44 @@ class DistributionTests(unittest.TestCase):
             verify_distribution(copy.deepcopy(first), self.bundle),
         )
 
+    def test_two_component_dependency_version_is_validated_by_both_verifiers(self) -> None:
+        entry = copy.deepcopy(self.fixture["dependencyWheels"][0])
+        entry["path"] = "pycparser-3.0-py3-none-any.whl"
+        for member in entry["entries"]:
+            member["path"] = member["path"].replace(
+                "jsonschema-4.25.1", "pycparser-3.0"
+            ).replace("jsonschema", "pycparser")
+            member["content"] = member["content"].replace(
+                "jsonschema-4.25.1", "pycparser-3.0"
+            ).replace("jsonschema", "pycparser").replace(
+                "Version: 4.25.1", "Version: 3.0"
+            )
+        dependency = self._write_entry(entry)
+        manifest = self._manifest(
+            dependencies=(*self.dependency_wheels, dependency)
+        )
+        self.assert_verified(verify_distribution(manifest, self.bundle))
+
+        manifest_file = self._manifest_file(
+            manifest, name="two-component-wheel-version.json"
+        )
+        script = Path(__file__).parents[1] / "scripts" / "verify_distribution.py"
+        verified = subprocess.run(
+            (
+                sys.executable,
+                str(script),
+                "--manifest",
+                str(manifest_file),
+                "--bundle-root",
+                str(self.bundle),
+            ),
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(verified.returncode, 0, verified.stderr)
+        self.assert_verified(json.loads(verified.stdout))
+
     def test_verify_is_offline_read_only_and_never_invokes_installers(self) -> None:
         manifest = self._manifest()
         before = self._snapshot()
