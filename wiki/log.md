@@ -12,6 +12,7 @@ Append-only хронологічний лог операцій. Формат: `#
 - Added `PlatformBackendConformanceProfile`, exact external HMAC envelope ingestion and narrow observed capabilities. No policy/store/broker/model/adapter/loop consumes the record; unsupported/failure profiles expose no capabilities.
 - Multi-agent review found and closed an ignored `uv.lock` tamper path, fake/non-PEP-427 wheel acceptance, missing main metadata/entry-point checks, dependency-wheel non-validation, verifier reopen races, archive-budget/file-type gaps, numeric JSON aliases, active-context relabeling, unpinned runner/implementation evidence, an unseeded environment canary, non-object CLI input, and standalone contract divergence.
 - Local evidence: 381 complete tests, 17 distribution tests, 7 backend-conformance tests, 7 live isolation tests, one real WSL conformance pass, compile/schema/diff gates, and real eight-artifact offline installation pass.
+- Hosted GitHub Actions run `29498793136` passed at commit `9dc77bee4772294f010c1ff0d5d2c86b7fb1b29a`: full Linux plus focused macOS/Windows portability gates are green. The initial run exposed and drove correction of non-canonical temporary fixture paths on both hosted operating systems.
 - Added ADR-023/024, architecture pages, combined completion report and wiki handoff to M5 team identity/signed policy/RBAC.
 
 ## [2026-07-16] implementation | M4.5.2 passive platform and adapter conformance completed

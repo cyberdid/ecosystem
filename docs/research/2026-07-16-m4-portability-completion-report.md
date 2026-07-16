@@ -86,7 +86,14 @@ At the implementation checkpoint:
 - real wheel build, stdlib verification, offline install and installed CLI version smoke: passed;
 - Python compilation, JSON Schema checks and `git diff --check`: passed.
 
-Remote hosted results are recorded separately after the pushed commit finishes CI; a configured workflow is not itself passing evidence.
+Hosted GitHub Actions run `29498793136` passed at commit
+`9dc77bee4772294f010c1ff0d5d2c86b7fb1b29a`: Linux completed the full
+suite and real eight-wheel verify/offline-install gate, while macOS and
+Windows completed the focused portability/conformance and CLI gates. The first
+hosted attempt exposed that test fixtures supplied a symlink-normalized macOS
+`/var` path and a Windows-normalized temporary path to a deliberately canonical
+test-root contract; fixtures now resolve their temporary root before invoking
+the contract. A configured workflow alone was not counted as passing evidence.
 
 ## Explicit non-claims
 
