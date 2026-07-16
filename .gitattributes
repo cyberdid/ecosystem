@@ -3,3 +3,10 @@
 
 # Archived source material is retained byte-for-byte as reviewed.
 docs/research/sources/** -text -diff
+
+# Deterministic client projections must retain compiler-emitted LF bytes.
+/AGENTS.md text eol=lf
+/CLAUDE.md text eol=lf
+/GEMINI.md text eol=lf
+/.github/copilot-instructions.md text eol=lf
+/.cursor/rules/eco.mdc text eol=lf
