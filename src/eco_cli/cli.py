@@ -147,6 +147,37 @@ def _parser() -> argparse.ArgumentParser:
     conformance_run.add_argument("--backend-instance-digest", required=True)
     conformance_run.add_argument("--json", action="store_true", dest="json_output")
 
+    policy_command = commands.add_parser(
+        "policy", help="Inspect or authenticate a deny-all team policy declaration"
+    )
+    policy_commands = policy_command.add_subparsers(
+        dest="policy_command", required=True
+    )
+    policy_verify = policy_commands.add_parser(
+        "verify", help="Authenticate a signed team policy without activating it"
+    )
+    policy_verify.add_argument("--envelope", required=True, type=Path)
+    policy_verify.add_argument("--trust-anchor", required=True, type=Path)
+    policy_verify.add_argument("--project", required=True)
+    policy_verify.add_argument("--json", action="store_true", dest="json_output")
+    policy_inspect = policy_commands.add_parser(
+        "inspect", help="Validate an unsigned team policy declaration"
+    )
+    policy_inspect.add_argument("--record", required=True, type=Path)
+    policy_inspect.add_argument("--json", action="store_true", dest="json_output")
+
+    identity_command = commands.add_parser(
+        "identity", help="Inspect a non-authorizing identity declaration"
+    )
+    identity_commands = identity_command.add_subparsers(
+        dest="identity_command", required=True
+    )
+    identity_inspect = identity_commands.add_parser(
+        "inspect", help="Validate one identity declaration without authenticating it"
+    )
+    identity_inspect.add_argument("--record", required=True, type=Path)
+    identity_inspect.add_argument("--json", action="store_true", dest="json_output")
+
     runtime_trust = runtime_commands.add_parser(
         "trust", help="Verify external runtime trust evidence without enabling execution"
     )
@@ -731,6 +762,160 @@ def command_conformance(args: argparse.Namespace) -> int:
     return 0 if available else 1
 
 
+def _authority_failure(operation: str, code: str) -> dict[str, Any]:
+    return {
+        "available": False,
+        "operation": operation,
+        "status": "blocked",
+        "code": code if code.startswith("ECO_") else "ECO_AUTHORITY_FAILED",
+        "currentness": "not-established",
+        "activationEligible": False,
+        "safety": {
+            "permissionsGranted": False,
+            "runtimeAuthorityCreated": False,
+            "policyActivated": False,
+            "repositoryMutation": False,
+            "networkAccessed": False,
+        },
+    }
+
+
+def command_policy(args: argparse.Namespace) -> int:
+    from eco_runtime.errors import ContractValidationError, RuntimePolicyError
+    from eco_runtime.policy_bundle import TeamPolicyVerifier
+    from eco_runtime.team_identity import validate_authority_record
+
+    from .authority import (
+        load_trust_anchor,
+        observed_at,
+        parse_canonical_json,
+        read_regular_file,
+    )
+
+    operation = f"policy-{args.policy_command}"
+    try:
+        repo = _repo(args)
+        if args.policy_command == "inspect":
+            document = parse_canonical_json(read_regular_file(args.record))
+            validate_authority_record(document)
+            if document["kind"] != "TeamPolicyBundle":
+                raise EcoError("ECO_TEAM_POLICY_BUNDLE_INVALID")
+            result = {
+                "available": True,
+                "operation": operation,
+                "status": "structurally-valid",
+                "bundleId": document["metadata"]["id"],
+                "revision": document["metadata"]["revision"],
+                "authenticity": "not-established",
+                "currentness": "not-established",
+                "activationEligible": False,
+                "safety": {
+                    "permissionsGranted": False,
+                    "runtimeAuthorityCreated": False,
+                    "policyActivated": False,
+                    "repositoryMutation": False,
+                    "networkAccessed": False,
+                },
+            }
+        elif args.policy_command == "verify":
+            envelope = read_regular_file(args.envelope)
+            anchor = load_trust_anchor(
+                read_regular_file(args.trust_anchor, forbidden_root=repo)
+            )
+            verified = TeamPolicyVerifier(anchor).verify(
+                envelope,
+                expected_project_id=args.project,
+                now=observed_at(),
+            )
+            result = {
+                "available": True,
+                "operation": operation,
+                "status": "signature-verified",
+                "bundleId": verified.bundle_id,
+                "bundleDigest": verified.bundle_digest,
+                "revision": verified.revision,
+                "issuerTeamId": verified.issuer_team_id,
+                "issuerKeyId": verified.issuer_key_id,
+                "authenticity": "relative-to-supplied-anchor",
+                "trustBasis": "caller-supplied-external-anchor",
+                "currentness": verified.currentness,
+                "activationEligible": verified.activation_eligible,
+                "safety": {
+                    "permissionsGranted": False,
+                    "runtimeAuthorityCreated": verified.authority_created,
+                    "policyActivated": False,
+                    "repositoryMutation": False,
+                    "networkAccessed": False,
+                },
+            }
+        else:
+            raise EcoError("ECO_AUTHORITY_COMMAND_INVALID")
+    except (EcoError, ContractValidationError, RuntimePolicyError, OSError) as exc:
+        code = getattr(exc, "code", str(exc))
+        result = _authority_failure(operation, code)
+    if args.json_output:
+        print(stable_json(result), end="")
+    elif result["available"]:
+        print(
+            "Policy signature verified relative to the supplied anchor; activation and runtime authority were not created"
+            if args.policy_command == "verify"
+            else "Policy declaration is structurally valid; authenticity is not established"
+        )
+    else:
+        print(f"Policy operation blocked ({result['code']})", file=sys.stderr)
+    return 0 if result["available"] else 1
+
+
+def command_identity(args: argparse.Namespace) -> int:
+    from eco_runtime.errors import ContractValidationError
+    from eco_runtime.team_identity import validate_authority_record
+
+    from .authority import parse_canonical_json, read_regular_file
+
+    operation = "identity-inspect"
+    try:
+        if args.identity_command != "inspect":
+            raise EcoError("ECO_AUTHORITY_COMMAND_INVALID")
+        _repo(args)
+        document = parse_canonical_json(read_regular_file(args.record))
+        validate_authority_record(document)
+        if document["kind"] not in {
+            "PrincipalIdentity",
+            "TeamIdentity",
+            "MembershipBinding",
+            "IdentityKey",
+        }:
+            raise EcoError("ECO_AUTHORITY_IDENTITY_KIND_INVALID")
+        result = {
+            "available": True,
+            "operation": operation,
+            "status": "structurally-valid",
+            "kind": document["kind"],
+            "id": document["metadata"]["id"],
+            "statusClaim": document["spec"]["status"],
+            "authenticity": "not-established",
+            "currentness": "not-established",
+            "activationEligible": False,
+            "safety": {
+                "permissionsGranted": False,
+                "runtimeAuthorityCreated": False,
+                "policyActivated": False,
+                "repositoryMutation": False,
+                "networkAccessed": False,
+            },
+        }
+    except (EcoError, ContractValidationError, OSError) as exc:
+        code = getattr(exc, "code", str(exc))
+        result = _authority_failure(operation, code)
+    if args.json_output:
+        print(stable_json(result), end="")
+    elif result["available"]:
+        print("Identity declaration is structurally valid; authority was not created")
+    else:
+        print(f"Identity inspection blocked ({result['code']})", file=sys.stderr)
+    return 0 if result["available"] else 1
+
+
 def command_run(args: argparse.Namespace) -> int:
     if args.run_command != "wiki-health-check":
         raise EcoError(f"Unknown fixed workflow: {args.run_command}")
@@ -841,6 +1026,8 @@ COMMANDS = {
     "platform": command_platform,
     "distribution": command_distribution,
     "conformance": command_conformance,
+    "policy": command_policy,
+    "identity": command_identity,
     "run": command_run,
     "eval": command_eval,
     "lock": command_lock,

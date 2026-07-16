@@ -72,7 +72,7 @@ Focused adoption tests run on hosted Linux, macOS, and Windows. This does not po
 
 `eco conformance run` is separate from passive doctor and accepts only the fixed namespace/Landlock suite in a private external root. Its content-free `PlatformBackendConformanceProfile` records narrow observations bound to platform, distribution, backend instance/implementation, runner and suite. External signing/ingestion is supported, but M4.6 has no policy/runtime consumer. Windows, macOS, container and hosted-CI profiles remain unsupported negatives. See [portable distribution](../docs/architecture/portable-distribution.md) and [backend conformance](../docs/architecture/platform-backend-conformance.md).
 
-The next vertical slice is M5 team identity/signed-policy/RBAC. Scheduling, autonomous retry, full-wiki lint, publisher provenance, cross-platform native security backends, and every L3–L5 profile remain separate future gates. Every new write backend must independently preserve root/path semantics, exact approval, durable recovery, M2 trusted evidence, isolation, no fallback, and parity.
+M5.0–M5.2 now implement non-authorizing team identity records and externally anchored Ed25519 deny-all policy verification. M5.3 RBAC/ABAC is the next vertical slice; durable activation remains M5.4. Scheduling, autonomous retry, full-wiki lint, publisher provenance, cross-platform native security backends, and every L3–L5 profile remain separate future gates. Every new write backend must independently preserve root/path semantics, exact approval, durable recovery, M2 trusted evidence, isolation, no fallback, and parity.
 
 ## Sources
 

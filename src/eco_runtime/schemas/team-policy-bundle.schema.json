@@ -1,0 +1,120 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai.ecosystem.local/schemas/authority/team-policy-bundle.schema.json",
+  "title": "TeamPolicyBundle",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "authority.ai.ecosystem/v1alpha1" },
+    "kind": { "const": "TeamPolicyBundle" },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "revision", "createdAt", "recordDigest"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "revision": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "recordDigest": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["profile", "authorityMode", "team", "targetProjectIds", "validity", "previous", "documents", "safety"],
+      "properties": {
+        "profile": { "const": "identity-catalog-only" },
+        "authorityMode": { "const": "deny-all" },
+        "team": { "$ref": "#/$defs/teamBinding" },
+        "targetProjectIds": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/id" }
+        },
+        "validity": { "$ref": "#/$defs/validity" },
+        "previous": {
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["revision", "digest"],
+              "properties": {
+                "revision": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+                "digest": { "$ref": "#/$defs/sha256" }
+              }
+            }
+          ]
+        },
+        "documents": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["teams", "principals", "memberships", "keys"],
+          "properties": {
+            "teams": { "$ref": "#/$defs/teamDocuments" },
+            "principals": { "$ref": "#/$defs/principalDocuments" },
+            "memberships": { "$ref": "#/$defs/membershipDocuments" },
+            "keys": { "$ref": "#/$defs/keyDocuments" }
+          }
+        },
+        "safety": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["permissionsGranted", "runtimeAuthorityCreated", "policyActivated", "privateKeyPresent"],
+          "properties": {
+            "permissionsGranted": { "const": false },
+            "runtimeAuthorityCreated": { "const": false },
+            "policyActivated": { "const": false },
+            "privateKeyPresent": { "const": false }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._:@/-]{0,127}$" },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "validity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["notBefore", "notAfter"],
+      "properties": {
+        "notBefore": { "type": "string", "format": "date-time" },
+        "notAfter": { "type": "string", "format": "date-time" }
+      }
+    },
+    "teamBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "id", "digest"],
+      "properties": {
+        "kind": { "const": "TeamIdentity" },
+        "id": { "$ref": "#/$defs/id" },
+        "digest": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "teamDocuments": {
+      "type": "array",
+      "maxItems": 1024,
+      "items": { "$ref": "https://ai.ecosystem.local/schemas/authority/team-identity.schema.json" }
+    },
+    "principalDocuments": {
+      "type": "array",
+      "maxItems": 1024,
+      "items": { "$ref": "https://ai.ecosystem.local/schemas/authority/principal-identity.schema.json" }
+    },
+    "membershipDocuments": {
+      "type": "array",
+      "maxItems": 1024,
+      "items": { "$ref": "https://ai.ecosystem.local/schemas/authority/membership-binding.schema.json" }
+    },
+    "keyDocuments": {
+      "type": "array",
+      "maxItems": 1024,
+      "items": { "$ref": "https://ai.ecosystem.local/schemas/authority/identity-key.schema.json" }
+    }
+  }
+}

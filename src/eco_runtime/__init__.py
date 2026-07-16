@@ -7,6 +7,20 @@ from .contracts import (
     validate_record,
     validate_tool_arguments,
 )
+from .team_identity import (
+    AUTHORITY_API_VERSION,
+    authority_contract_errors,
+    authority_record_digest,
+    authority_schema_bundle_digest,
+    identity_key_id,
+    membership_binding_id,
+    validate_authority_record,
+)
+from .policy_bundle import (
+    PolicyTrustAnchor,
+    TeamPolicyVerifier,
+    VerifiedPolicyBundle,
+)
 from .broker import RepositoryReadBroker, RepositoryReadResult
 from .adapters import (
     ADAPTER_VERSION,
@@ -59,6 +73,7 @@ from .write_orchestrator import (
 
 __all__ = [
     "API_VERSION",
+    "AUTHORITY_API_VERSION",
     "ADAPTER_VERSION",
     "AdapterInvocationResult",
     "ArtifactAvailabilityProof",
@@ -69,6 +84,12 @@ __all__ = [
     "BudgetLedger",
     "BudgetSnapshot",
     "ContractValidationError",
+    "authority_contract_errors",
+    "authority_record_digest",
+    "authority_schema_bundle_digest",
+    "identity_key_id",
+    "membership_binding_id",
+    "validate_authority_record",
     "OpenAIChatInvocation",
     "OpenAICompatibleAdapter",
     "OpenAICompatibleInvoker",
@@ -83,6 +104,7 @@ __all__ = [
     "RuntimeStateError",
     "RuntimeStoreError",
     "PlanningResult",
+    "PolicyTrustAnchor",
     "EmbeddedOrchestrator",
     "PolicyEngine",
     "LinuxWorkspaceWriteBroker",
@@ -94,10 +116,12 @@ __all__ = [
     "RunState",
     "RuntimeBudgetError",
     "RuntimeCapabilities",
+    "TeamPolicyVerifier",
     "SQLiteRuntimeStore",
     "SQLiteChangeAuthority",
     "SQLiteChangeStore",
     "VerifiedApproval",
+    "VerifiedPolicyBundle",
     "WorkspaceRollbackResult",
     "WorkspaceWriteResult",
     "approval_subject_digest",

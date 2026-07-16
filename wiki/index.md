@@ -3,12 +3,14 @@
 > Curated operational knowledge. Canonical executable truth lives under `.ai/`; generated vendor files are projections.
 
 **Updated:** 2026-07-16
-**Status:** The bounded M1–M4 sequence is complete through M4.6. M4 provides fixed manual no-model `wiki-health-check` execution through L2; M4.5.1 adds safe adoption, M4.5.2 passive profiles, M4.5.3 verified wheel-only offline distribution, and M4.6 active Linux/WSL backend observation without runtime authority. M5 team identity/policy is next.
+**Status:** M1–M4.6 are complete, and M5.0–M5.2 now provide non-authorizing team identity contracts plus externally anchored Ed25519 policy verification. M5.3 RBAC/ABAC is next; no signed bundle is active/current authority yet.
 
 ## Pages
 
 | Page | Purpose | Updated |
 |---|---|---:|
+| [M5 team authority](../docs/architecture/team-authority.md) | Threat boundary, identity catalog, Ed25519 verification, diagnostic CLI and exact non-claims | 2026-07-16 |
+| [M5.0–M5.2 foundation report](../docs/research/2026-07-16-m5-team-authority-foundation-report.md) | Multi-agent findings, implementation evidence, 405-test gate and M5.3 handoff | 2026-07-16 |
 | [architecture.md](architecture.md) | Current implemented boundary and target runtime flow | 2026-07-16 |
 | [loops.md](loops.md) | Loop contract, safety boundaries, maturity and first executable L2 profile | 2026-07-16 |
 | [openresearcher.md](openresearcher.md) | Downloaded upstream research node, evidence, boundaries, and possible role | 2026-07-15 |

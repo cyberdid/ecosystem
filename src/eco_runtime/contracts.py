@@ -11,10 +11,11 @@ from jsonschema import Draft202012Validator, FormatChecker
 
 from .digests import semantic_digest
 from .errors import ContractValidationError
+from .team_identity import AUTHORITY_SCHEMA_BY_KIND, authority_contract_errors
 
 API_VERSION = "runtime.ai.ecosystem/v1alpha1"
 
-SCHEMA_BY_KIND = {
+RUNTIME_SCHEMA_BY_KIND = {
     "RunRequest": "run-request.schema.json",
     "RunPlan": "run-plan.schema.json",
     "NoModelRunRequest": "no-model-run-request.schema.json",
@@ -44,6 +45,9 @@ SCHEMA_BY_KIND = {
     "WorkspaceWriteReceipt": "workspace-write-receipt.schema.json",
     "WorkspaceRollbackReceipt": "workspace-rollback-receipt.schema.json",
 }
+# Backward-compatible runtime registry. Authority schemas deliberately live in a
+# separate registry so existing M4 schema snapshots remain byte-for-byte stable.
+SCHEMA_BY_KIND = RUNTIME_SCHEMA_BY_KIND
 
 TOOL_ARGUMENT_SCHEMAS = {
     "repository.read": "repository-read.schema.json",
@@ -100,7 +104,9 @@ def _load_tool_schema(tool_id: str) -> dict[str, Any]:
 def schema_bundle_digest() -> str:
     return semantic_digest(
         {
-            "records": {kind: _load_schema(kind) for kind in sorted(SCHEMA_BY_KIND)},
+            "records": {
+                kind: _load_schema(kind) for kind in sorted(RUNTIME_SCHEMA_BY_KIND)
+            },
             "tools": {tool_id: _load_tool_schema(tool_id) for tool_id in sorted(TOOL_ARGUMENT_SCHEMAS)},
         }
     )
@@ -141,8 +147,13 @@ def contract_errors(document: Any) -> list[str]:
         return ["record$: has the wrong type"]
 
     kind = document.get("kind")
-    if not isinstance(kind, str) or kind not in SCHEMA_BY_KIND:
-        return ["record$.kind: is not a supported runtime record kind"]
+    if not isinstance(kind, str) or (
+        kind not in RUNTIME_SCHEMA_BY_KIND and kind not in AUTHORITY_SCHEMA_BY_KIND
+    ):
+        return ["record$.kind: is not a supported record kind"]
+
+    if kind in AUTHORITY_SCHEMA_BY_KIND:
+        return authority_contract_errors(document)
 
     validator = Draft202012Validator(_load_schema(kind), format_checker=FORMAT_CHECKER)
     errors = sorted(
@@ -208,7 +219,7 @@ def contract_errors(document: Any) -> list[str]:
 
 
 def validate_record(document: Any) -> dict[str, Any]:
-    """Validate a runtime record and return it unchanged on success."""
+    """Validate a supported runtime or authority record unchanged on success."""
 
     errors = contract_errors(document)
     if errors:

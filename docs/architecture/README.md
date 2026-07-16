@@ -1,6 +1,6 @@
 # Architecture
 
-**Status:** M1, embedded M2 read-only, bounded M3 Linux/WSL controlled writes, M3.5/M3.6 integration/trust, the fixed M4 no-model L0–L2 reference loop, M4.5.1 safe project adoption, M4.5.2 passive platform profiles, M4.5.3 wheel-only offline distribution, and M4.6 controlled Linux/WSL backend conformance are implemented.
+**Status:** M1, embedded M2 read-only, bounded M3 Linux/WSL controlled writes, M3.5/M3.6 integration/trust, the fixed M4 no-model L0–L2 reference loop, M4.5 portability/conformance, and the non-authorizing M5.0–M5.2 team identity/signed-policy foundation are implemented.
 
 **Updated:** 2026-07-16
 
@@ -139,14 +139,18 @@ The wheel-only `DistributionManifest` binds the exact main/dependency wheelhouse
 
 `eco conformance run` accepts only a fixed synthetic Linux/WSL namespace + Landlock suite in an operator-created external private root. The resulting `PlatformBackendConformanceProfile` binds exact platform/distribution/backend/runner/suite identities and uses `observedCapabilities`, never effective authority. External envelope ingestion verifies the record but no policy/store/broker/adapter/loop consumes it in M4.6. See [M4.6 platform backend conformance](platform-backend-conformance.md).
 
-### Remaining beyond M4
+### M5.0–M5.2 team-authority foundation
+
+The separate `authority.ai.ecosystem/v1alpha1` namespace now describes teams, principals, memberships, public identity keys and revisioned deny-all identity catalogs. Ed25519 verification checks canonical policy bytes relative to a caller-supplied external anchor without self-bootstrap; M5.2 does not establish anchor provenance. The read-only CLI fixes currentness, activation and runtime authority to unavailable. M4 runtime schema snapshots and `.ai/trust.yaml` remain unchanged. See [M5 team authority](team-authority.md).
+
+### Remaining after M5.2
 
 - endpoint-specific network allowlist backend;
 - Windows/macOS isolation and filesystem backends;
 - Windows/macOS controlled-write backends and conformance evidence;
 - delete, rename, directory, batch, command, A3 and A4 action profiles;
 - descendant-exec/seccomp/cgroup/device containment;
-- asymmetric team-verifiable evidence identity.
+- durable M5 activation heads, RBAC/ABAC, revocation/rotation, emergency state and quorum approvals;
 - full-wiki link/staleness/duplicate-semantic lint over a separately signed larger scope;
 - loop scheduling, autonomous retry, and L3–L5 promotion profiles.
 - durable adoption crash recovery and hostile concurrent parent-swap protection;
@@ -181,7 +185,7 @@ client without credentials
 
 ## Next milestone
 
-M5 team authority—signed policy and release distribution, RBAC/identity, independent evidence consumption, revocation/rotation, and shared-state conformance—follows the completed bounded M4 portability work. It must preserve the M4 authority separation: neither L2 history, a passive profile, a package checksum nor an M4.6 observation may become implicit scheduling, model, network or write authority.
+M5.3 adds bounded RBAC/ABAC as a narrowing intersection with the existing `PolicyEngine`; M5.4 then adds local shared activation authority. Neither L2 history, a passive profile, a package checksum, an M4.6 observation nor a cryptographically valid but inactive M5 bundle may become implicit scheduling, model, network or write authority.
 
 ## Sources
 

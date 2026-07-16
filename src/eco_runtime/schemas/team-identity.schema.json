@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai.ecosystem.local/schemas/authority/team-identity.schema.json",
+  "title": "TeamIdentity",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "authority.ai.ecosystem/v1alpha1" },
+    "kind": { "const": "TeamIdentity" },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "createdAt", "recordDigest"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "version": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "recordDigest": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "validity", "safety"],
+      "properties": {
+        "status": { "enum": ["active", "suspended", "revoked"] },
+        "validity": { "$ref": "#/$defs/validity" },
+        "safety": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["permissionsGranted", "runtimeAuthorityCreated"],
+          "properties": {
+            "permissionsGranted": { "const": false },
+            "runtimeAuthorityCreated": { "const": false }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._:@/-]{0,127}$" },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "validity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["notBefore", "notAfter"],
+      "properties": {
+        "notBefore": { "type": "string", "format": "date-time" },
+        "notAfter": { "type": "string", "format": "date-time" }
+      }
+    }
+  }
+}

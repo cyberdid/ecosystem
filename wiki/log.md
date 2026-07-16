@@ -4,6 +4,17 @@ Append-only хронологічний лог операцій. Формат: `#
 
 ---
 
+## [2026-07-16] implementation | M5.0–M5.2 team identity and signed-policy foundation
+
+- Added the separate `authority.ai.ecosystem/v1alpha1` contract family for team/principal identities, membership bindings, Ed25519 public identity keys and revisioned deny-all identity catalogs.
+- Kept the M4 runtime schema registry/digest unchanged and introduced a separate authority schema digest, preventing new records from invalidating durable M4 snapshots.
+- Implemented domain-separated authority-record digests, deterministic membership/key IDs, exact validity/controller rules and recursive sorted cross-record binding.
+- Added externally anchored canonical Ed25519 policy-envelope verification with no production signer, no self-bootstrap, fixed project/team/subject bindings and immutable non-authorizing results.
+- Added read-only `eco identity inspect`, `eco policy inspect` and `eco policy verify`; project-controlled trust anchors, unsafe file aliases, duplicate/noncanonical JSON and raw diagnostic leakage fail closed.
+- Multi-agent threat, identity/crypto and shared-state audits fixed the trust/digest/replay boundaries and defined M5.3–M5.7 handoff constraints.
+- Locked `cryptography` and dependencies; focused 24-test M5 gate plus the complete 405-test regression pass.
+- Next: M5.3 bounded RBAC/ABAC as an additional narrowing gate; durable activation/currentness remains M5.4.
+
 ## [2026-07-16] implementation | Remaining bounded M4 portability completed
 
 - Added M4.5.3 closed distribution integrity metadata, installed + standard-library offline verifiers, exact main/dependency/lock/schema binding, wheel-internal validation and non-executable package-manager previews.

@@ -11,8 +11,10 @@ requires-python = ">=3.11"
 license = { text = "MIT" }
 authors = [{ name = "ecosystem maintainers" }]
 dependencies = [
+  "cryptography>=41,<50",
   "PyYAML>=6.0,<7",
   "jsonschema>=4.10,<5",
+  "referencing>=0.28,<0.38",
 ]
 
 [project.optional-dependencies]

@@ -65,7 +65,7 @@ jobs:
           cache: pip
       - run: python -m pip install --upgrade pip
       - run: python -m pip install -e ".[test]"
-      - run: python -m unittest tests.test_cli tests.test_adoption_fixtures tests.test_adoption_safety tests.test_platform_conformance tests.test_distribution tests.test_backend_conformance -v
+      - run: python -m unittest tests.test_cli tests.test_adoption_fixtures tests.test_adoption_safety tests.test_platform_conformance tests.test_distribution tests.test_backend_conformance tests.test_m5_identity_contracts tests.test_m5_policy_bundle tests.test_m5_authority_cli -v
       - run: eco validate
       - run: eco render --check
       - run: eco doctor
