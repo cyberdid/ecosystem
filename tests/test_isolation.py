@@ -9,6 +9,7 @@ import threading
 import traceback
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from eco_runtime.errors import RuntimePolicyError
 from eco_runtime.isolation import (
@@ -19,6 +20,18 @@ from eco_runtime.isolation import (
     MappingCredentialResolver,
     NetworkEndpoint,
 )
+
+
+def _live_isolation_available() -> bool:
+    """Whether this host can execute, rather than merely unit-test, the profile."""
+    try:
+        LinuxNamespaceLauncher()._preflight()
+    except RuntimePolicyError:
+        return False
+    return True
+
+
+LIVE_ISOLATION_AVAILABLE = _live_isolation_available()
 
 
 class _ExplodingResolver:
@@ -77,6 +90,10 @@ class IsolationTests(unittest.TestCase):
         self.assertEqual(caught.exception.code, code)
         return caught.exception
 
+    @unittest.skipUnless(
+        LIVE_ISOLATION_AVAILABLE,
+        "requires a Linux host with user/net/pid namespaces and Landlock",
+    )
     def test_environment_is_clean_and_host_files_are_landlock_denied(self) -> None:
         host_name = "ECO_HOST_ONLY_SECRET"
         previous = os.environ.get(host_name)
@@ -119,6 +136,10 @@ print(json.dumps({
         self.assertEqual(payload["home"], str(self.work))
         self.assertEqual((self.work / "created.txt").read_text(), "ok")
 
+    @unittest.skipUnless(
+        LIVE_ISOLATION_AVAILABLE,
+        "requires a Linux host with user/net/pid namespaces and Landlock",
+    )
     def test_network_namespace_and_landlock_deny_host_tcp_connection(self) -> None:
         server = socket.socket()
         server.bind(("127.0.0.1", 0))
@@ -160,6 +181,10 @@ except OSError:
         self.assertEqual(result.stdout.strip(), b"blocked")
         self.assertEqual(accepted, [])
 
+    @unittest.skipUnless(
+        LIVE_ISOLATION_AVAILABLE,
+        "requires a Linux host with user/net/pid namespaces and Landlock",
+    )
     def test_read_only_workdir_denies_mutation(self) -> None:
         result = self.launcher.launch(
             self.request(
@@ -189,6 +214,38 @@ except PermissionError:
                 credential_resolver=resolver,
             ),
         )
+        self.assertFalse(resolver.called)
+
+    def test_static_contract_rejections_precede_optional_kernel_preflight(self) -> None:
+        """An unsupported host must not obscure an invalid launch contract."""
+        resolver = _ExplodingResolver()
+        allowlist = IsolationContract(
+            network_mode="allowlist",
+            allowed_network_endpoints=(NetworkEndpoint("api.example.com", 443),),
+            credential_bindings=(),
+            executable_allowlist=(self.python,),
+        )
+        with mock.patch.object(
+            self.launcher,
+            "_preflight",
+            side_effect=AssertionError("kernel probe must not run"),
+        ):
+            self.assert_code(
+                "ECO_NETWORK_ALLOWLIST_UNSUPPORTED",
+                lambda: self.launcher.launch(
+                    self.request("print('never')"),
+                    allowlist,
+                    credential_resolver=resolver,
+                ),
+            )
+            self.assert_code(
+                "ECO_EXECUTABLE_DENIED",
+                lambda: self.launcher.launch(
+                    LaunchRequest("/usr/bin/true", (), str(self.work)),
+                    self.contract(),
+                    credential_resolver=resolver,
+                ),
+            )
         self.assertFalse(resolver.called)
 
         allowlist = IsolationContract(
@@ -245,6 +302,10 @@ except PermissionError:
                 self.assertIsNone(error.__cause__)
                 self.assertIsNone(error.__context__)
 
+    @unittest.skipUnless(
+        LIVE_ISOLATION_AVAILABLE,
+        "requires a Linux host with user/net/pid namespaces and Landlock",
+    )
     def test_stdin_is_closed_and_output_is_bounded(self) -> None:
         result = self.launcher.launch(
             self.request("import sys; print(len(sys.stdin.buffer.read()))"),

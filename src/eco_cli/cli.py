@@ -52,6 +52,13 @@ def _parser() -> argparse.ArgumentParser:
     doctor = commands.add_parser("doctor", help="Validate configuration and projection health")
     doctor.add_argument("--json", action="store_true", dest="json_output")
 
+    runtime = commands.add_parser("runtime", help="Inspect the embedded runtime composition")
+    runtime_commands = runtime.add_subparsers(dest="runtime_command", required=True)
+    runtime_doctor = runtime_commands.add_parser(
+        "doctor", help="Probe runtime boundaries without enabling execution"
+    )
+    runtime_doctor.add_argument("--json", action="store_true", dest="json_output")
+
     commands.add_parser("lock", help="Write a deterministic lock of canonical configuration inputs")
 
     uninstall = commands.add_parser("uninstall", help="Remove only eco-managed vendor projections")
@@ -229,6 +236,57 @@ def command_lock(args: argparse.Namespace) -> int:
     return 0
 
 
+def command_runtime(args: argparse.Namespace) -> int:
+    if args.runtime_command != "doctor":
+        raise EcoError(f"Unknown runtime command: {args.runtime_command}")
+    repo = _repo(args)
+    try:
+        errors, bundle, paths = _validate(repo, args.config_root)
+    except EcoError:
+        errors, bundle, paths = ["configuration unavailable"], {}, {}
+    if errors:
+        result = {
+            "available": False,
+            "executionReady": False,
+            "mode": "embedded-read-only-preflight",
+            "checks": [
+                {
+                    "component": "configuration",
+                    "status": "blocked",
+                    "code": "ECO_CONFIG_INVALID",
+                }
+            ],
+            "execution": {
+                "status": "blocked",
+                "code": "ECO_RUNTIME_TRUST_BOOTSTRAP_REQUIRED",
+            },
+            "safety": {
+                "repositoryMutation": "denied",
+                "modelEgress": "not-used",
+                "writeAuthority": "not-created",
+                "probeKeys": "ephemeral",
+            },
+        }
+    else:
+        from eco_runtime.integration import runtime_diagnostics
+
+        probe_path = paths["project"].relative_to(repo).as_posix()
+        result = runtime_diagnostics(repo, bundle, probe_path=probe_path)
+    if args.json_output:
+        print(stable_json(result), end="")
+    else:
+        for item in result["checks"]:
+            print(
+                f"{item['status'].upper()}: {item['component']} ({item['code']})"
+            )
+        readiness = "available" if result["available"] else "unavailable"
+        print(f"Runtime composition: {readiness}")
+        print(
+            "Execution: blocked until trusted evidence and key provisioning are configured"
+        )
+    return 0 if result["available"] else 1
+
+
 def command_uninstall(args: argparse.Namespace) -> int:
     repo = _repo(args)
     directory = config_directory(repo, args.config_root)
@@ -251,6 +309,7 @@ COMMANDS = {
     "render": command_render,
     "diff": command_diff,
     "doctor": command_doctor,
+    "runtime": command_runtime,
     "lock": command_lock,
     "uninstall": command_uninstall,
 }
@@ -267,4 +326,3 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

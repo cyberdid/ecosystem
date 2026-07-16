@@ -13,6 +13,7 @@ This directory stores project-specific research that informs, but does not by it
 
 | Review | Raw source | Verdict |
 |---|---|---|
+| [M3.5 integration and reproducibility report](2026-07-16-m3.5-integration-reproducibility-report.md) | CLI/runtime composition, clean-install gate, platform-conformance review and ADR-018 | Real read-only runtime composition is reachable from `eco`; execution remains fail-closed pending trust bootstrap and live isolation remains Linux/WSL conformance |
 | [M3 controlled-write completion report](2026-07-15-m3-completion-report.md) | Local M3 implementation, multi-agent reviews, adversarial tests and project gates | Bounded Linux/WSL one-file create/replace profile complete; broader actions and production identity remain explicit non-claims |
 | [Loop and Harness engineering source review](2026-07-15-loop-and-harness-engineering-source-review.md) | [Archived Markdown](sources/loop-and-harness-engineering-7-files-5-steps-every-config-in.md) | Useful mental model; Claude-specific details require correction; not a universal contract |
 | [M2.5 completion report](2026-07-15-m2.5-completion-report.md) | Local implementation, multi-agent reviews, and verification suite | Embedded durability slice complete with explicit proof boundary |

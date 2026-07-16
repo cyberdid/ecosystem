@@ -61,10 +61,10 @@ canonical contracts → compiler/projections → policy boundary → adapters �
 ## Quick start
 
 ```bash
-cd /home/snow/projects/ecosystem
+cd /path/to/ecosystem
 python3 -m venv .venv
 . .venv/bin/activate
-python -m pip install -e .
+python -m pip install -e ".[test]"
 
 eco validate
 eco render --check
@@ -114,6 +114,7 @@ eco --repo /path/to/project uninstall --remove-config --yes
 | `eco render` | Apply owned vendor projections | Yes |
 | `eco render --check` | Detect projection drift for CI | No |
 | `eco doctor` | Validate configuration and projection health | No |
+| `eco runtime doctor` | Probe the embedded runtime composition; does not enable execution | No |
 | `eco lock` | Record deterministic input hashes and deployment identities | Yes |
 | `eco uninstall` | Remove/restore only eco-owned projections | Yes |
 

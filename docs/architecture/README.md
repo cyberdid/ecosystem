@@ -94,7 +94,13 @@ This provides ownership and reversibility. It does not prove that different AI c
 - Linux/WSL direct-egress denial and clean environment launcher;
 - durable audit/artifact authority and signed evaluation verifier.
 
-### Remaining beyond M3
+### M3.5 integration boundary
+
+`eco runtime doctor --json` now proves that the installed CLI can construct the embedded policy, private store, artifact store, descriptor-anchored snapshot, read broker, and orchestrator as one read-only composition. The probe neither executes a plan nor creates a write authority: it is deliberately blocked until signed deployment/snapshot evidence and production trust-key provisioning exist. This turns the former test-only runtime into a verifiable integration boundary without weakening M2/M3 authorization.
+
+Hosted CI validates deterministic contracts and fail-closed unsupported-isolation behavior. Live user/net/pid namespace plus Landlock conformance is exercised only on capable Linux/WSL hosts; an unavailable profile is a visible “not performed” result, never a portable security claim. See the [M3.5 report](../research/2026-07-16-m3.5-integration-reproducibility-report.md).
+
+### Remaining beyond M3.5
 
 - endpoint-specific network allowlist backend;
 - Windows/macOS isolation and filesystem backends;
@@ -131,7 +137,7 @@ client without credentials
 
 ## Next milestone
 
-M4 adds repeated L0–L4 evaluation and promotion gates around the now-implemented M3 primitive. The first candidate remains `wiki-health-check`: start with deterministic observe/report runs, then separately measure proposal quality and controlled-apply recovery before enabling scheduling. M2 deployment observations still require renewal after their validity window before current routing or promotion.
+First, bootstrap a real signed read-only execution profile: provision trust keys outside Git, configure an enabled governed deployment, ingest current signed conformance evidence and a signed repository snapshot, then run deterministic `wiki-health-check` through the composition root. M4 then adds repeated L0–L5 evaluation and promotion gates around that evidence-producing workflow before any scheduling or controlled apply. M2 deployment observations still require renewal after their validity window before current routing or promotion.
 
 ## Sources
 

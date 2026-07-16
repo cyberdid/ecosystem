@@ -1,6 +1,6 @@
 # Roadmap
 
-**Updated:** 2026-07-15
+**Updated:** 2026-07-16
 
 | Milestone | Deliverable | Status |
 |---|---|---|
@@ -8,6 +8,7 @@
 | M1 | Schemas, CLI, projections, audit, lock, tests | Implemented |
 | M2 | Read-only PEP/broker, local+cloud adapters, sanitized run events | Complete for the embedded Linux/WSL reference profile; 187 tests plus passing live local/cloud evidence |
 | M3 | Controlled writes, sandbox boundary, approvals, idempotency | Complete for bounded Linux/WSL one-file create/replace profile; 258 tests |
+| M3.5 | Integration, reproducibility, governance reconciliation | Complete locally: `eco runtime doctor`, declared test extra, honest hosted-CI isolation scope, ADR-018; execution remains trust-bootstrap blocked |
 | M4 | L0–L4 evals and promotion | Pending |
 | M5 | Team state, signed policy, RBAC | Deferred |
 | M6 | Enterprise topology options | Deferred |
@@ -43,9 +44,19 @@ All seven criteria pass for the embedded reference profile under ADR-016's obser
 5. Idempotent replay has at most one effect and remains historically observable after authority expiry.
 6. Process-loss recovery reopens authenticated private-CAS metadata, fences the old worker and conservatively restores exact before-state.
 7. SQLite/WAL/audit contain no raw path or content and are reconciled against an HMAC audit chain.
-8. All M2 regression and project gates pass: 258/258 `unittest` tests plus pytest, compile, validate, render, doctor and diff checks.
+8. All M2 regression and project gates pass: `unittest` plus the declared pytest extra, compile, validate, render, doctor and diff checks. Live namespace/Landlock conformance runs only on a capable Linux/WSL host; unsupported hosts report a skip, not a security pass.
 
 This profile does not authorize delete, rename, directory creation, multi-file batches, arbitrary commands, A3/A4 actions, live-root promotion or non-Linux backends. See the [M3 completion report](../docs/research/2026-07-15-m3-completion-report.md).
+
+## M3.5 integration and reproducibility exit criteria
+
+1. An installed `eco` command constructs the real embedded read-only runtime boundary without model egress, write authority, committed keys, or repository mutation.
+2. The command reports a structured, sanitized readiness result and refuses execution until signed evidence and trust-key provisioning are configured.
+3. The documented pytest gate is installable from project metadata and lockable from a clean environment.
+4. Hosted CI distinguishes unit coverage from privileged Linux/WSL namespace/Landlock conformance; unavailable controls remain a visible non-claim.
+5. The Phase-0 constitution has a dated canonical supersession decision and generated client projections agree with its retained universal guarantees.
+
+See the [M3.5 report](../docs/research/2026-07-16-m3.5-integration-reproducibility-report.md) and [ADR-018](../docs/decisions/README.md#adr-018--reconcile-the-phase-0-constitution-with-canonical-authority-and-bounded-loops).
 
 ## Loop rollout
 

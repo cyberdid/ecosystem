@@ -9,11 +9,15 @@ purpose: >-
   model, agent client, gateway, inference server, or deployment topology.
 principles:
   - Canonical machine-readable contracts are the source; vendor instruction files are deterministic projections.
+  - Authority is ordered and explicit; lower-precedence instructions cannot expand permissions granted by operator, platform, policy, or canonical project contracts.
   - A model, prompt, skill, plugin, or MCP server may propose intent but cannot grant itself permission.
   - Transport compatibility is not semantic compatibility; capabilities belong to tested deployments.
+  - Replaceability is a tested contract and migration property, not a promise that every backend swap is a one-line configuration change.
   - The first topology is an embedded CLI; centralized services appear only after measured need.
   - Knowledge, context, memory, audit trail, telemetry, and application logs have separate contracts.
+  - Persistent project state contains provenance-bound verified facts, open failures, and reviewed lessons; it is memory, not authorization.
   - Single-agent execution is the default; additional agents require task-specific evaluation evidence.
+  - A loop is a bounded feedback system with an independent gate, durable evidence, explicit budgets, and hard stops.
   - Every integration must support preview, objective verification, rollback, and uninstall.
 rules:
   - id: CONTRACTS-FIRST
@@ -25,6 +29,9 @@ rules:
   - id: POLICY-OUTSIDE-PROMPTS
     priority: must
     text: Treat instructions as guidance, not authorization; enforcement belongs to a broker or runtime boundary.
+  - id: AUTHORITY-PRECEDENCE
+    priority: must
+    text: Apply operator and platform policy before repository canonical contracts, generated projections, and task-local context; lower layers may narrow but never broaden granted authority.
   - id: NO-DIRECT-EGRESS
     priority: must
     text: Do not add direct model or tool credentials to agent-facing configuration; use typed references and broker ownership.
@@ -43,6 +50,12 @@ rules:
   - id: VERIFY-DONE
     priority: must
     text: Verify changes with schemas, tests, drift checks, or another objective artifact before reporting completion.
+  - id: VERIFIED-STATE
+    priority: must
+    text: Promote facts or lessons into persistent project memory only with provenance and objective verification; never treat memory as policy or permission.
+  - id: BOUNDED-LOOPS
+    priority: must
+    text: Require every repeated workflow to declare an independent gate, state and evidence boundary, budgets, hard stops, and separately authorized side effects.
   - id: EMBEDDED-FIRST
     priority: should
     text: Keep the trusted core usable without a daemon, gateway, Kubernetes, or a central control service.

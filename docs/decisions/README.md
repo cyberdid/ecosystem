@@ -19,6 +19,7 @@
 | ADR-015 | Deployment promotion requires identical signed cross-deployment evaluation evidence | Accepted for M2 |
 | ADR-016 | Hardware-neutral local/cloud substitution and observable cloud identity | Accepted; supersedes ADR-007 as the active deployment rule |
 | ADR-017 | Controlled workspace writes use exact human approvals, a trusted CAS broker, and compare-and-swap rollback | Accepted for the M3 Linux/WSL single-file profile |
+| ADR-018 | Reconcile the Phase-0 constitution with canonical authority, verified memory, and bounded-loop terminology | Accepted; supersedes the Phase-0 `AGENTS.md` as an authority source while preserving its universal guarantees |
 
 ## ADR-001 — Contracts-first
 
@@ -129,6 +130,41 @@ Before mutation, candidate bytes and the exact before-image (or an absence marke
 The bounded M3 profile excludes delete, rename, directory creation, multi-file transactions, arbitrary command execution, live-root promotion, and A3/A4 external actions. Those capabilities require separate contracts and conformance evidence rather than silent broadening of this approval.
 
 **Consequences.** M2's read-only store and regression profile remain valid. M3 uses a distinct write-authority journal so an old schema-v3 read journal is never implicitly migrated across a security-boundary change. The write journal contains only content-free records, opaque keyed path/CAS references, digests, authority state and an authenticated audit chain; raw paths, candidate bytes, backups, credentials and diffs remain outside SQLite. A private CAS recovery bundle is completed before mutation, allowing a restarted fenced worker to mark exact-before as failed or conservatively roll exact-after back; unrelated state remains `recovery_required`.
+
+## ADR-018 — Reconcile the Phase-0 constitution with canonical authority and bounded loops
+
+**Date:** 2026-07-16
+
+**Context.** The Phase-0 `AGENTS.md` was the original human-readable constitution. It established valuable invariants: one source with many adapters, substitution through contracts, no capability claim without verification, persistent project memory, bounded loops, vendor neutrality, and secrets outside Git. M1 later made `.ai/instructions.yaml` canonical and turned `AGENTS.md` and the other client files into deterministic projections. That architectural change was implemented and tested, but the decision register did not explicitly supersede the original file as an authority source or state which guarantees survived.
+
+The original document also mixed universal guarantees with one-machine assumptions and informal terminology. In particular, it named LiteLLM on `spark-ts:4000` as the model boundary, described backend replacement as a one-line change with no prompt changes, treated the presence of `STATE.md` as sufficient memory discipline, and used both `L0–L4` for ecosystem layers and colors for loop risk. Current loop documentation independently uses `L0–L5` for side-effect and maturity levels. Leaving both `L` taxonomies active makes statements such as “L3” ambiguous, while transport compatibility and a color label cannot establish semantic equivalence or authorization.
+
+**Decision.** The Phase-0 `AGENTS.md` is superseded as a canonical authority source by `.ai/instructions.yaml`; it remains historical provenance in Git. The canonical graph preserves and strengthens its universal guarantees as follows:
+
+- **one source, many adapters** is enforced by contracts-first editing, deterministic projections, drift checks, reversible adoption, and uninstall;
+- **swap by contract** means an adapter may be replaced only when the target deployment satisfies the declared semantic capabilities and evaluation gates; replaceability is a measured migration property, not a guarantee of a one-line change;
+- **no capability without verification** remains a mandatory rule and applies to models, tools, skills, loops, policies, recovery, and platform backends;
+- **persistent state** may contain provenance-bound verified facts, general rules, open failures, and reviewed lessons. A project that uses the original five-section `STATE.md` convention may keep `Last session / Verified facts / General rules / Open failures / Lessons learned` as a human-readable projection, but the filename or presence of those headings does not make content trusted, grant permission, or replace a versioned state contract and gate;
+- **bounded loops** require a trigger, bounded task, approved context, capability and policy decision, independent gate, state and evidence boundary, budgets, hard stops, audit trail, and separately authorized side effects. The original `automation + skill + state + gate + hard stop` formula remains a useful minimum mnemonic, not the complete enforcement contract;
+- **vendor neutrality and secret hygiene** remain mandatory. No branded host, gateway, model alias, client, endpoint shape, MCP server, or skill format receives privileged authority merely because it is configured.
+
+Effective instruction precedence is explicit: operator and platform policy first, then repository canonical contracts, then generated client projections, then task-local context. Lower-precedence material may narrow an action but cannot broaden authority. Runtime authorization remains outside every prompt and projection.
+
+To remove the taxonomy collision, architecture discussions use **E0–E4** for the informational ecosystem stack:
+
+- E0 — knowledge and verified project state;
+- E1 — model/provider adapters and governed deployment identities;
+- E2 — tools, skills, MCP adapters, and agent roles;
+- E3 — methods, bounded loops, and evaluation workflows;
+- E4 — client harness projections and user-facing integrations.
+
+Loop documentation retains **L0–L5** exclusively for loop side-effect/maturity (`Manual` through `Evidence-compounding`). Green/yellow/red labels are operator-facing summaries only; D/A/Z/P classification and the policy boundary determine authority.
+
+The machine-specific LiteLLM/DGX endpoint, exact role aliases, and the claim that any backend replacement needs only one configuration line are superseded as universal requirements. They remain valid only as optional deployment choices after the same capability, identity, policy, and evaluation checks as any other adapter. This agrees with ADR-004 and ADR-016.
+
+**Migration and contract impact.** The `InstructionGraph` schema stays at `ai.ecosystem/v1alpha1`; this decision strengthens canonical content without changing its wire shape or runtime authorization semantics. All managed client projections are regenerated from `.ai/instructions.yaml`, yielding a new source digest. Existing runtime journals, M2/M3 contracts, and signed evidence are unaffected. Future documents must qualify ecosystem stack levels as `E*` and loop maturity levels as `L*`; ambiguous bare `L0–L4` architecture references should be migrated when their owning documents are next revised.
+
+**Evidence.** `eco validate`, deterministic projection rendering, `eco render --check`, and projection-focused regression tests verify that the canonical graph and all managed surfaces agree. These checks establish governance consistency; they do not by themselves prove runtime enforcement, which remains covered by the broker, policy, store, and isolation tests.
 
 ## Supersession
 

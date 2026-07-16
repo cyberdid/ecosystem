@@ -268,7 +268,6 @@ class LinuxNamespaceLauncher:
                 "ECO_CREDENTIAL_BINDINGS_DENIED",
                 "Untrusted-agent processes cannot receive credentials",
             )
-        self._preflight()
         if contract.network_mode != "deny" or contract.allowed_network_endpoints:
             raise RuntimePolicyError(
                 "ECO_NETWORK_ALLOWLIST_UNSUPPORTED",
@@ -281,6 +280,10 @@ class LinuxNamespaceLauncher:
         workdir = Path(request.working_directory).resolve(strict=True)
         if not workdir.is_dir():
             raise RuntimePolicyError("ECO_WORKDIR_INVALID", "Working directory is invalid")
+        # Reject invalid/unimplemented requests before probing optional kernel
+        # controls.  This makes the policy error deterministic on every host;
+        # a valid launch still fails closed when the isolation profile is absent.
+        self._preflight()
         configuration = canonical_json(
             {
                 "command": [executable, *request.arguments],
