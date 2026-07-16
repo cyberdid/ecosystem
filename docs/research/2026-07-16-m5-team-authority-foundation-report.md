@@ -35,6 +35,7 @@ Three independent read-only reviews covered identity/crypto contracts, shared-st
 | Focused identity, signature and CLI suite | 24 tests pass |
 | Full unittest-discovery and pytest regression | 406 tests pass |
 | Distribution compatibility | 18 tests pass; real 11-artifact Linux wheelhouse manifest verifies |
+| Hosted CI | GitHub Actions run `29503014508` passes at `75cea96`: Linux full tests/offline install plus focused macOS/Windows M5 portability |
 | M4 runtime schema digest | Unchanged at `d7ab8041...316d9d` |
 | Python compile | Pass |
 | Lock synchronization | `uv lock` + `uv sync --extra test` pass |
@@ -44,6 +45,8 @@ Three independent read-only reviews covered identity/crypto contracts, shared-st
 ## Exact non-claims
 
 This slice does not establish the newest identity or policy revision, effective membership, revocation freshness, RBAC permission, active team policy, shared writer authority, remote identity, human presence, key hardware provenance, quorum approval or runtime access. It does not modify or supersede `.ai/trust.yaml` and does not convert M4 evidence into team authority.
+
+The first hosted attempts exposed two integration defects that local pytest did not reveal: `unittest discover -s tests` imported the new test modules outside package context, and the existing wheel verifier rejected the valid two-component dependency version `pycparser 3.0`. Absolute test-fixture imports and a bounded dependency-wheel version profile were added to both installed and standalone verifiers before the final green run. This is regression evidence, not a claim that arbitrary PEP 440 versions or every native crypto wheel are portable.
 
 ## Handoff to M5.3
 

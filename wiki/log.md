@@ -14,6 +14,7 @@ Append-only хронологічний лог операцій. Формат: `#
 - Multi-agent threat, identity/crypto and shared-state audits fixed the trust/digest/replay boundaries and defined M5.3–M5.7 handoff constraints.
 - Locked `cryptography` and dependencies; focused 24-test M5 gate plus the complete 406-test regression pass.
 - Extended installed and standalone distribution verification for valid two-component dependency versions (`pycparser 3.0`); 18 distribution tests and a real 11-artifact Linux wheelhouse verification pass.
+- GitHub Actions run `29503014508` passed at `75cea96`: Linux completed unittest discovery, pytest, canonical gates and real offline wheelhouse install; macOS and Windows completed the focused M5/portability matrix.
 - Next: M5.3 bounded RBAC/ABAC as an additional narrowing gate; durable activation/currentness remains M5.4.
 
 ## [2026-07-16] implementation | Remaining bounded M4 portability completed
