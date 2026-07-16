@@ -56,7 +56,20 @@ See [M3 controlled writes](docs/architecture/controlled-writes.md) and the [M3 c
 
 See the [M3.6 trust-bootstrap report](docs/research/2026-07-16-m3.6-verification-only-trust-bootstrap-report.md).
 
-**Not implemented and not claimed:** endpoint-specific network allowlists, Windows/macOS executable isolation/write backends, descendant-exec/seccomp/cgroup/device containment, asymmetric evidence or approval signatures, durable evidence replay IDs, delete/rename/mkdir/batch/arbitrary-command writes, A3/A4 external actions, a bundled database-plus-CAS disaster-recovery package, caller-independent external anchoring, or production autonomy.
+**M4 fixed no-model loop and promotion profile complete:**
+
+- `eco run wiki-health-check --json` executes one code-owned A1 workflow over exactly three signed D0/P1 wiki entries;
+- the separate `NoModelRunPlan` has no route, deployment, adapter, endpoint, model request, network request, or write authority;
+- every read receives a fresh single-use expiring policy decision evaluated against advancing runtime time and passes only through the Linux/WSL snapshot broker;
+- private external SQLite journals are path/content-free, HMAC-authenticated, exclusively process-owned, replay-safe, symlink/hardlink resistant, and never written below the governed repository;
+- a durable pre-I/O `started` event fences each broker attempt: pre-start recovery reauthorizes, while an ambiguous post-start crash fails closed without rereading;
+- the deterministic report checks signed-snapshot integrity, one primary heading per document, and distinct document contents without emitting document text or paths;
+- `eco eval wiki-health-check --json` evaluates five independent fixed journals plus a zero-read replay proof and can promote this workflow only through L2;
+- L3, L4, and L5 are explicit ineligible results for this no-model read-only profile, not implied write or autonomy rights.
+
+See [M4 no-model wiki health](docs/architecture/no-model-wiki-health.md) and the [M4 completion report](docs/research/2026-07-16-m4-no-model-wiki-health-completion-report.md).
+
+**Not implemented and not claimed:** endpoint-specific network allowlists, Windows/macOS M4 read-broker conformance or executable isolation/write backends, descendant-exec/seccomp/cgroup/device containment, asymmetric evidence or approval signatures, delete/rename/mkdir/batch/arbitrary-command writes, A3/A4 external actions, a bundled database-plus-CAS disaster-recovery package, caller-independent external anchoring, scheduled/autonomous loops, full wiki link/staleness lint, or production autonomy.
 
 ## Architecture in one sentence
 
@@ -77,8 +90,23 @@ python -m pip install -e ".[test]"
 eco validate
 eco render --check
 eco doctor
+eco runtime trust doctor --json
 python -m unittest discover -s tests -v
 ```
+
+The live M4 commands additionally require operator-provisioned external state and trust inputs. The runtime never creates or signs its own snapshot:
+
+```bash
+export ECO_SNAPSHOT_EVIDENCE_KEY='operator-provisioned verification material'
+export ECO_WIKI_SNAPSHOT_ENVELOPE_FILE='/private/external/snapshot.envelope'
+export ECO_RUNTIME_STATE_DIR='/private/external/runtime-state' # existing mode 0700
+export ECO_RUNTIME_JOURNAL_HMAC_KEY='separate journal key with at least 32 bytes'
+
+eco run wiki-health-check --json
+eco eval wiki-health-check --json
+```
+
+Do not commit those values or the external evidence/state files. The example shows required interfaces, not reusable credentials.
 
 Initialize another repository:
 
@@ -123,9 +151,13 @@ eco --repo /path/to/project uninstall --remove-config --yes
 | `eco render --check` | Detect projection drift for CI | No |
 | `eco doctor` | Validate configuration and projection health | No |
 | `eco runtime doctor` | Probe the embedded runtime composition; does not enable execution | No |
-| `eco runtime trust doctor` | Verify externally signed trust inputs; does not enable execution | No |
+| `eco runtime trust doctor` | Verify externally signed trust inputs; does not start execution | No |
+| `eco run wiki-health-check` | Run the fixed signed-snapshot, no-model A1 health profile | No repository write* |
+| `eco eval wiki-health-check` | Run the fixed five-attempt plus replay L0–L2 promotion gate | No repository write* |
 | `eco lock` | Record deterministic input hashes and deployment identities | Yes |
 | `eco uninstall` | Remove/restore only eco-owned projections | Yes |
+
+`*` The M4 commands write only HMAC-authenticated SQLite state below the separately provisioned external `ECO_RUNTIME_STATE_DIR`.
 
 ## Repository layout
 

@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai.ecosystem.local/schemas/runtime/wiki-health-run-evidence.v1.schema.json",
+  "title": "WikiHealthRunEvidenceV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "runtime.ai.ecosystem/v1alpha1" },
+    "kind": { "const": "WikiHealthRunEvidence" },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "runId", "createdAt"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "runId": { "$ref": "#/$defs/id" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "profile", "workflow", "evidenceDigest", "reportDigest",
+        "repositorySnapshotDigest", "status", "replayed", "execution", "safety"
+      ],
+      "properties": {
+        "profile": { "const": "wiki-health-run-evidence/v1" },
+        "workflow": { "const": "wiki-health-check" },
+        "evidenceDigest": { "$ref": "#/$defs/sha256" },
+        "reportDigest": { "$ref": "#/$defs/sha256" },
+        "repositorySnapshotDigest": { "$ref": "#/$defs/sha256" },
+        "status": { "enum": ["succeeded", "failed", "blocked"] },
+        "replayed": { "type": "boolean" },
+        "execution": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["verifiedEntryCount", "brokerReadCount", "totalBytes"],
+          "properties": {
+            "verifiedEntryCount": { "type": "integer", "minimum": 0, "maximum": 3 },
+            "brokerReadCount": { "type": "integer", "minimum": 0, "maximum": 3 },
+            "totalBytes": { "type": "integer", "minimum": 0, "maximum": 50331648 }
+          }
+        },
+        "safety": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "unauthorizedActions", "repositoryMutations", "modelRequests",
+            "networkRequests", "writeOperations", "adaptersCreated", "contentEmissions"
+          ],
+          "properties": {
+            "unauthorizedActions": { "$ref": "#/$defs/count" },
+            "repositoryMutations": { "$ref": "#/$defs/count" },
+            "modelRequests": { "$ref": "#/$defs/count" },
+            "networkRequests": { "$ref": "#/$defs/count" },
+            "writeOperations": { "$ref": "#/$defs/count" },
+            "adaptersCreated": { "$ref": "#/$defs/count" },
+            "contentEmissions": { "$ref": "#/$defs/count" }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$" },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "count": { "type": "integer", "minimum": 0, "maximum": 1000000 }
+  }
+}

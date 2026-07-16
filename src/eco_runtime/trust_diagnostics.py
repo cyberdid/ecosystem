@@ -23,6 +23,30 @@ _SAFE_CODE = re.compile(r"^ECO_[A-Z0-9_]{1,96}$")
 _ALLOWED_PATH_PREFIXES = ("wiki/", "docs/")
 
 
+class VerifiedTrustBootstrap:
+    """Verified snapshot material for an embedded, no-model execution root.
+
+    This object is intentionally process-local.  It contains canonical envelope
+    bytes solely so ``PolicyEngine`` can independently verify them again when
+    it issues each decision; callers must never serialize or display it.
+    """
+
+    def __init__(
+        self,
+        *,
+        repository_snapshot: dict[str, Any],
+        repository_snapshot_envelope: bytes,
+        evidence_policies: tuple[EvidenceIssuerPolicy, ...],
+        repository_root_identity_digest: str,
+        maximum_file_bytes: int,
+    ) -> None:
+        self.repository_snapshot = repository_snapshot
+        self.repository_snapshot_envelope = repository_snapshot_envelope
+        self.evidence_policies = evidence_policies
+        self.repository_root_identity_digest = repository_root_identity_digest
+        self.maximum_file_bytes = maximum_file_bytes
+
+
 def _ready(component: str, code: str) -> dict[str, str]:
     return {"component": component, "status": "ready", "code": code}
 
@@ -139,6 +163,94 @@ def _expected_entries(trust: dict[str, Any]) -> dict[str, tuple[str, str, str]]:
     return expected
 
 
+def _issuer_policies(trust: dict[str, Any]) -> tuple[EvidenceIssuerPolicy, ...]:
+    issuer_specs = trust.get("evidence", {}).get("issuers")
+    if not isinstance(issuer_specs, list) or not issuer_specs:
+        raise RuntimePolicyError("ECO_RUNTIME_TRUST_CONFIG_INVALID", "Trust configuration is invalid")
+    try:
+        policies = tuple(
+            EvidenceIssuerPolicy(
+                issuer_id=issuer["id"],
+                key_id=issuer["keyId"],
+                verification_key=_env_bytes(issuer["verificationKeyRef"]),
+                allowed_kinds=frozenset(issuer["allowedKinds"]),
+                allowed_projects=frozenset(issuer["allowedProjects"]),
+                allowed_deployments=frozenset(issuer["allowedDeployments"]),
+                allowed_suite_digests=frozenset(issuer["allowedSuiteDigests"]),
+            )
+            for issuer in issuer_specs
+        )
+    except (KeyError, TypeError) as exc:
+        raise RuntimePolicyError("ECO_RUNTIME_TRUST_CONFIG_INVALID", "Trust configuration is invalid") from exc
+    if not policies:
+        raise RuntimePolicyError("ECO_RUNTIME_TRUST_CONFIG_INVALID", "Trust configuration is invalid")
+    return policies
+
+
+def verified_trust_bootstrap(
+    repository: str | Path,
+    bundle: dict[str, dict[str, Any]],
+    *,
+    now: datetime | None = None,
+) -> VerifiedTrustBootstrap:
+    """Verify and return only the signed snapshot material needed by M4.
+
+    It performs no repository read, creates no durable state and returns no
+    content.  The separate policy engine re-ingests the returned envelope when
+    it grants execution authority, so this preliminary verification can never
+    become an authorization bypass.
+    """
+
+    instant = now or datetime.now(timezone.utc)
+    if instant.tzinfo is None:
+        raise ValueError("now must be timezone-aware")
+    root = Path(repository).resolve(strict=True)
+    project = bundle.get("project", {})
+    trust = bundle.get("trust")
+    if not root.is_dir() or not isinstance(project, dict) or not isinstance(trust, dict):
+        raise RuntimePolicyError("ECO_RUNTIME_TRUST_CONFIG_INVALID", "Trust configuration is invalid")
+    project_id = project.get("metadata", {}).get("name")
+    if not isinstance(project_id, str):
+        raise RuntimePolicyError("ECO_RUNTIME_TRUST_CONFIG_INVALID", "Trust configuration is invalid")
+    expected = _expected_entries(trust)
+    policies = _issuer_policies(trust)
+    snapshot_spec = trust.get("repositorySnapshot")
+    if not isinstance(snapshot_spec, dict):
+        raise RuntimePolicyError("ECO_RUNTIME_TRUST_CONFIG_INVALID", "Trust configuration is invalid")
+    maximum_file_bytes = snapshot_spec.get("maximumFileBytes")
+    if not isinstance(maximum_file_bytes, int) or maximum_file_bytes < 1:
+        raise RuntimePolicyError("ECO_RUNTIME_TRUST_CONFIG_INVALID", "Trust configuration is invalid")
+    envelope = _external_evidence(snapshot_spec.get("envelopeRef"), repository_root=root)
+    ingestor = TrustedEvidenceIngestor(EvidenceTrustStore(policies))
+    root_identity = repository_root_identity(root)
+    verified = ingestor.ingest_repository_snapshot(
+        envelope,
+        expected_project_id=project_id,
+        expected_root_identity_digest=root_identity,
+        now=instant,
+    )
+    record = verified.as_dict()
+    expected_issuer = snapshot_spec.get("issuer")
+    if not isinstance(expected_issuer, dict) or record["metadata"]["issuer"] != {
+        "type": expected_issuer.get("recordIssuerType"),
+        "id": expected_issuer.get("id"),
+    }:
+        raise RuntimePolicyError("ECO_RUNTIME_TRUST_SNAPSHOT_ISSUER_MISMATCH", "Snapshot issuer is invalid")
+    actual = {
+        item["path"]: (item["dataClass"], item["trust"], item["classificationAuthority"])
+        for item in record["spec"]["entries"]
+    }
+    if actual != expected:
+        raise RuntimePolicyError("ECO_RUNTIME_TRUST_SNAPSHOT_SCOPE_INVALID", "Snapshot scope is invalid")
+    return VerifiedTrustBootstrap(
+        repository_snapshot=record,
+        repository_snapshot_envelope=envelope,
+        evidence_policies=policies,
+        repository_root_identity_digest=root_identity,
+        maximum_file_bytes=maximum_file_bytes,
+    )
+
+
 def _result(checks: list[dict[str, str]], *, checked_entries: int = 0) -> dict[str, Any]:
     available = all(item["status"] == "ready" for item in checks)
     return {
@@ -148,8 +260,8 @@ def _result(checks: list[dict[str, str]], *, checked_entries: int = 0) -> dict[s
         "checks": checks,
         "evidence": {"verifiedSnapshotEntries": checked_entries if available else 0},
         "execution": {
-            "status": "blocked",
-            "code": "ECO_RUNTIME_NO_MODEL_PLAN_CONTRACT_REQUIRED",
+            "status": "not-started",
+            "code": "ECO_RUNTIME_TRUST_VERIFICATION_ONLY",
         },
         "safety": {
             "repositoryRead": "not-started",

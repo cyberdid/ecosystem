@@ -68,6 +68,20 @@ def _parser() -> argparse.ArgumentParser:
     )
     runtime_trust_doctor.add_argument("--json", action="store_true", dest="json_output")
 
+    run = commands.add_parser("run", help="Run one fixed, policy-bound workflow")
+    run_commands = run.add_subparsers(dest="run_command", required=True)
+    wiki_health = run_commands.add_parser(
+        "wiki-health-check", help="Verify the fixed trusted D0 wiki scope without a model"
+    )
+    wiki_health.add_argument("--json", action="store_true", dest="json_output")
+
+    evaluate = commands.add_parser("eval", help="Evaluate one fixed workflow promotion gate")
+    evaluate_commands = evaluate.add_subparsers(dest="eval_command", required=True)
+    wiki_health_eval = evaluate_commands.add_parser(
+        "wiki-health-check", help="Run the fixed five-attempt no-model L0-L2 gate"
+    )
+    wiki_health_eval.add_argument("--json", action="store_true", dest="json_output")
+
     commands.add_parser("lock", help="Write a deterministic lock of canonical configuration inputs")
 
     uninstall = commands.add_parser("uninstall", help="Remove only eco-managed vendor projections")
@@ -270,8 +284,8 @@ def command_runtime(args: argparse.Namespace) -> int:
                 ],
                 "evidence": {"verifiedSnapshotEntries": 0},
                 "execution": {
-                    "status": "blocked",
-                    "code": "ECO_RUNTIME_NO_MODEL_PLAN_CONTRACT_REQUIRED",
+                    "status": "not-started",
+                    "code": "ECO_RUNTIME_TRUST_VERIFICATION_ONLY",
                 },
                 "safety": {
                     "repositoryRead": "not-started",
@@ -291,7 +305,7 @@ def command_runtime(args: argparse.Namespace) -> int:
             for item in result["checks"]:
                 print(f"{item['status'].upper()}: {item['component']} ({item['code']})")
             print("Trust bootstrap: ready" if result["available"] else "Trust bootstrap: blocked")
-            print("Execution: blocked until an explicit no-model A1 plan contract exists")
+            print("Execution: not started; run wiki-health-check through the separate fixed command")
         return 0 if result["available"] else 1
 
     if errors:
@@ -337,6 +351,68 @@ def command_runtime(args: argparse.Namespace) -> int:
     return 0 if result["available"] else 1
 
 
+def command_run(args: argparse.Namespace) -> int:
+    if args.run_command != "wiki-health-check":
+        raise EcoError(f"Unknown fixed workflow: {args.run_command}")
+    repo = _repo(args)
+    errors, bundle, _ = _validate(repo, args.config_root)
+    if errors:
+        result = {
+            "available": False,
+            "workflow": "wiki-health-check",
+            "status": "blocked",
+            "code": "ECO_CONFIG_INVALID",
+            "safety": {
+                "repositoryMutation": "denied",
+                "modelEgress": "not-used",
+                "network": "not-used",
+                "writeAuthority": "not-created",
+                "adapter": "not-created",
+                "content": "not-emitted",
+            },
+        }
+    else:
+        from eco_runtime.no_model_execution import execute_wiki_health_check
+
+        result = execute_wiki_health_check(repo, bundle)
+    if args.json_output:
+        print(stable_json(result), end="")
+    else:
+        print(f"Workflow: {result['workflow']}")
+        print(f"Status: {result['status']} ({result['code']})")
+        print("Safety: no model, network, write authority, adapter, or document content")
+    return 0 if result["available"] else 1
+
+
+def command_eval(args: argparse.Namespace) -> int:
+    if args.eval_command != "wiki-health-check":
+        raise EcoError(f"Unknown fixed evaluation: {args.eval_command}")
+    repo = _repo(args)
+    errors, bundle, _ = _validate(repo, args.config_root)
+    if errors:
+        result = {
+            "available": False,
+            "workflow": "wiki-health-check",
+            "status": "blocked",
+            "code": "ECO_CONFIG_INVALID",
+        }
+    else:
+        from eco_runtime.wiki_health_evaluation import execute_wiki_health_evaluation
+
+        result = execute_wiki_health_evaluation(repo, bundle)
+    if args.json_output:
+        print(stable_json(result), end="")
+    else:
+        print(f"Workflow: {result['workflow']}")
+        print(f"Evaluation: {result['status']} ({result['code']})")
+        if "evaluation" in result:
+            print(
+                "Highest eligible level: "
+                f"{result['evaluation'].get('highestEligibleLevel') or 'none'}"
+            )
+    return 0 if result["available"] else 1
+
+
 def command_uninstall(args: argparse.Namespace) -> int:
     repo = _repo(args)
     directory = config_directory(repo, args.config_root)
@@ -360,6 +436,8 @@ COMMANDS = {
     "diff": command_diff,
     "doctor": command_doctor,
     "runtime": command_runtime,
+    "run": command_run,
+    "eval": command_eval,
     "lock": command_lock,
     "uninstall": command_uninstall,
 }

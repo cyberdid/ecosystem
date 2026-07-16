@@ -1,7 +1,7 @@
 # Loop engineering
 
-**Updated:** 2026-07-15
-**Status:** bounded-loop contract; M2 read and M3 controlled-write primitives exist, autonomous scheduling does not
+**Updated:** 2026-07-16
+**Status:** bounded-loop contract plus fixed M4 `wiki-health-check` L0–L2 profile; autonomous scheduling does not exist
 
 ## TL;DR
 
@@ -94,7 +94,7 @@ Every executable loop should eventually have a versioned, machine-readable defin
 | `result` | Artifact schema, provenance and acceptance record |
 | `metrics` | Reliability, economics, safety and recovery signals |
 
-This definition is a target contract. It must not be presented as enforced until M2–M4 runtime boundaries and negative tests exist.
+This remains the target contract for new loops. The fixed `wiki-health-check` subset is enforced through M4 contracts and negative tests; fields not present in that fixed profile, and every other loop, remain unenforced until separately implemented.
 
 ## Gate design
 
@@ -153,20 +153,25 @@ Exhaustion produces a typed incomplete result with evidence. It must never be re
 | L4 — Controlled apply | Approved writes inside enforced boundaries | Sandbox, PEP, idempotency, approval and negative tests |
 | L5 — Evidence-compounding | Strategy may improve inside frozen objective/evaluator bounds | Longitudinal safety, quality, cost and recovery evidence |
 
-Production or external-write loops stay disabled until M4 repeated-run promotion gates are implemented. M3 supplies only the narrowly approved one-file apply primitive; it does not authorize autonomous scheduling or broaden the action scope.
+Production or external-write loops remain disabled unless their own repeated-run promotion gates are implemented. M4 completes only the read-only `wiki-health-check` L0–L2 gate. M3 supplies a narrowly approved one-file apply primitive, but M4 does not connect that primitive to this loop or authorize scheduling.
 
 ## Candidate 1: wiki-health-check
 
 This is the recommended first loop because it is low-risk and has deterministic checks.
 
+Implemented v1:
+
 ```text
-manual trigger initially
-→ read repository wiki and referenced documentation
-→ detect broken links, missing metadata, stale pages and duplicates
-→ produce a versioned report
-→ run report/schema checks
-→ stop
+manual trigger
+→ verify external signed snapshot
+→ read exactly index / architecture / roadmap through the broker
+→ check exact bytes, UTF-8 safety, one H1 each and distinct documents
+→ emit a path/content-free report
+→ optionally run five fixed attempts + one zero-read replay
+→ promote at most L2 and stop
 ```
+
+Full-wiki broken-link, metadata-staleness and semantic-duplicate checks remain a future larger signed-scope profile. They are not silently claimed by v1.
 
 Initial boundaries:
 
@@ -177,13 +182,13 @@ Initial boundaries:
 - fixed file, time and token limits;
 - human acceptance before any proposed patch is applied.
 
-Promotion path:
+Completed promotion path:
 
 1. Make the checks reliable as a manual command.
 2. Run them repeatedly against fixed fixtures.
 3. Add report generation without writes to curated wiki pages.
-4. Measure false positives, review time and recovery behavior.
-5. Schedule only after repeated-run evaluation passes.
+4. Require zero safety violations and a zero-read recovery replay.
+5. Keep scheduling disabled; it requires a separate trigger/incident/kill-switch contract.
 
 ## Candidate 2: ml-autoresearch
 
@@ -235,16 +240,17 @@ Implemented today:
 - audit, lock, drift, backup and uninstall foundations;
 - default-deny runtime policy, immutable plans, budgets and trusted run/event ledger;
 - Linux/WSL read isolation and exact-approved one-file create/replace with restart-safe rollback;
-- a documented registry of loop candidates.
+- a fixed no-model `wiki-health-check` command, private authenticated replay state, deterministic report, and five-attempt L0–L2 promotion gate;
+- a documented registry of additional loop candidates.
 
 Not implemented today:
 
-- loop scheduler or durable execution engine;
+- loop scheduler, daemon, or autonomous retry engine;
 - a production multi-user approval service;
 - cross-platform controlled-write backends;
-- promotion evaluation for L2–L5 loops.
+- L3–L5 promotion for `wiki-health-check` or promotion evaluation for other loops.
 
-Therefore `wiki-health-check` and `ml-autoresearch` are candidates, not running autonomous services.
+Therefore `wiki-health-check` is an executable manual L2 observe-only profile, not an autonomous service. `ml-autoresearch` remains a candidate.
 
 ## Sources and evidence status
 

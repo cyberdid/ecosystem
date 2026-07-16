@@ -2,25 +2,27 @@
 
 > Curated operational knowledge. Canonical executable truth lives under `.ai/`; generated vendor files are projections.
 
-**Updated:** 2026-07-15
-**Status:** M1, embedded M2 read-only, bounded M3 Linux/WSL controlled writes, M3.5 integration/reproducibility and M3.6 verification-only trust bootstrap are complete; no-model M4 execution and evaluation/promotion are next.
+**Updated:** 2026-07-16
+**Status:** M1–M4 reference profiles are complete. M4 provides fixed manual no-model `wiki-health-check` execution and promotion through L2 only; M5 team identity/RBAC is next.
 
 ## Pages
 
 | Page | Purpose | Updated |
 |---|---|---:|
-| [architecture.md](architecture.md) | Current implemented boundary and target runtime flow | 2026-07-15 |
-| [loops.md](loops.md) | Loop contract, safety boundaries, maturity and first candidates | 2026-07-15 |
+| [architecture.md](architecture.md) | Current implemented boundary and target runtime flow | 2026-07-16 |
+| [loops.md](loops.md) | Loop contract, safety boundaries, maturity and first executable L2 profile | 2026-07-16 |
 | [openresearcher.md](openresearcher.md) | Downloaded upstream research node, evidence, boundaries, and possible role | 2026-07-15 |
 | [labs-molt.md](labs-molt.md) | NVIDIA agentic-RL training node, architecture, evidence, risks, and gated role | 2026-07-15 |
 | [ai-legal-claude.md](ai-legal-claude.md) | Claude-specific legal prompt corpus, compatibility audit, legal limits, and safe-adoption gate | 2026-07-15 |
-| [roadmap.md](roadmap.md) | Dependency-ordered M0–M6 delivery plan | 2026-07-15 |
+| [roadmap.md](roadmap.md) | Dependency-ordered M0–M6 delivery plan | 2026-07-16 |
 | [Read-only broker](../docs/architecture/read-only-broker.md) | Snapshot-bound Linux/WSL A1 enforcement and proof limits | 2026-07-15 |
 | [Durable runtime store](../docs/architecture/durable-runtime-store.md) | Schema-v3 event/plan/budget/operation authority and operational durability | 2026-07-15 |
 | [M3 controlled writes](../docs/architecture/controlled-writes.md) | Exact approval, A2 one-file CAS apply/rollback and restart recovery boundary | 2026-07-15 |
 | [M3 completion report](../docs/research/2026-07-15-m3-completion-report.md) | Exit-criteria evidence, multi-agent review, 258-test gate and exact limitations | 2026-07-15 |
 | [M3.5 integration and reproducibility](../docs/research/2026-07-16-m3.5-integration-reproducibility-report.md) | Installed runtime composition, honest isolation-conformance scope, declared test dependency and governance reconciliation | 2026-07-16 |
 | [M3.6 verification-only trust bootstrap](../docs/research/2026-07-16-m3.6-verification-only-trust-bootstrap-report.md) | Canonical external trust policy and fail-closed evidence verification; no execution authority | 2026-07-16 |
+| [M4 no-model wiki health](../docs/architecture/no-model-wiki-health.md) | Fixed three-page A1 execution, authenticated replay, five-attempt evaluation and L2-only promotion | 2026-07-16 |
+| [M4 completion report](../docs/research/2026-07-16-m4-no-model-wiki-health-completion-report.md) | Exit criteria, multi-agent adversarial corrections, 320-test gate and exact non-claims | 2026-07-16 |
 | [M2.5 completion report](../docs/research/2026-07-15-m2.5-completion-report.md) | Implemented slices, evidence matrix, and exact proof boundary | 2026-07-15 |
 | [M2 completion report](../docs/research/2026-07-15-m2-completion-report.md) | Exit-criteria evidence, test gate, and exact limitations | 2026-07-15 |
 | [M2 evaluation report](../docs/research/2026-07-15-m2-cross-deployment-evaluation-report.md) | Identical suite runner, governed local/cloud evidence, cloud-alias and renewal boundaries | 2026-07-15 |
@@ -34,6 +36,7 @@
 - [`.ai/capabilities.yaml`](../.ai/capabilities.yaml)
 - [`.ai/deployments.yaml`](../.ai/deployments.yaml)
 - [`.ai/tools.yaml`](../.ai/tools.yaml)
+- [`.ai/trust.yaml`](../.ai/trust.yaml)
 
 ## Reading order
 
@@ -41,8 +44,8 @@
 2. `.ai/project.yaml`
 3. `docs/architecture/README.md`
 4. `docs/decisions/README.md`
-5. `docs/architecture/runtime-contracts.md`, `read-only-broker.md`, and `controlled-writes.md` for the current M2/M3 boundary
-6. `wiki/loops.md` for bounded automation, proposal, and controlled-apply rules
+5. `docs/architecture/runtime-contracts.md`, `read-only-broker.md`, `controlled-writes.md`, and `no-model-wiki-health.md` for the current M2–M4 boundary
+6. `wiki/loops.md` for bounded automation, evaluation, proposal, and controlled-apply rules
 7. `wiki/openresearcher.md` for the current external research-node snapshot
 8. `wiki/labs-molt.md` for the external agentic-RL training-node snapshot
 9. `wiki/ai-legal-claude.md` for the external legal-prompt corpus and its safety limits

@@ -41,6 +41,11 @@ class RunProjection:
     adapter_completed: bool = False
     adapter_failed: bool = False
     budget_exhausted: bool = False
+    no_model_authorized: bool = False
+    no_model_started: bool = False
+    no_model_plan_digest: str | None = None
+    no_model_scope_entries: tuple[tuple[str, str], ...] = ()
+    no_model_results: tuple[tuple[str, str, str], ...] = ()
 
     @classmethod
     def initial(cls) -> RunProjection:
@@ -55,6 +60,11 @@ class RunProjection:
         adapter_completed: bool,
         adapter_failed: bool,
         budget_exhausted: bool,
+        no_model_authorized: bool = False,
+        no_model_started: bool = False,
+        no_model_plan_digest: str | None = None,
+        no_model_scope_entries: Mapping[str, str] | None = None,
+        no_model_results: Mapping[str, tuple[str, str]] | None = None,
     ) -> RunProjection:
         return cls(
             state=state,
@@ -65,12 +75,28 @@ class RunProjection:
             adapter_completed=adapter_completed,
             adapter_failed=adapter_failed,
             budget_exhausted=budget_exhausted,
+            no_model_authorized=no_model_authorized,
+            no_model_started=no_model_started,
+            no_model_plan_digest=no_model_plan_digest,
+            no_model_scope_entries=tuple(sorted((no_model_scope_entries or {}).items())),
+            no_model_results=tuple(
+                (slot, content_digest, heading_check)
+                for slot, (content_digest, heading_check) in sorted(
+                    (no_model_results or {}).items()
+                )
+            ),
         )
 
     def tool_map(self) -> dict[str, tuple[str, str]]:
         return {
             subject_id: (phase, subject_digest)
             for subject_id, phase, subject_digest in self.tool_states
+        }
+
+    def no_model_result_map(self) -> dict[str, tuple[str, str]]:
+        return {
+            slot: (content_digest, heading_check)
+            for slot, content_digest, heading_check in self.no_model_results
         }
 
 
@@ -85,6 +111,11 @@ def reduce_run_event(
     adapter_completed = projection.adapter_completed
     adapter_failed = projection.adapter_failed
     budget_exhausted = projection.budget_exhausted
+    no_model_authorized = projection.no_model_authorized
+    no_model_started = projection.no_model_started
+    no_model_plan_digest = projection.no_model_plan_digest
+    no_model_scope_entries = dict(projection.no_model_scope_entries)
+    no_model_results = projection.no_model_result_map()
 
     def result(state: RunState) -> RunProjection:
         return RunProjection.from_parts(
@@ -93,6 +124,11 @@ def reduce_run_event(
             adapter_completed=adapter_completed,
             adapter_failed=adapter_failed,
             budget_exhausted=budget_exhausted,
+            no_model_authorized=no_model_authorized,
+            no_model_started=no_model_started,
+            no_model_plan_digest=no_model_plan_digest,
+            no_model_scope_entries=no_model_scope_entries,
+            no_model_results=no_model_results,
         )
 
     if projection.state == RunState.NEW and event_type == "run.received":
@@ -106,9 +142,149 @@ def reduce_run_event(
             return result(RunState.AUTHORIZED)
         if event_type == "policy.denied":
             return result(RunState.DENIED)
-    if projection.state == RunState.AUTHORIZED and event_type == "adapter.started":
-        return result(RunState.RUNNING)
+        if event_type == "no-model.policy.allowed":
+            plan_digest = spec.get("subjectDigest")
+            if not isinstance(plan_digest, str):
+                raise RuntimeStateError(
+                    "ECO_NO_MODEL_LIFECYCLE", "No-model authorization requires a plan digest"
+                )
+            no_model_authorized = True
+            no_model_plan_digest = plan_digest
+            return result(RunState.AUTHORIZED)
+        if event_type == "no-model.policy.denied":
+            return result(RunState.DENIED)
+    if projection.state == RunState.AUTHORIZED:
+        if event_type == "adapter.started":
+            if no_model_authorized:
+                raise RuntimeStateError(
+                    "ECO_NO_MODEL_LIFECYCLE", "No-model authorization cannot start an adapter"
+                )
+            return result(RunState.RUNNING)
+        if event_type == "no-model.workflow.started":
+            if not no_model_authorized or spec.get("subjectDigest") != no_model_plan_digest:
+                raise RuntimeStateError(
+                    "ECO_NO_MODEL_LIFECYCLE", "No-model workflow is not bound to its authorization"
+                )
+            entries = spec.get("scopeEntries")
+            if not isinstance(entries, list) or len(entries) != 3:
+                raise RuntimeStateError(
+                    "ECO_NO_MODEL_LIFECYCLE", "No-model workflow requires three scope entries"
+                )
+            scope_entries: dict[str, str] = {}
+            for entry in entries:
+                if not isinstance(entry, dict):
+                    raise RuntimeStateError(
+                        "ECO_NO_MODEL_LIFECYCLE", "No-model scope entry is invalid"
+                    )
+                slot, entry_digest = entry.get("slot"), entry.get("entryDigest")
+                if (
+                    slot not in {"slot-1", "slot-2", "slot-3"}
+                    or not isinstance(entry_digest, str)
+                    or slot in scope_entries
+                ):
+                    raise RuntimeStateError(
+                        "ECO_NO_MODEL_LIFECYCLE", "No-model scope entries are not exact"
+                    )
+                scope_entries[slot] = entry_digest
+            if (
+                set(scope_entries) != {"slot-1", "slot-2", "slot-3"}
+                or len(set(scope_entries.values())) != 3
+            ):
+                raise RuntimeStateError(
+                    "ECO_NO_MODEL_LIFECYCLE", "No-model scope entries are incomplete"
+                )
+            no_model_scope_entries = scope_entries
+            no_model_started = True
+            return result(RunState.RUNNING)
     if projection.state == RunState.RUNNING:
+        if no_model_started:
+            if event_type.startswith("adapter.") or event_type.startswith("tool.") or event_type in {
+                "artifact.recorded",
+                "budget.exhausted",
+                "run.succeeded",
+                "run.exhausted",
+            }:
+                raise RuntimeStateError(
+                    "ECO_NO_MODEL_LIFECYCLE", "No-model runs cannot enter adapter or tool lifecycles"
+                )
+            if event_type.startswith("no-model.read."):
+                subject_id = spec.get("subjectId")
+                subject_digest = spec.get("subjectDigest")
+                scope_slot = spec.get("scopeSlot")
+                entry_digest = spec.get("entryDigest")
+                if not isinstance(subject_id, str) or not isinstance(subject_digest, str):
+                    raise RuntimeStateError(
+                        "ECO_TOOL_EVENT_BINDING", "No-model read event requires a subject id and digest"
+                    )
+                if (
+                    not isinstance(scope_slot, str)
+                    or no_model_scope_entries.get(scope_slot) != entry_digest
+                ):
+                    raise RuntimeStateError(
+                        "ECO_NO_MODEL_LIFECYCLE", "No-model read is not bound to a scope entry"
+                    )
+                existing = tools.get(scope_slot)
+                if event_type == "no-model.read.requested":
+                    if existing is not None:
+                        raise RuntimeStateError("ECO_TOOL_EVENT_ORDER", "No-model read is already recorded")
+                    tools[scope_slot] = ("requested", subject_digest)
+                else:
+                    if existing is None or existing[1] != subject_digest:
+                        raise RuntimeStateError(
+                            "ECO_TOOL_EVENT_BINDING", "No-model read subject does not match"
+                        )
+                    current = existing[0]
+                    if event_type == "no-model.read.allowed" and current == "requested":
+                        tools[scope_slot] = ("allowed", subject_digest)
+                    elif event_type == "no-model.read.started" and current == "allowed":
+                        tools[scope_slot] = ("started", subject_digest)
+                    elif event_type == "no-model.read.denied" and current in {"requested", "allowed"}:
+                        tools[scope_slot] = ("denied", subject_digest)
+                    elif event_type == "no-model.read.failed" and current in {"allowed", "started"}:
+                        if not isinstance(spec.get("resultDigest"), str):
+                            raise RuntimeStateError(
+                                "ECO_TOOL_EVENT_BINDING", "No-model terminal read requires a result digest"
+                            )
+                        tools[scope_slot] = ("failed", subject_digest)
+                    elif event_type == "no-model.read.completed" and current == "started":
+                        if not isinstance(spec.get("resultDigest"), str):
+                            raise RuntimeStateError(
+                                "ECO_TOOL_EVENT_BINDING", "No-model terminal read requires a result digest"
+                            )
+                        tools[scope_slot] = ("completed", subject_digest)
+                        content_digest = spec.get("contentDigest")
+                        heading_check = spec.get("headingCheck")
+                        if not isinstance(content_digest, str) or heading_check not in {"pass", "fail"}:
+                            raise RuntimeStateError(
+                                "ECO_TOOL_EVENT_BINDING",
+                                "Completed no-model read requires sanitized check evidence",
+                            )
+                        no_model_results[scope_slot] = (content_digest, heading_check)
+                    else:
+                        raise RuntimeStateError("ECO_TOOL_EVENT_ORDER", "No-model read is out of order")
+                return result(RunState.RUNNING)
+            if event_type == "no-model.workflow.succeeded":
+                # The only M4 no-model profile has exactly three fixed reads.
+                # Policy binds their hidden path scope; the event chain binds
+                # their exact request digests and cannot report success early.
+                result_digests = {
+                    content_digest for content_digest, _ in no_model_results.values()
+                }
+                if (
+                    set(tools) != set(no_model_scope_entries)
+                    or any(state != "completed" for state, _ in tools.values())
+                    or set(no_model_results) != set(no_model_scope_entries)
+                    or any(check != "pass" for _, check in no_model_results.values())
+                    or len(result_digests) != 3
+                ):
+                    raise RuntimeStateError(
+                        "ECO_RUN_SUCCESS_INVALID", "No-model workflow success preconditions are not met"
+                    )
+                return result(RunState.SUCCEEDED)
+            if event_type == "run.succeeded":
+                raise RuntimeStateError(
+                    "ECO_NO_MODEL_LIFECYCLE", "No-model runs require no-model.workflow.succeeded"
+                )
         if event_type.startswith("tool."):
             subject_id = spec.get("subjectId")
             subject_digest = spec.get("subjectDigest")

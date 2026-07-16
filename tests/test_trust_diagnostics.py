@@ -143,7 +143,7 @@ class RuntimeTrustDiagnosticsTests(unittest.TestCase):
         self.assertEqual(result["safety"]["repositoryRead"], "not-started")
         self.assertEqual(result["safety"]["modelEgress"], "not-used")
         self.assertEqual(
-            result["execution"]["code"], "ECO_RUNTIME_NO_MODEL_PLAN_CONTRACT_REQUIRED"
+            result["execution"]["code"], "ECO_RUNTIME_TRUST_VERIFICATION_ONLY"
         )
 
     def test_missing_key_fails_closed_without_echoing_environment_value(self) -> None:

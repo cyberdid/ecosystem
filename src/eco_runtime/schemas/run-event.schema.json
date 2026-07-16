@@ -39,9 +39,19 @@
             "plan.created",
             "policy.allowed",
             "policy.denied",
+            "no-model.policy.allowed",
+            "no-model.policy.denied",
             "adapter.started",
             "adapter.completed",
             "adapter.failed",
+            "no-model.workflow.started",
+            "no-model.read.requested",
+            "no-model.read.allowed",
+            "no-model.read.started",
+            "no-model.read.denied",
+            "no-model.read.completed",
+            "no-model.read.failed",
+            "no-model.workflow.succeeded",
             "tool.requested",
             "tool.allowed",
             "tool.denied",
@@ -59,6 +69,21 @@
         "outcome": { "enum": ["pending", "success", "denied", "failed", "cancelled", "exhausted"] },
         "subjectId": { "$ref": "#/$defs/id" },
         "subjectDigest": { "$ref": "#/$defs/sha256" },
+        "scopeSlot": { "enum": ["slot-1", "slot-2", "slot-3"] },
+        "entryDigest": { "$ref": "#/$defs/sha256" },
+        "contentDigest": { "$ref": "#/$defs/sha256" },
+        "headingCheck": { "enum": ["pass", "fail"] },
+        "scopeEntries": {
+          "type": "array", "minItems": 3, "maxItems": 3,
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["slot", "entryDigest"],
+            "properties": {
+              "slot": { "enum": ["slot-1", "slot-2", "slot-3"] },
+              "entryDigest": { "$ref": "#/$defs/sha256" }
+            }
+          }
+        },
         "resultDigest": { "$ref": "#/$defs/sha256" },
         "reasonCode": { "type": "string", "pattern": "^ECO_[A-Z0-9_]+$" },
         "metrics": {

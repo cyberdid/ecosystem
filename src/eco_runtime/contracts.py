@@ -17,6 +17,11 @@ API_VERSION = "runtime.ai.ecosystem/v1alpha1"
 SCHEMA_BY_KIND = {
     "RunRequest": "run-request.schema.json",
     "RunPlan": "run-plan.schema.json",
+    "NoModelRunRequest": "no-model-run-request.schema.json",
+    "NoModelRunPlan": "no-model-run-plan.schema.json",
+    "NoModelReadRequest": "no-model-read-request.schema.json",
+    "WikiHealthRunEvidence": "wiki-health-run-evidence.v1.schema.json",
+    "WikiHealthPromotionReport": "wiki-health-promotion-report.v1.schema.json",
     "ToolRequest": "tool-request.schema.json",
     "PolicyDecision": "policy-decision.schema.json",
     "RunEvent": "run-event.schema.json",

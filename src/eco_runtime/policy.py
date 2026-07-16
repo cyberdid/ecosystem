@@ -38,6 +38,18 @@ ARGUMENT_CONTRACTS = {
 }
 POLICY_ENGINE_VERSION = "0.1.0"
 
+# M4 deliberately starts with one profile rather than a generic deterministic
+# workflow language.  Adding another workflow is a contract/version change,
+# not a caller-controlled path list.
+NO_MODEL_A1_PROFILE = "no-model-a1/v1alpha1"
+NO_MODEL_WORKFLOWS: dict[str, tuple[str, ...]] = {
+    "wiki-health-check": (
+        "wiki/index.md",
+        "wiki/architecture.md",
+        "wiki/roadmap.md",
+    )
+}
+
 
 @dataclass(frozen=True)
 class PlanningResult:
@@ -137,6 +149,8 @@ class PolicyEngine:
         self._issued_decisions: dict[str, dict[str, Any]] = {}
         self._issued_plans: dict[str, str] = {}
         self._active_plans: dict[str, str] = {}
+        self._issued_no_model_plans: dict[str, str] = {}
+        self._active_no_model_plans: dict[str, str] = {}
         self._budget_ledgers: dict[str, BudgetLedger] = {}
 
         self._validate_canonical_schemas()
@@ -283,6 +297,18 @@ class PolicyEngine:
                 )
             self._issued_plans[plan_id] = digest
 
+    def _register_no_model_plan(self, plan: dict[str, Any]) -> None:
+        plan_id = plan["metadata"]["id"]
+        digest = semantic_digest(plan)
+        with self._lock:
+            existing = self._issued_no_model_plans.get(plan_id)
+            if existing is not None and existing != digest:
+                raise RuntimePolicyError(
+                    "ECO_PLAN_ID_CONFLICT",
+                    "No-model plan id was already issued for different content",
+                )
+            self._issued_no_model_plans[plan_id] = digest
+
     def _decision(
         self,
         *,
@@ -353,6 +379,347 @@ class PolicyEngine:
                 )
             )
         return min(deadlines)
+
+    def _snapshot_evidence_deadline(self) -> datetime:
+        """Return the exact signed-snapshot deadline for no-model authority."""
+
+        if self._repository_snapshot is None or self._repository_snapshot_provenance is None:
+            raise RuntimePolicyError("ECO_REPOSITORY_SNAPSHOT_MISSING", "Snapshot evidence is missing")
+        return min(
+            _parse_timestamp(self._repository_snapshot_provenance.expires_at),
+            _parse_timestamp(self._repository_snapshot["metadata"]["createdAt"])
+            + timedelta(seconds=self._maximum_snapshot_age_seconds),
+        )
+
+    def _deny_no_model_run(
+        self,
+        request: dict[str, Any],
+        *,
+        run_id: str,
+        decision_id: str,
+        now: datetime,
+        code: str,
+    ) -> PlanningResult:
+        return PlanningResult(
+            plan=None,
+            decision=self._decision(
+                decision_id=decision_id,
+                run_id=run_id,
+                now=now,
+                subject_kind="NoModelRunRequest",
+                subject_id=request["metadata"]["id"],
+                subject_digest=semantic_digest(request),
+                effect="deny",
+                reason_codes=[code],
+            ),
+        )
+
+    def _no_model_scope(
+        self, workflow_id: str
+    ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]] | None:
+        """Build the code-owned raw scope and its path-free durable markers."""
+
+        expected_paths = NO_MODEL_WORKFLOWS.get(workflow_id)
+        if expected_paths is None:
+            return None
+        if set(self._repository_entries) != set(expected_paths):
+            return None
+        scope_entries: list[dict[str, Any]] = []
+        for path in expected_paths:
+            entry = self._repository_entries.get(path)
+            if (
+                entry is None
+                or entry.get("dataClass") != "D0"
+                or entry.get("trust") != "P1"
+                or entry.get("classificationAuthority") != "policy"
+            ):
+                return None
+            scope_entries.append(
+                {
+                    "path": path,
+                    "contentDigest": entry["contentDigest"],
+                    "byteLength": entry["byteLength"],
+                    "dataClass": "D0",
+                    "trust": "P1",
+                }
+            )
+        return (
+            scope_entries,
+            [
+                {"slot": f"slot-{index}", "entryDigest": semantic_digest(entry)}
+                for index, entry in enumerate(scope_entries, start=1)
+            ],
+        )
+
+    def _no_model_plan_binding_error(self, plan: dict[str, Any]) -> str | None:
+        """Rebind a no-model plan to the current verified snapshot and config."""
+
+        if plan["spec"]["profile"] != NO_MODEL_A1_PROFILE:
+            return "ECO_PLAN_UNTRUSTED"
+        if plan["spec"]["project"]["semanticConfigDigest"] != self._config_digest:
+            return "ECO_CONFIG_DRIFT"
+        if self._repository_snapshot is None or self._repository_snapshot_provenance is None:
+            return "ECO_REPOSITORY_SNAPSHOT_MISSING"
+        workflow_id = plan["spec"]["workflow"]["id"]
+        scope = self._no_model_scope(workflow_id)
+        if scope is None:
+            return "ECO_WORKFLOW_SNAPSHOT_SCOPE_INVALID"
+        scope_entries, scope_slots = scope
+        expected_snapshot = {
+            "id": self._repository_snapshot["metadata"]["id"],
+            "digest": semantic_digest(self._repository_snapshot),
+            "rootIdentityDigest": self._repository_snapshot["spec"]["rootIdentityDigest"],
+            "trust": "P1",
+            "evidence": self._repository_snapshot_provenance.as_dict(),
+        }
+        if plan["spec"]["repositorySnapshot"] != expected_snapshot:
+            return "ECO_REPOSITORY_SNAPSHOT_MISMATCH"
+        workflow = plan["spec"]["workflow"]
+        if (
+            workflow["scopeDigest"] != semantic_digest(scope_entries)
+            or workflow["entryCount"] != len(scope_entries)
+            or workflow["scopeSlots"] != scope_slots
+        ):
+            return "ECO_WORKFLOW_SNAPSHOT_SCOPE_INVALID"
+        if plan["spec"]["budget"] != {
+            "maxDurationSeconds": 30,
+            "maxReadRequests": 3,
+            "maxInputBytes": sum(entry["byteLength"] for entry in scope_entries),
+            "maxModelRequests": 0,
+            "maxNetworkRequests": 0,
+            "maxWorkspaceWrites": 0,
+        }:
+            return "ECO_BUDGET_INVALID"
+        return None
+
+    def plan_no_model_run(
+        self,
+        request: dict[str, Any],
+        *,
+        run_id: str,
+        plan_id: str,
+        decision_id: str,
+        now: datetime,
+    ) -> PlanningResult:
+        """Authorize the one fixed, non-routed M4 A1 inspection workflow.
+
+        This method intentionally does not inspect deployments, observations,
+        adapters, or model budgets.  Its authority is limited to exact D0/P1
+        entries from the already verified signed repository snapshot.
+        """
+
+        _timestamp(now)
+        self._refresh_trusted_evidence(now)
+        request = copy.deepcopy(validate_record(request))
+        request_created_at = _parse_timestamp(request["metadata"]["createdAt"])
+        if request_created_at > now.astimezone(timezone.utc) + timedelta(
+            seconds=self._maximum_clock_skew_seconds
+        ):
+            return self._deny_no_model_run(
+                request, run_id=run_id, decision_id=decision_id, now=now, code="ECO_REQUEST_TIME_INVALID"
+            )
+        if request["spec"]["projectId"] != self._bundle["project"]["metadata"]["name"]:
+            return self._deny_no_model_run(
+                request, run_id=run_id, decision_id=decision_id, now=now, code="ECO_PROJECT_MISMATCH"
+            )
+        workflow_id = request["spec"]["workflow"]
+        if workflow_id not in NO_MODEL_WORKFLOWS:
+            return self._deny_no_model_run(
+                request, run_id=run_id, decision_id=decision_id, now=now, code="ECO_WORKFLOW_NOT_ALLOWED"
+            )
+        if self._repository_snapshot is None or self._repository_snapshot_provenance is None:
+            return self._deny_no_model_run(
+                request, run_id=run_id, decision_id=decision_id, now=now, code="ECO_REPOSITORY_SNAPSHOT_MISSING"
+            )
+
+        scope = self._no_model_scope(workflow_id)
+        if scope is None:
+            return self._deny_no_model_run(
+                request,
+                run_id=run_id,
+                decision_id=decision_id,
+                now=now,
+                code="ECO_WORKFLOW_SNAPSHOT_SCOPE_INVALID",
+            )
+        scope_entries, scope_slots = scope
+
+        plan = {
+            "apiVersion": API_VERSION,
+            "kind": "NoModelRunPlan",
+            # Stable plan identifiers must produce stable plan bytes.  The
+            # request timestamp is an already validated part of that subject.
+            "metadata": {"id": plan_id, "runId": run_id, "createdAt": request["metadata"]["createdAt"]},
+            "spec": {
+                "profile": NO_MODEL_A1_PROFILE,
+                "requestDigest": semantic_digest(request),
+                "project": {
+                    "id": self._bundle["project"]["metadata"]["name"],
+                    "semanticConfigDigest": self._config_digest,
+                    "sourceDigests": copy.deepcopy(self._source_digests),
+                    "digestProfile": DIGEST_PROFILE,
+                    "contractProfile": CONTRACT_PROFILE,
+                    "schemaBundleDigest": self._schema_bundle_digest,
+                    "policyEngineVersion": POLICY_ENGINE_VERSION,
+                },
+                "effectivePolicy": {
+                    "dataClass": "D0",
+                    "maximumActionClass": "A1",
+                    "sandbox": "inspect",
+                    "network": "deny",
+                    "modelRequests": 0,
+                    "workspaceWrites": 0,
+                },
+                "repositorySnapshot": {
+                    "id": self._repository_snapshot["metadata"]["id"],
+                    "digest": semantic_digest(self._repository_snapshot),
+                    "rootIdentityDigest": self._repository_snapshot["spec"]["rootIdentityDigest"],
+                    "trust": "P1",
+                    "evidence": self._repository_snapshot_provenance.as_dict(),
+                },
+                "workflow": {
+                    "id": workflow_id,
+                    # Durable plans bind a fixed scope without persisting raw
+                    # repository paths.  The policy owns the profile paths.
+                    "scopeDigest": semantic_digest(scope_entries),
+                    "entryCount": len(scope_entries),
+                    "scopeSlots": scope_slots,
+                },
+                "budget": {
+                    "maxDurationSeconds": 30,
+                    "maxReadRequests": 3,
+                    "maxInputBytes": sum(entry["byteLength"] for entry in scope_entries),
+                    "maxModelRequests": 0,
+                    "maxNetworkRequests": 0,
+                    "maxWorkspaceWrites": 0,
+                },
+            },
+        }
+        validate_record(plan)
+        self._register_no_model_plan(plan)
+        decision = self._decision(
+            decision_id=decision_id,
+            run_id=run_id,
+            now=now,
+            subject_kind="NoModelRunPlan",
+            subject_id=plan_id,
+            subject_digest=semantic_digest(plan),
+            effect="allow",
+            reason_codes=["ECO_NO_MODEL_RUN_ALLOWED"],
+            maximum_expiry=self._snapshot_evidence_deadline(),
+        )
+        return PlanningResult(plan=plan, decision=decision)
+
+    def activate_no_model_plan(
+        self,
+        plan: dict[str, Any],
+        decision: dict[str, Any],
+        *,
+        now: datetime,
+    ) -> None:
+        """Consume one exact allow decision and activate only its no-model plan."""
+
+        _timestamp(now)
+        self._refresh_trusted_evidence(now)
+        plan = copy.deepcopy(validate_record(plan))
+        if plan["kind"] != "NoModelRunPlan":
+            raise RuntimePolicyError("ECO_PLAN_UNTRUSTED", "Plan is not a no-model plan")
+        plan_id = plan["metadata"]["id"]
+        plan_digest = semantic_digest(plan)
+        with self._lock:
+            if self._issued_no_model_plans.get(plan_id) != plan_digest:
+                raise RuntimePolicyError("ECO_PLAN_UNTRUSTED", "Plan was not issued by this policy engine")
+        binding_error = self._no_model_plan_binding_error(plan)
+        if binding_error is not None:
+            raise RuntimePolicyError(binding_error, "No-model plan no longer matches trusted authority")
+        self.consume_decision(decision, plan, now=now)
+        with self._lock:
+            run_id = plan["metadata"]["runId"]
+            existing = self._active_no_model_plans.get(run_id)
+            if existing is not None and existing != plan_digest:
+                raise RuntimePolicyError("ECO_PLAN_ID_CONFLICT", "Another no-model plan is active for this run")
+            self._active_no_model_plans[run_id] = plan_digest
+
+    def authorize_no_model_read(
+        self,
+        plan: dict[str, Any],
+        request: dict[str, Any],
+        *,
+        decision_id: str,
+        now: datetime,
+    ) -> dict[str, Any]:
+        """Issue per-read authority only for an exact active no-model plan entry."""
+
+        _timestamp(now)
+        self._refresh_trusted_evidence(now)
+        plan = copy.deepcopy(validate_record(plan))
+        request = copy.deepcopy(validate_record(request))
+        subject_digest = semantic_digest(request)
+        if plan["kind"] != "NoModelRunPlan":
+            raise RuntimePolicyError("ECO_PLAN_UNTRUSTED", "Plan is not a no-model plan")
+        plan_digest = semantic_digest(plan)
+        with self._lock:
+            issued = self._issued_no_model_plans.get(plan["metadata"]["id"])
+            active = self._active_no_model_plans.get(plan["metadata"]["runId"])
+        if issued != plan_digest:
+            raise RuntimePolicyError("ECO_PLAN_UNTRUSTED", "Plan was not issued by this policy engine")
+        code: str | None = None
+        binding_error = self._no_model_plan_binding_error(plan)
+        if binding_error is not None:
+            code = binding_error
+        elif active != plan_digest:
+            code = "ECO_PLAN_NOT_ACTIVE"
+        elif request["metadata"]["runId"] != plan["metadata"]["runId"]:
+            code = "ECO_RUN_MISMATCH"
+        elif request["metadata"]["createdAt"] != plan["metadata"]["createdAt"]:
+            code = "ECO_NO_MODEL_READ_TIME_INVALID"
+        elif request["spec"]["planDigest"] != plan_digest:
+            code = "ECO_PLAN_MISMATCH"
+        elif request["spec"]["workflow"] != plan["spec"]["workflow"]["id"]:
+            code = "ECO_WORKFLOW_NOT_ALLOWED"
+        else:
+            expected_paths = NO_MODEL_WORKFLOWS[plan["spec"]["workflow"]["id"]]
+            path = request["spec"]["path"]
+            if path not in expected_paths:
+                code = "ECO_REPOSITORY_PATH_UNSNAPSHOTTED"
+            elif request["spec"]["scopeSlot"] != f"slot-{expected_paths.index(path) + 1}":
+                code = "ECO_WORKFLOW_SNAPSHOT_SCOPE_INVALID"
+
+        return self._decision(
+            decision_id=decision_id,
+            run_id=plan["metadata"]["runId"],
+            now=now,
+            subject_kind="NoModelReadRequest",
+            subject_id=request["metadata"]["id"],
+            subject_digest=subject_digest,
+            effect="deny" if code else "allow",
+            reason_codes=[code or "ECO_NO_MODEL_READ_ALLOWED"],
+            maximum_expiry=self._snapshot_evidence_deadline() if code is None else None,
+        )
+
+    def assert_no_model_plan_current(
+        self,
+        plan: dict[str, Any],
+        *,
+        now: datetime,
+    ) -> None:
+        """Revalidate active no-model authority before committing read evidence."""
+
+        _timestamp(now)
+        self._refresh_trusted_evidence(now)
+        plan = copy.deepcopy(validate_record(plan))
+        if plan["kind"] != "NoModelRunPlan":
+            raise RuntimePolicyError("ECO_PLAN_UNTRUSTED", "Plan is not a no-model plan")
+        plan_digest = semantic_digest(plan)
+        with self._lock:
+            issued = self._issued_no_model_plans.get(plan["metadata"]["id"])
+            active = self._active_no_model_plans.get(plan["metadata"]["runId"])
+        if issued != plan_digest or active != plan_digest:
+            raise RuntimePolicyError("ECO_PLAN_NOT_ACTIVE", "No-model plan is not active")
+        binding_error = self._no_model_plan_binding_error(plan)
+        if binding_error is not None:
+            raise RuntimePolicyError(
+                binding_error, "No-model plan no longer matches trusted authority"
+            )
 
     def _deny_run(
         self,

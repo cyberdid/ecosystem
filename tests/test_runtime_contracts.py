@@ -174,6 +174,158 @@ def tool_request() -> dict:
     }
 
 
+def no_model_run_request() -> dict:
+    return {
+        "apiVersion": API_VERSION,
+        "kind": "NoModelRunRequest",
+        "metadata": {
+            "id": "no-model-request-1",
+            "createdAt": NOW,
+            "actor": {"type": "human", "id": "operator-1"},
+        },
+        "spec": {"projectId": "ecosystem", "workflow": "wiki-health-check"},
+    }
+
+
+def no_model_run_plan() -> dict:
+    return {
+        "apiVersion": API_VERSION,
+        "kind": "NoModelRunPlan",
+        "metadata": {"id": "no-model-plan-1", "runId": "run-1", "createdAt": NOW},
+        "spec": {
+            "profile": "no-model-a1/v1alpha1",
+            "requestDigest": DIGEST,
+            "project": copy.deepcopy(run_plan()["spec"]["project"]),
+            "effectivePolicy": {
+                "dataClass": "D0",
+                "maximumActionClass": "A1",
+                "sandbox": "inspect",
+                "network": "deny",
+                "modelRequests": 0,
+                "workspaceWrites": 0,
+            },
+            "repositorySnapshot": copy.deepcopy(run_plan()["spec"]["repositorySnapshot"]),
+            "workflow": {
+                "id": "wiki-health-check",
+                "scopeDigest": DIGEST,
+                "entryCount": 3,
+                "scopeSlots": [
+                    {"slot": f"slot-{index}", "entryDigest": f"{index}" * 64}
+                    for index in range(1, 4)
+                ],
+            },
+            "budget": {
+                "maxDurationSeconds": 30,
+                "maxReadRequests": 3,
+                "maxInputBytes": 42,
+                "maxModelRequests": 0,
+                "maxNetworkRequests": 0,
+                "maxWorkspaceWrites": 0,
+            },
+        },
+    }
+
+
+def no_model_read_request() -> dict:
+    return {
+        "apiVersion": API_VERSION,
+        "kind": "NoModelReadRequest",
+        "metadata": {"id": "no-model-read-1", "runId": "run-1", "createdAt": NOW},
+        "spec": {
+            "planDigest": DIGEST,
+            "workflow": "wiki-health-check",
+            "path": "wiki/index.md",
+            "scopeSlot": "slot-1",
+        },
+    }
+
+
+def wiki_health_run_evidence() -> dict:
+    return {
+        "apiVersion": API_VERSION,
+        "kind": "WikiHealthRunEvidence",
+        "metadata": {"id": "wiki-evidence-1", "runId": "run-1", "createdAt": NOW},
+        "spec": {
+            "profile": "wiki-health-run-evidence/v1",
+            "workflow": "wiki-health-check",
+            "evidenceDigest": DIGEST,
+            "reportDigest": DIGEST,
+            "repositorySnapshotDigest": DIGEST,
+            "status": "succeeded",
+            "replayed": False,
+            "execution": {"verifiedEntryCount": 3, "brokerReadCount": 3, "totalBytes": 42},
+            "safety": {
+                "unauthorizedActions": 0,
+                "repositoryMutations": 0,
+                "modelRequests": 0,
+                "networkRequests": 0,
+                "writeOperations": 0,
+                "adaptersCreated": 0,
+                "contentEmissions": 0,
+            },
+        },
+    }
+
+
+def wiki_health_promotion_report() -> dict:
+    passed = {
+        "eligible": True,
+        "reasonCode": "ECO_M4_PROMOTION_GATE_PASSED",
+        "reason": "The fixed no-model workflow passed the complete M4 L0-L2 evidence gate.",
+    }
+    out_of_scope = {
+        "eligible": False,
+        "reasonCode": "ECO_M4_LEVEL_OUT_OF_SCOPE",
+        "reason": "The no-model read-only M4 evidence cannot authorize model, network, or write-capable promotion.",
+    }
+    return {
+        "apiVersion": API_VERSION,
+        "kind": "WikiHealthPromotionReport",
+        "metadata": {"id": "wiki-promotion-1", "evaluatedAt": NOW},
+        "spec": {
+            "profile": "wiki-health-promotion-report/v1",
+            "workflow": "wiki-health-check",
+            "evaluationVersion": 1,
+            "criteria": {
+                "requiredIndependentAttempts": 5,
+                "requiredVerifiedEntryCount": 3,
+                "requiredBrokerReadsPerAttempt": 3,
+                "requiredRecoveryBrokerReads": 0,
+                "maximumSafetyViolations": 0,
+            },
+            "observed": {
+                "attemptCount": 5,
+                "independentRunCount": 5,
+                "successfulNonReplayedAttemptCount": 5,
+                "stableResult": True,
+                "safeAttemptCount": 5,
+            },
+            "reference": {
+                "reportDigest": DIGEST,
+                "repositorySnapshotDigest": DIGEST,
+                "verifiedEntryCount": 3,
+                "totalBytes": 42,
+            },
+            "recovery": {"provided": True, "passed": True, "evidenceDigest": DIGEST},
+            "status": "pass",
+            "reasonCodes": [],
+            "sourceEvidenceDigests": [DIGEST],
+            "promotion": {
+                "highestEligibleLevel": "L2",
+                "levels": {
+                    "L0": copy.deepcopy(passed),
+                    "L1": copy.deepcopy(passed),
+                    "L2": copy.deepcopy(passed),
+                    "L3": copy.deepcopy(out_of_scope),
+                    "L4": copy.deepcopy(out_of_scope),
+                    "L5": copy.deepcopy(out_of_scope),
+                },
+            },
+            "promotionReportDigest": DIGEST,
+        },
+    }
+
+
 def policy_decision() -> dict:
     return {
         "apiVersion": API_VERSION,
@@ -499,6 +651,11 @@ class RuntimeContractTests(unittest.TestCase):
         return [
             run_request(),
             run_plan(),
+            no_model_run_request(),
+            no_model_run_plan(),
+            no_model_read_request(),
+            wiki_health_run_evidence(),
+            wiki_health_promotion_report(),
             tool_request(),
             policy_decision(),
             run_event(),

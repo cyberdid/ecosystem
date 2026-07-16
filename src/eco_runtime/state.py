@@ -17,9 +17,19 @@ EVENT_SEMANTICS: dict[str, tuple[str, frozenset[str]]] = {
     "plan.created": ("success", frozenset({"runtime"})),
     "policy.allowed": ("success", frozenset({"policy"})),
     "policy.denied": ("denied", frozenset({"policy"})),
+    "no-model.policy.allowed": ("success", frozenset({"policy"})),
+    "no-model.policy.denied": ("denied", frozenset({"policy"})),
     "adapter.started": ("pending", frozenset({"adapter"})),
     "adapter.completed": ("success", frozenset({"adapter"})),
     "adapter.failed": ("failed", frozenset({"adapter"})),
+    "no-model.workflow.started": ("pending", frozenset({"runtime"})),
+    "no-model.read.requested": ("pending", frozenset({"runtime"})),
+    "no-model.read.allowed": ("success", frozenset({"policy"})),
+    "no-model.read.started": ("pending", frozenset({"runtime"})),
+    "no-model.read.denied": ("denied", frozenset({"policy"})),
+    "no-model.read.completed": ("success", frozenset({"broker"})),
+    "no-model.read.failed": ("failed", frozenset({"runtime", "broker"})),
+    "no-model.workflow.succeeded": ("success", frozenset({"runtime"})),
     "tool.requested": ("pending", frozenset({"runtime"})),
     "tool.allowed": ("success", frozenset({"policy"})),
     "tool.denied": ("denied", frozenset({"policy"})),
@@ -38,6 +48,14 @@ OPERATIONAL_EVENTS = frozenset(
     {
         "adapter.completed",
         "adapter.failed",
+        "no-model.workflow.started",
+        "no-model.read.requested",
+        "no-model.read.allowed",
+        "no-model.read.started",
+        "no-model.read.denied",
+        "no-model.read.completed",
+        "no-model.read.failed",
+        "no-model.workflow.succeeded",
         "tool.requested",
         "tool.allowed",
         "tool.denied",
@@ -97,6 +115,11 @@ class RunEventChain:
         self._adapter_completed = False
         self._adapter_failed = False
         self._budget_exhausted = False
+        self._no_model_authorized = False
+        self._no_model_started = False
+        self._no_model_plan_digest: str | None = None
+        self._no_model_scope_entries: dict[str, str] = {}
+        self._no_model_results: dict[str, tuple[str, str]] = {}
         self._lock = threading.Lock()
 
     @property
@@ -177,6 +200,11 @@ class RunEventChain:
                     adapter_completed=self._adapter_completed,
                     adapter_failed=self._adapter_failed,
                     budget_exhausted=self._budget_exhausted,
+                    no_model_authorized=self._no_model_authorized,
+                    no_model_started=self._no_model_started,
+                    no_model_plan_digest=self._no_model_plan_digest,
+                    no_model_scope_entries=self._no_model_scope_entries,
+                    no_model_results=self._no_model_results,
                 ),
                 event_type,
                 spec,
@@ -191,4 +219,9 @@ class RunEventChain:
             self._adapter_completed = next_projection.adapter_completed
             self._adapter_failed = next_projection.adapter_failed
             self._budget_exhausted = next_projection.budget_exhausted
+            self._no_model_authorized = next_projection.no_model_authorized
+            self._no_model_started = next_projection.no_model_started
+            self._no_model_plan_digest = next_projection.no_model_plan_digest
+            self._no_model_scope_entries = dict(next_projection.no_model_scope_entries)
+            self._no_model_results = next_projection.no_model_result_map()
             return next_projection.state

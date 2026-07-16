@@ -4,6 +4,15 @@ Append-only хронологічний лог операцій. Формат: `#
 
 ---
 
+## [2026-07-16] implementation | M4 fixed no-model wiki-health L0–L2 profile completed
+
+- Added distinct route-free `NoModelRunRequest`, `NoModelRunPlan`, and `NoModelReadRequest` contracts plus an exact no-model lifecycle; the plan fixes three D0/P1 slots, three reads, 30 seconds, exact input bytes, and zero model/network/write budgets.
+- Added `eco run wiki-health-check`: external signed-snapshot verification, single-use plan/read decisions, Linux/WSL broker-only reads, in-memory integrity/H1/distinctness checks, and path/content-free output.
+- Added a private external SQLite application with separate HMAC plan/event/head authentication, strict ownership/permissions/schema/link checks, exclusive process ownership, fresh pre-start recovery authorization, a durable `started` ambiguity fence, and terminal zero-read replay.
+- Added `eco eval wiki-health-check`: five fixed independent journals plus a zero-read recovery proof, frozen thresholds, deterministic promotion report, maximum L2 eligibility, and structural L3–L5 denial.
+- Multi-agent adversarial review reproduced and closed forged recovery authority, adapter/lifecycle entry, duplicate-scope success, unauthenticated journal rewrite, symlink repository mutation, timestamp replay conflict, concurrent journal ownership, recovery-without-reauthorization, partial-recovery evidence loss, ambiguous post-read reread, parser-deadline, and frozen policy-time gaps.
+- Full local acceptance gate: 320 `unittest` tests plus pytest, compile, canonical validation, render drift, doctor, and diff checks. Exact proof limits are in the M4 completion report and ADR-020.
+
 ## [2026-07-15] implementation | M3 bounded controlled-write profile completed
 
 - Added exact A2 `repository.write` contracts for one Linux/WSL UTF-8 regular-file create/replace operation, with active-plan, snapshot, root, before-state, candidate, preview, limit and rollback bindings.

@@ -8,9 +8,9 @@
 | M1 | Schemas, CLI, projections, audit, lock, tests | Implemented |
 | M2 | Read-only PEP/broker, local+cloud adapters, sanitized run events | Complete for the embedded Linux/WSL reference profile; 187 tests plus passing live local/cloud evidence |
 | M3 | Controlled writes, sandbox boundary, approvals, idempotency | Complete for bounded Linux/WSL one-file create/replace profile; 258 tests |
-| M3.5 | Integration, reproducibility, governance reconciliation | Complete: `eco runtime doctor`, declared test extra, honest hosted-CI isolation scope, ADR-018; execution remains trust-bootstrap blocked |
-| M3.6 | Verification-only trust bootstrap | Complete: canonical external-trust policy and `eco runtime trust doctor`; no-model A1 execution contract still required |
-| M4 | L0–L5 evals and promotion | Pending |
+| M3.5 | Integration, reproducibility, governance reconciliation | Complete: `eco runtime doctor`, declared test extra, honest hosted-CI isolation scope, ADR-018 |
+| M3.6 | Verification-only trust bootstrap | Complete: canonical external-trust policy and `eco runtime trust doctor`; consumed by M4 without self-signing |
+| M4 | L0–L5 evaluation/promotion contract | Complete for fixed `wiki-health-check`: L0–L2 eligible after five attempts + replay; L3–L5 structurally ineligible |
 | M5 | Team state, signed policy, RBAC | Deferred |
 | M6 | Enterprise topology options | Deferred |
 
@@ -66,7 +66,19 @@ See the [M3.5 report](../docs/research/2026-07-16-m3.5-integration-reproducibili
 3. Missing, stale, malformed, changed, insecure, symlinked, or repository-resident evidence leaves execution blocked without raw-data leakage.
 4. A successful trust doctor remains verification-only: no repository read, model request, network egress, store, artifact, run, approval, or write authority is created.
 
-The next M4 gate is a separate no-model A1 plan/lifecycle contract and then a fixed-scope, report-only `wiki-health-check`; the existing model-routed RunPlan must not be repurposed for that workflow. See the [M3.6 report](../docs/research/2026-07-16-m3.6-verification-only-trust-bootstrap-report.md) and [ADR-019](../docs/decisions/README.md#adr-019--verification-only-external-trust-bootstrap).
+M4 consumes this verification through a separate no-model A1 plan/lifecycle; the model-routed RunPlan is not repurposed. See the [M3.6 report](../docs/research/2026-07-16-m3.6-verification-only-trust-bootstrap-report.md) and [ADR-019](../docs/decisions/README.md#adr-019--verification-only-external-trust-bootstrap).
+
+## M4 exit criteria
+
+1. A separate route-free no-model plan binds the exact signed three-entry D0/P1 scope and zero model/network/write budgets.
+2. Every broker read requires fresh expiring single-use policy authority; forged, drifted, expired, repeated, or out-of-scope authority fails closed.
+3. Private external HMAC state contains no raw path/content, rejects unsafe SQLite/link/permission/concurrent-owner topology, and replays terminal success without rereading.
+4. The fixed report verifies signed bytes, one primary heading per document, and distinct documents without repository mutation.
+5. Five independent attempts must agree exactly; completed observations survive recovery, ambiguous post-start reads fail without retry, terminal recovery must replay with zero reads, and any safety violation blocks promotion.
+6. Passing grants only L0–L2. L3–L5, scheduling, autonomous retry, model, network, and writes remain ineligible.
+7. Complete M1–M3 regression plus CLI/schema/compile/projection gates pass.
+
+All criteria pass for the embedded Linux/WSL reference profile. See the [M4 report](../docs/research/2026-07-16-m4-no-model-wiki-health-completion-report.md), [architecture](../docs/architecture/no-model-wiki-health.md), and [ADR-020](../docs/decisions/README.md#adr-020--separate-no-model-a1-lifecycle-and-fixed-l0-l2-promotion-gate).
 
 ## Loop rollout
 
@@ -75,12 +87,14 @@ The next M4 gate is a separate no-model A1 plan/lifecycle contract and then a fi
 | Current / M1 | Manual commands and documented candidates | Existing compiler and validation |
 | M2 | L2 observe/report-only loop prototype | Read-only PEP, sanitized events, negative bypass tests |
 | M3 | L3 proposals and narrowly approved L4 writes | Implemented primitive: exact approval, idempotency, CAS rollback and restart recovery |
-| M4 | Promotion by repeated-run L0–L4 evaluations | Quality, safety, cost and recovery thresholds |
+| M4 | Fixed no-model L0–L2 promotion | Implemented five-attempt quality/safety/stability gate plus recovery replay; L3–L5 denied |
 
-The first candidate is `wiki-health-check`; `ml-autoresearch` follows only after experiment isolation, immutable evaluation, reproducibility, and approved local-compute resource limits are enforced. A DGX is one optional local profile, not a dependency. See [Loop engineering](loops.md).
+The first reference loop is now `wiki-health-check` in manual L2 observe-only mode. `ml-autoresearch` follows only after experiment isolation, immutable evaluation, reproducibility, and approved local-compute resource limits are enforced. A DGX is one optional local profile, not a dependency. See [Loop engineering](loops.md).
 
 ## Sources
 
 - [Architecture](../docs/architecture/README.md)
 - [Decision register](../docs/decisions/README.md)
 - [Loop engineering](loops.md)
+- [M4 no-model wiki health](../docs/architecture/no-model-wiki-health.md)
+- [M4 completion report](../docs/research/2026-07-16-m4-no-model-wiki-health-completion-report.md)

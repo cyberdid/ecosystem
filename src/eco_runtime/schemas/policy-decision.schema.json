@@ -28,7 +28,7 @@
           "additionalProperties": false,
           "required": ["kind", "id", "digest"],
           "properties": {
-            "kind": { "enum": ["RunRequest", "RunPlan", "ToolRequest", "ModelRequest"] },
+            "kind": { "enum": ["RunRequest", "RunPlan", "ToolRequest", "ModelRequest", "NoModelRunRequest", "NoModelRunPlan", "NoModelReadRequest"] },
             "id": { "$ref": "#/$defs/id" },
             "digest": { "$ref": "#/$defs/sha256" }
           }

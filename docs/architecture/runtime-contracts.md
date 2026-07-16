@@ -1,8 +1,8 @@
-# M2 runtime contracts
+# Runtime contracts
 
-**Status:** complete for the embedded M2 Linux/WSL read-only reference profile
+**Status:** complete for the embedded M2 model-routed profile and fixed M4 no-model Linux/WSL profile
 
-**Updated:** 2026-07-15
+**Updated:** 2026-07-16
 
 ## Boundary
 
@@ -44,6 +44,11 @@ The runtime namespace is `runtime.ai.ecosystem/v1alpha1`; canonical configuratio
 | `EndpointBinding` | Time-bounded digest-only binding of an exact deployment identity to a resolved local/cloud endpoint profile |
 | `ModelRequest` | Content-bound, budgeted, no-fallback request for one exact deployment and endpoint binding |
 | `ModelResult` | Content-free normalized model result, usage, finish reason, and exact request/deployment binding |
+| `NoModelRunRequest` | Fixed request for the code-owned `wiki-health-check` workflow |
+| `NoModelRunPlan` | Route-free signed-snapshot A1 plan with three path-free slots and zero model/network/write budget |
+| `NoModelReadRequest` | Transient exact fixed path plus plan and slot binding; never durable raw-path state |
+| `WikiHealthRunEvidence` | Content/path-free historical attempt or replay evidence for M4 evaluation |
+| `WikiHealthPromotionReport` | Frozen five-attempt plus recovery criteria and explicit L0–L5 eligibility |
 
 The broker-owned `repository.read` argument contract accepts one POSIX-relative path and rejects absolute paths, traversal, URI schemes, backslashes, NULs, extra fields, and invalid types before filesystem access.
 
@@ -74,6 +79,8 @@ RECEIVED
 The in-memory `RunEventChain` and schema-v3 SQLite authority share the same pure reducer. SQLite generates and replays durable events, enforces exact producer/outcome/subject/result bindings, consumes single-use decisions, and owns the authoritative budget/reservations. `PolicyEngine` remains the pure decision evaluator; its legacy `BudgetLedger` is not used by the typed broker execution path.
 
 The Linux/WSL `repository.read` backend is documented separately in [Read-only repository broker](read-only-broker.md). Governed local/cloud adapter identities, signed trusted evidence, durable audit, and a network-denied Linux/WSL launcher are implemented. A cloud provider alias is an observable routing identity, not an immutable-weight revision. Cryptographic remote producer identity, endpoint-specific network allowlists, and Windows/macOS executable backends are not inferred from these controls.
+
+M4 adds explicit `no-model.policy.*`, `no-model.workflow.*`, and `no-model.read.*` events to the same reducer. Each read follows `requested → allowed → started → completed|failed`; `started` is the durable ambiguity fence before broker I/O. Once no-model authority is recorded, adapter, tool, artifact, model-budget, and generic model-run success/exhaustion events are rejected. Success requires all three distinct path-free scope slots to complete with sanitized heading evidence and three distinct content digests. The dedicated authenticated M4 journal and promotion boundary are documented in [M4 no-model wiki health](no-model-wiki-health.md).
 
 The SQLite authority is documented in [Durable runtime store](durable-runtime-store.md) and owns the full implemented read-only run aggregate.
 

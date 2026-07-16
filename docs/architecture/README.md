@@ -1,8 +1,8 @@
 # Architecture
 
-**Status:** M1, the embedded M2 read-only profile, and the bounded M3 Linux/WSL controlled-write profile are implemented.
+**Status:** M1, embedded M2 read-only, bounded M3 Linux/WSL controlled writes, M3.5/M3.6 integration/trust, and the fixed M4 no-model L0–L2 reference loop are implemented.
 
-**Updated:** 2026-07-15
+**Updated:** 2026-07-16
 
 ## Logical architecture
 
@@ -18,6 +18,10 @@ flowchart TB
     DPEP --> ROUTER["Capability-aware planner"]
     ROUTER --> ADAPTERS["Governed replaceable model adapters"]
     DPEP --> ORCH["Typed embedded orchestrator"]
+    DPEP --> NOMODEL["Fixed no-model A1 planner"]
+    NOMODEL --> NMJOURNAL["Private HMAC no-model journal"]
+    NMJOURNAL --> BROKER
+    BROKER --> NMEVAL["Deterministic wiki report + L0-L2 gate"]
     ORCH --> STORE["SQLite event / plan / budget / operation authority"]
     ORCH --> BROKER["Filesystem-only Linux read broker"]
     ORCH --> WRITEAUTH["Authenticated M3 write authority"]
@@ -100,7 +104,15 @@ This provides ownership and reversibility. It does not prove that different AI c
 
 Hosted CI validates deterministic contracts and fail-closed unsupported-isolation behavior. Live user/net/pid namespace plus Landlock conformance is exercised only on capable Linux/WSL hosts; an unavailable profile is a visible “not performed” result, never a portable security claim. See the [M3.5 report](../research/2026-07-16-m3.5-integration-reproducibility-report.md).
 
-### Remaining beyond M3.5
+### M4 no-model loop boundary
+
+`eco run wiki-health-check --json` now consumes M3.6 external signed-snapshot verification through a distinct `NoModelRunPlan`. The plan is path-free, route-free, and fixes three D0/P1 wiki slots, three reads, a 30-second attempt deadline, exact signed input bytes, and zero model/network/workspace-write budgets. Reads receive fresh single-use policy decisions and cross only the existing Linux/WSL descriptor-anchored broker.
+
+A dedicated private external SQLite journal authenticates plan/event/head state with a separately provisioned HMAC key and excludes concurrent owners. Recovery reauthorizes only pre-start `allowed` reads; the durable `started` ambiguity fence turns uncertain post-start recovery into a typed terminal failure without another broker call. Completed observations are restored, terminal success does not repeat broker I/O, and the first event anchors the deadline across recovery. Output and durable state contain no raw path or wiki content.
+
+`eco eval wiki-health-check --json` evaluates five fixed independent journals plus one zero-read replay. Frozen gates can promote only L0–L2. L3–L5 remain explicit ineligible states and create no M3 write, model, network, retry, or scheduling authority. See [M4 no-model wiki health](no-model-wiki-health.md).
+
+### Remaining beyond M4
 
 - endpoint-specific network allowlist backend;
 - Windows/macOS isolation and filesystem backends;
@@ -108,6 +120,8 @@ Hosted CI validates deterministic contracts and fail-closed unsupported-isolatio
 - delete, rename, directory, batch, command, A3 and A4 action profiles;
 - descendant-exec/seccomp/cgroup/device containment;
 - asymmetric team-verifiable evidence identity.
+- full-wiki link/staleness/duplicate-semantic lint over a separately signed larger scope;
+- loop scheduling, autonomous retry, and L3–L5 promotion profiles.
 
 The embedded capability guards remain process-local and the executable filesystem/isolation/write proof is Linux/WSL-specific. Evidence and reference-approval HMACs authenticate configured embedded boundaries but are not remote third-party identities. See [M2 runtime contracts](runtime-contracts.md), [Read-only repository broker](read-only-broker.md), [Durable runtime store](durable-runtime-store.md), [M3 controlled writes](controlled-writes.md), [M3 completion report](../research/2026-07-15-m3-completion-report.md), and [D/A/Z/P semantics](policy-semantics.md).
 
@@ -137,7 +151,7 @@ client without credentials
 
 ## Next milestone
 
-M3.6 provides a verification-only external trust bootstrap. Next, define a versioned no-model A1 plan/lifecycle contract, then use the verified snapshot to run deterministic `wiki-health-check` through the policy/store/broker composition without a model adapter or egress. M4 then adds repeated L0–L5 evaluation and promotion gates around that evidence-producing workflow before any scheduling or controlled apply. M2 deployment observations still require renewal after their validity window before current routing or promotion.
+The next milestone is M5 team authority: signed policy distribution, RBAC/identity, independently authenticated evidence consumption, revocation/rotation, and shared-state conformance. It must preserve the completed M4 fixed no-model profile without turning L2 evidence into implicit scheduling, model, network, or write authority. Full-wiki lint and any new loop profile require their own signed scope, fixtures, thresholds, and promotion evidence. M2 deployment observations still require renewal after their validity window before current model routing or promotion.
 
 ## Sources
 
