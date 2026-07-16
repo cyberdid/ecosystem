@@ -13,6 +13,7 @@ Append-only хронологічний лог операцій. Формат: `#
 - Rollback is deliberately bounded and compare-and-swap aware: it restores only exact ecosystem-written after-images and preserves conflicting user bytes. Durable `SIGKILL` recovery, hostile parent swaps, complete reparse/case-fold safety, packaging adapters, and non-Linux runtime backends remain non-claims.
 - Added byte-exact Python and TypeScript-monorepo fixtures, 29 focused adoption tests, Linux/macOS/Windows hosted adoption jobs, ADR-021, architecture documentation, completion research, and wiki handoff to M4.5.2.
 - Final local gate: 349 `unittest`; 349 pytest tests plus 188 subtests; compile, wheel/schema packaging, `uv lock --check`, validation, projection drift, doctor, diff, and whitespace checks all pass.
+- Hosted GitHub Actions run `29491034403` passed at commit `93122d0ab290de5e95f19a8e95551e9c6626868a`: full Linux gate plus focused macOS and Windows adoption/validation/projection/doctor jobs. The Windows run first exposed CRLF-sensitive canonical instruction digests; `.gitattributes` now fixes canonical YAML and generated projection surfaces to LF.
 
 ## [2026-07-16] implementation | M4 fixed no-model wiki-health L0–L2 profile completed
 
