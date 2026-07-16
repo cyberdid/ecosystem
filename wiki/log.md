@@ -11,7 +11,8 @@ Append-only хронологічний лог операцій. Формат: `#
 - The doctor cannot accept unsigned evidence, invoke an executable, contact a network or adapter, read secret/projection content, write files, or create runtime authority. Existing externally signed runtime `AdapterConformanceProfile` remains the separate proof boundary.
 - Six fixtures cover Linux native, WSL, macOS, Windows native, container, and hosted CI. Spoofed hints, unsupported/inconsistent OS, duplicates, unknown fields, declaration mismatch, and nested WSL/container/CI contexts fail closed.
 - Multi-agent review found and closed unsigned effective-capability schema elevation, incomplete exact-inventory reconciliation, and a Python 3.12 test nesting limit. Canary traps cover process, shell, network, HTTP, secret reads, and filesystem mutation.
-- Local verification: 8 focused platform tests and 357 complete `unittest` tests pass. Hosted Linux/macOS/Windows evidence is recorded after the final pushed CI run.
+- Local verification: 8 focused platform tests, 357 complete `unittest` tests, 357 pytest tests plus 205 subtests, compile, lock, validation, drift, both doctors, deterministic diff, wheel contents, and whitespace checks pass.
+- Hosted GitHub Actions run `29493436362` passed at implementation commit `34411106fb3b02aca1422f485b93dd9069cfe029`: full Linux plus focused macOS and Windows portability jobs are green.
 - Added ADR-022, architecture documentation, completion research, and the M4.5.3 portable-packaging handoff. Active native security conformance remains a separate non-claim.
 
 ## [2026-07-16] implementation | M4.5.1 safe project-adoption bootstrap completed
