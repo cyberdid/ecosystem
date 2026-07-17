@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import json
 import os
 import re
 import stat
@@ -53,9 +54,12 @@ from eco_runtime.orchestrator import RuntimeCapabilities
 from eco_runtime.policy import PolicyEngine
 from eco_runtime.store import SQLiteRuntimeStore
 from eco_runtime.trust_diagnostics import _external_evidence, _issuer_policies
+from eco_routing.consumption import DurableRouteConsumptionJournal, verify_route_binding
+from eco_routing.errors import RoutingError
 
 
 _ENV_NAME = re.compile(r"^ECO_[A-Z0-9_]{1,120}$")
+_ROUTE_FILE_LIMIT_BYTES = 262_144
 _IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
 _ORCHESTRATION_IDENTIFIER = re.compile(
     r"^[a-z0-9](?:[a-z0-9._:-]{0,126}[a-z0-9])?$"
@@ -121,6 +125,44 @@ def _secret(name: str) -> bytes:
     if len(encoded) < 32:
         raise _fail("ECO_SOURCE_REVIEW_SECRET_INVALID", "Required secret is invalid")
     return encoded
+
+
+def _load_route_records(
+    route_decision_path: Path | None, route_request_path: Path | None
+) -> tuple[dict[str, Any], dict[str, Any]] | None:
+    if route_decision_path is None and route_request_path is None:
+        return None
+    if route_decision_path is None or route_request_path is None:
+        raise _fail(
+            "ECO_SOURCE_REVIEW_ROUTE_INVALID",
+            "Route decision and request files are required together",
+        )
+    records: list[dict[str, Any]] = []
+    for path in (route_decision_path, route_request_path):
+        try:
+            resolved = Path(path)
+            if (
+                not resolved.is_file()
+                or resolved.is_symlink()
+                or resolved.stat().st_size > _ROUTE_FILE_LIMIT_BYTES
+            ):
+                raise _fail(
+                    "ECO_SOURCE_REVIEW_ROUTE_INVALID",
+                    "Route evidence file is missing or exceeds the input limit",
+                )
+            payload = json.loads(resolved.read_text(encoding="utf-8"))
+        except SourceReviewCLIError:
+            raise
+        except (OSError, UnicodeDecodeError, ValueError) as exc:
+            raise _fail(
+                "ECO_SOURCE_REVIEW_ROUTE_INVALID", "Route evidence file is not bounded UTF-8 JSON"
+            ) from exc
+        if not isinstance(payload, dict):
+            raise _fail(
+                "ECO_SOURCE_REVIEW_ROUTE_INVALID", "Route evidence file must contain one JSON object"
+            )
+        records.append(payload)
+    return records[0], records[1]
 
 
 def _outside_repository(path: Path, repository: Path, *, directory: bool) -> Path:
@@ -749,6 +791,8 @@ def preflight_source_review(
     run_id: str,
     created_at: str,
     deadline_at: str,
+    route_decision_path: Path | None = None,
+    route_request_path: Path | None = None,
 ) -> dict[str, Any]:
     repository = repository.resolve(strict=True)
     _identifier(team_id, orchestration=True)
@@ -796,6 +840,22 @@ def preflight_source_review(
     for role_id in SOURCE_REVIEW_ROLES:
         load_packaged_role_profile(role_id)
     load_source_review_rubric()
+    route_records = _load_route_records(route_decision_path, route_request_path)
+    route_decision_digest = None
+    if route_records is not None:
+        try:
+            verified_decision, _verified_request = verify_route_binding(
+                route_records[0],
+                route_records[1],
+                expected_deployment_id=verified.deployment["id"],
+                expected_deployment_identity_digest=deployment_identity_digest(
+                    verified.deployment
+                ),
+                now=now,
+            )
+        except RoutingError as exc:
+            raise _fail(exc.code, "Route evidence is not acceptable") from exc
+        route_decision_digest = verified_decision["metadata"]["recordDigest"]
     return {
         "available": True,
         "operation": "team-run-source-review-check",
@@ -805,6 +865,7 @@ def preflight_source_review(
         "teamId": team_id,
         "runId": run_id,
         "deploymentId": verified.deployment["id"],
+        "routeDecisionDigest": route_decision_digest,
         "sourceCount": len(manifest.sources),
         "safety": {
             "credentials": "none",
@@ -833,6 +894,8 @@ def run_source_review(
     created_at: str,
     deadline_at: str,
     store_id: str,
+    route_decision_path: Path | None = None,
+    route_request_path: Path | None = None,
 ) -> dict[str, Any]:
     _identifier(store_id)
     preflight_source_review(
@@ -847,6 +910,8 @@ def run_source_review(
         run_id=run_id,
         created_at=created_at,
         deadline_at=deadline_at,
+        route_decision_path=route_decision_path,
+        route_request_path=route_request_path,
     )
     created = _parse_time(created_at, field="created-at")
     deadline = _parse_time(deadline_at, field="deadline-at")
@@ -858,6 +923,38 @@ def run_source_review(
     capabilities = RuntimeCapabilities(object(), object(), object(), object())
     proof_key = _secret(proof_env)
     hmac_key = _secret(hmac_env)
+    route_records = _load_route_records(route_decision_path, route_request_path)
+    route_receipt: dict[str, Any] | None = None
+    if route_records is not None:
+        route_journal_path = database.parent / (database.name + ".routes")
+        consumer_digest = semantic_digest(
+            {
+                "domain": "eco-source-review-route-consumer-v1",
+                "storeId": store_id,
+                "teamId": team_id,
+                "runId": run_id,
+            }
+        )
+        try:
+            with DurableRouteConsumptionJournal(
+                route_journal_path,
+                hmac_key=hmac_key,
+                key_id="source-review-route-v1",
+            ) as route_journal:
+                route_receipt = route_journal.consume(
+                    route_records[0],
+                    route_records[1],
+                    expected_deployment_id=verified.deployment["id"],
+                    expected_deployment_identity_digest=deployment_identity_digest(
+                        verified.deployment
+                    ),
+                    consumer_kind="source-review",
+                    consumer_id=run_id,
+                    consumer_digest=consumer_digest,
+                    now=datetime.now(timezone.utc),
+                )
+        except RoutingError as exc:
+            raise _fail(exc.code, "Route evidence is not acceptable") from exc
     with ContentAddressedArtifactStore(
         artifact_root,
         proof_key=proof_key,
@@ -923,6 +1020,7 @@ def run_source_review(
         "result": result,
         "reportArtifact": result["spec"]["finalReport"],
         "replayed": execution.replayed,
+        "routeConsumption": route_receipt,
         "safety": {
             "contentEmitted": False,
             "providerCalls": "durably-fenced",

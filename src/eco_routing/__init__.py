@@ -11,6 +11,7 @@ from .contracts import (
     seal_routing_record,
     validate_routing_record,
 )
+from .consumption import DurableRouteConsumptionJournal, verify_route_binding
 from .errors import RoutingError
 from .router import (
     DeploymentCandidate,
@@ -30,8 +31,10 @@ __all__ = [
     "seal_routing_record",
     "validate_routing_record",
     "RoutingError",
+    "DurableRouteConsumptionJournal",
     "DeploymentCandidate",
     "DeterministicModelRouter",
     "RoutingOutcome",
     "candidates_from_deployment_catalog",
+    "verify_route_binding",
 ]

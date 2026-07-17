@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import contextlib
+import copy
 import hashlib
 import io
 import json
@@ -471,6 +472,266 @@ class SourceReviewCLIProductionTests(unittest.TestCase):
         )
         self.assertFalse((self.external / "runtime.sqlite3").exists())
         self.assertFalse((self.external / "artifacts").exists())
+
+    def _route_records(self, bundle: dict) -> dict:
+        from eco_routing import DeterministicModelRouter
+        from eco_routing.contracts import (
+            CANONICAL_MODEL_ROLES,
+            ROUTING_API_VERSION,
+            seal_routing_record,
+        )
+        from eco_routing.router import DeploymentCandidate
+
+        now = datetime.now(timezone.utc).replace(microsecond=0)
+        projected = copy.deepcopy(bundle["deployments"]["deployments"][0])
+        projected["retention"] = "no-retention"
+        route_candidate = DeploymentCandidate.from_canonical_deployment(projected)
+
+        def sealed(kind: str, identifier: str, spec: dict) -> dict:
+            return seal_routing_record(
+                {
+                    "apiVersion": ROUTING_API_VERSION,
+                    "kind": kind,
+                    "metadata": {"id": identifier, "createdAt": _utc(now)},
+                    "spec": spec,
+                }
+            )
+
+        routing_policy = seal_routing_record(
+            {
+                "apiVersion": ROUTING_API_VERSION,
+                "kind": "ModelRoutingPolicy",
+                "metadata": {
+                    "id": "route-policy-1",
+                    "createdAt": _utc(now),
+                    "revision": 1,
+                },
+                "spec": {
+                    "defaultDecision": "deny",
+                    "decisionTtlSeconds": 300,
+                    "roles": [
+                        {
+                            "role": role,
+                            "requiredCapabilities": [
+                                "model.structured-output",
+                                "model.text",
+                            ],
+                            "allowedActionClasses": ["A0", "A1"],
+                            "allowedDataClasses": ["D0", "D1"],
+                            "allowedZones": ["Z1"],
+                            "allowedRetentions": ["no-retention"],
+                            "candidateIds": [route_candidate.deployment_id],
+                            "maximumCostMicrousd": 0,
+                            "fallback": {
+                                "maxRouteAttempts": 1,
+                                "retryableFailureClasses": [],
+                            },
+                        }
+                        for role in CANONICAL_MODEL_ROLES
+                    ],
+                },
+            }
+        )
+        prices = seal_routing_record(
+            {
+                "apiVersion": ROUTING_API_VERSION,
+                "kind": "TrustedPriceCatalog",
+                "metadata": {
+                    "id": "route-prices-1",
+                    "createdAt": _utc(now),
+                    "revision": 1,
+                },
+                "spec": {
+                    "authority": "operator",
+                    "currency": "microUSD",
+                    "validFrom": _utc(now - timedelta(minutes=5)),
+                    "validUntil": _utc(now + timedelta(hours=1)),
+                    "sourceProvenanceDigest": SUITE_DIGEST,
+                    "entries": [
+                        {
+                            "deploymentId": route_candidate.deployment_id,
+                            "deploymentIdentityDigest": route_candidate.identity_digest,
+                            "inputMicrousdPerMillionTokens": 0,
+                            "outputMicrousdPerMillionTokens": 0,
+                            "fixedRequestMicrousd": 0,
+                        }
+                    ],
+                },
+            }
+        )
+        capability_observation = sealed(
+            "ObservedModelCapabilities",
+            "route-observation-1",
+            {
+                "authority": "trusted-observation",
+                "deploymentId": route_candidate.deployment_id,
+                "deploymentIdentityDigest": route_candidate.identity_digest,
+                "capabilities": ["model.structured-output", "model.text"],
+                "contextWindowTokens": 32768,
+                "latencyP95Millis": 50,
+                "observedAt": _utc(now - timedelta(minutes=1)),
+                "validUntil": _utc(now + timedelta(minutes=30)),
+                "evidenceEnvelopeDigest": semantic_digest({"envelope": "route"}),
+                "suiteDigest": SUITE_DIGEST,
+            },
+        )
+        request = sealed(
+            "ModelRouteRequest",
+            "route-request-1",
+            {
+                "role": "eco-researcher",
+                "actionClass": "A0",
+                "dataClass": "D1",
+                "workloadClass": "research",
+                "requiredCapabilities": ["model.structured-output"],
+                "requiredContextTokens": 8192,
+                "inputTokenCeiling": 1000,
+                "outputTokenCeiling": 1000,
+                "allowedZones": ["Z1"],
+                "allowedRetentions": ["no-retention"],
+                "allowCloud": False,
+                "maximumCostMicrousd": 0,
+                "deadlineAt": _utc(now + timedelta(minutes=15)),
+                "executionProfile": "m6.1-local-zero-cost",
+                "policyDigest": routing_policy["metadata"]["recordDigest"],
+                "contextDigest": semantic_digest({"trustedContext": "route"}),
+            },
+        )
+        outcome = DeterministicModelRouter(routing_policy, prices).route(
+            request,
+            [route_candidate],
+            [capability_observation],
+            now=now,
+            decision_id="route-decision-1",
+            explain_id="route-explain-1",
+        )
+        decision = outcome.decision
+        assert decision["spec"]["decision"] == "allowed", decision["spec"]["reasonCode"]
+        return {
+            "policy": routing_policy,
+            "prices": prices,
+            "observation": capability_observation,
+            "request": request,
+            "decision": decision,
+        }
+
+    def _write_route_files(self, decision: dict, request: dict) -> list[str]:
+        decision_path = self.root / "route-decision.json"
+        request_path = self.root / "route-request.json"
+        decision_path.write_text(canonical_json(decision), encoding="utf-8")
+        request_path.write_text(canonical_json(request), encoding="utf-8")
+        return [
+            "--route-decision", str(decision_path),
+            "--route-request", str(request_path),
+        ]
+
+    def test_route_decision_is_consumed_durably_and_replay_safe(self) -> None:
+        manifest = self._write_sources()
+        with _Provider() as provider:
+            bundle, _envelope = self._write_bundle(provider.endpoint)
+            records = self._route_records(bundle)
+            decision, request = records["decision"], records["request"]
+            route_arguments = self._write_route_files(decision, request)
+            environment = {
+                "ECO_LOCAL_OPENAI_ENDPOINT": provider.endpoint,
+                "ECO_LOCAL_ADAPTER_EVIDENCE_KEY": EVIDENCE_KEY,
+                "ECO_LOCAL_ADAPTER_ENVELOPE_FILE": str(
+                    self.external / "observation-envelope.json"
+                ),
+                "ECO_SOURCE_REVIEW_HMAC_KEY": HMAC_KEY,
+                "ECO_SOURCE_REVIEW_PROOF_KEY": PROOF_KEY,
+            }
+            with mock.patch.dict(os.environ, environment, clear=False):
+                first_stdout = io.StringIO()
+                with contextlib.redirect_stdout(first_stdout):
+                    first = main([*self._arguments(manifest), *route_arguments])
+                self.assertEqual(first, 0, first_stdout.getvalue())
+                first_result = json.loads(first_stdout.getvalue())
+                self.assertEqual(first_result["status"], "succeeded")
+                self.assertFalse(first_result["routeConsumption"]["replayed"])
+                self.assertEqual(
+                    first_result["routeConsumption"]["routeDigest"],
+                    decision["metadata"]["recordDigest"],
+                )
+                self.assertEqual(len(provider.calls), 5)
+                journal_path = self.external / "runtime.sqlite3.routes"
+                self.assertTrue(journal_path.exists())
+
+                second_stdout = io.StringIO()
+                with contextlib.redirect_stdout(second_stdout):
+                    second = main([*self._arguments(manifest), *route_arguments])
+                self.assertEqual(second, 0, second_stdout.getvalue())
+                second_result = json.loads(second_stdout.getvalue())
+                self.assertTrue(second_result["routeConsumption"]["replayed"])
+                self.assertEqual(len(provider.calls), 5)
+
+    def test_mismatched_route_blocks_before_http_or_state_write(self) -> None:
+        manifest = self._write_sources()
+        with _Provider() as provider:
+            bundle, _envelope = self._write_bundle(provider.endpoint)
+            records = self._route_records(bundle)
+            decision, request = records["decision"], records["request"]
+            tampered = copy.deepcopy(decision)
+            del tampered["metadata"]["recordDigest"]
+            tampered["spec"]["selected"]["deploymentIdentityDigest"] = "b" * 64
+            from eco_routing.contracts import seal_routing_record
+
+            tampered = seal_routing_record(tampered)
+            route_arguments = self._write_route_files(tampered, request)
+            environment = {
+                "ECO_LOCAL_OPENAI_ENDPOINT": provider.endpoint,
+                "ECO_LOCAL_ADAPTER_EVIDENCE_KEY": EVIDENCE_KEY,
+                "ECO_LOCAL_ADAPTER_ENVELOPE_FILE": str(
+                    self.external / "observation-envelope.json"
+                ),
+                "ECO_SOURCE_REVIEW_HMAC_KEY": HMAC_KEY,
+                "ECO_SOURCE_REVIEW_PROOF_KEY": PROOF_KEY,
+            }
+            with mock.patch.dict(os.environ, environment, clear=False):
+                output = io.StringIO()
+                with contextlib.redirect_stdout(output):
+                    code = main([*self._arguments(manifest), *route_arguments])
+            self.assertEqual(code, 1)
+            self.assertEqual(
+                json.loads(output.getvalue())["code"], "ECO_ROUTE_BINDING_MISMATCH"
+            )
+            self.assertEqual(provider.calls, [])
+            self.assertFalse((self.external / "runtime.sqlite3").exists())
+            self.assertFalse((self.external / "runtime.sqlite3.routes").exists())
+
+    def test_route_plan_cli_selects_the_governed_deployment(self) -> None:
+        with _Provider() as provider:
+            bundle, _envelope = self._write_bundle(provider.endpoint)
+            deployments_path = self.repo / ".ai" / CONFIG_FILES["deployments"]
+            normalized = copy.deepcopy(bundle["deployments"])
+            normalized["deployments"][0]["retention"] = "no-retention"
+            deployments_path.write_text(dump_yaml(normalized), encoding="utf-8")
+            records = self._route_records(bundle)
+            paths = {}
+            for name in ("policy", "prices", "request", "observation"):
+                paths[name] = self.root / f"plan-{name}.json"
+                paths[name].write_text(
+                    canonical_json(records[name]), encoding="utf-8"
+                )
+            arguments = [
+                "--repo", str(self.repo),
+                "route", "plan",
+                "--policy", str(paths["policy"]),
+                "--prices", str(paths["prices"]),
+                "--request", str(paths["request"]),
+                "--observation", str(paths["observation"]),
+                "--json",
+            ]
+            stdout = io.StringIO()
+            with contextlib.redirect_stdout(stdout):
+                code = main(arguments)
+            self.assertEqual(code, 0, stdout.getvalue())
+            result = json.loads(stdout.getvalue())
+            self.assertEqual(result["decision"]["spec"]["decision"], "allowed")
+            self.assertEqual(
+                result["decision"]["spec"]["selected"]["deploymentId"],
+                "local-source-review",
+            )
 
 
 if __name__ == "__main__":

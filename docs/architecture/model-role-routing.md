@@ -161,6 +161,36 @@ eligibility outcomes, reason codes and an opaque rank digest. It contains no:
 `ModelRouteDecision` contains the selected deployment ID because the policy/model
 bridge needs that exact binding, but still contains no endpoint or credential.
 
+## Durable consumption and CLI composition
+
+The router stays pure. Two additive surfaces make its decisions usable without
+turning a route into authority:
+
+- `DurableRouteConsumptionJournal` is a private, HMAC-authenticated SQLite
+  chain that binds one `allowed` decision digest to exactly one consumer
+  (`kind`, `id`, `digest`). Consumption re-verifies record validity, the
+  decision→request digest binding, `validUntil`/`deadlineAt`, the exact
+  selected deployment and identity digest, and reservation consistency.
+  Replaying the identical consumer binding is an idempotent no-op; any other
+  consumer receives `ECO_ROUTE_ALREADY_CONSUMED`. An attempt-2 fallback
+  decision requires its consumed predecessor. Rows are immutable and the full
+  chain re-verifies on every open; tampering or a wrong key fails closed.
+- `eco route plan` composes the router over canonical `.ai/deployments.yaml`
+  candidates plus operator-supplied policy, price-catalog, request and
+  observation records. It writes nothing and grants nothing: a computed denial
+  is exit 1 with the sealed decision/explain records, invalid trusted inputs
+  are a sanitized exit 2.
+- `eco team run source-review --route-decision --route-request` verifies the
+  binding in preflight before any state write, consumes the decision durably
+  beside the run's external journal, and keeps restart replay at zero
+  additional provider calls. A selection that does not match the governed
+  deployment blocks before HTTP or state creation.
+
+The journal never stores prompts, sources, endpoints or credentials — only
+digests, identifiers and bindings. Consuming a route does not authorize a
+model call; the exact call still crosses the independent policy/store/model
+bridge.
+
 ## Verification
 
 `tests/test_m6_routing.py` covers:
@@ -189,7 +219,9 @@ M6.4 does **not** claim:
 - measured live provider/model performance, quality or availability;
 - immutable cloud model weights behind a provider alias;
 - endpoint resolution, credential custody or network allowlisting;
-- durable decision issuance/consumption by this pure library;
+- durable decision issuance/consumption by the pure router itself (the separate
+  `DurableRouteConsumptionJournal` provides single-use consumption; the router
+  stays pure);
 - permission to invoke a model, tool, network or workspace write;
 - safe fallback from ambiguous or policy-related failures;
 - semantic equivalence between providers or OpenAI-compatible endpoints;

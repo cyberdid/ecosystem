@@ -25,7 +25,7 @@
 | M6.1 | Governed model bridge plus fixed offline `source-review` vertical slice | In progress; model bridge precedes team runner |
 | M6.2 | Canonical skills and harness synchronization | Implemented in working tree; integrated M6 release evidence pending |
 | M6.3 | Generic bounded loop engine | Implemented in working tree; integrated M6 release evidence pending |
-| M6.4 | Logical model roles, policy routing and explicit bounded fallback | Implemented as an additive pure library with 21 focused tests; durable integration and M6 release evidence pending |
+| M6.4 | Logical model roles, policy routing and explicit bounded fallback | Implemented: pure router plus durable single-use consumption journal, `eco route plan` and source-review CLI composition; M6 release evidence pending |
 | M6.5 | Provenance-preserving private context and memory graph | Implemented in working tree with focused integrity/adversarial tests; integrated M6 release evidence pending |
 | M6.6 | General workload-agent team orchestration | Implemented API-first in working tree; integrated M6 release evidence pending |
 | M6.7 | Governed live research tools | Implemented API-first in working tree with adversarial broker/transport tests; real-provider and integrated M6.8 evidence pending |

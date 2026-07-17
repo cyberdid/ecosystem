@@ -4,6 +4,29 @@ Append-only хронологічний лог операцій. Формат: `#
 
 ---
 
+## [2026-07-17] implementation | M6.4 durable route consumption and CLI composition
+
+- Added `DurableRouteConsumptionJournal`: a private HMAC-authenticated SQLite
+  chain that binds one `allowed` `ModelRouteDecision` to exactly one consumer.
+  Same-consumer replay is idempotent; any other consumer receives a typed
+  `ECO_ROUTE_ALREADY_CONSUMED`. Attempt-2 fallback requires its consumed
+  predecessor. Rows are immutable; tamper and wrong-key reopen fail closed.
+- Extracted pure `verify_route_binding` for write-free preflight: record/kind
+  validation, decision→request digest binding, validity windows, exact
+  deployment/identity-digest match and reservation consistency.
+- Added `eco route plan`: deterministic CLI composition over canonical
+  `.ai/deployments.yaml` candidates plus operator-supplied policy, price
+  catalog, request and observation records. Zero writes; a computed denial is
+  exit 1, invalid trusted inputs are sanitized exit 2. A route remains
+  non-authorizing.
+- `eco team run source-review` accepts `--route-decision/--route-request`:
+  preflight verifies the binding before any state write, the run consumes the
+  decision durably beside the runtime journal, restart replay keeps provider
+  calls at five, and a mismatched selection blocks before HTTP or state
+  creation.
+- Added focused journal/CLI tests plus production-composition route tests;
+  fixed-flake and integrated M6 release evidence remain tracked under M6.8.
+
 ## [2026-07-17] implementation | M6.7 governed research tools
 
 - Added the independent `research.ai.ecosystem/v1alpha1` policy, HMAC capability,

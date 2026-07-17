@@ -98,6 +98,34 @@ def _parser() -> argparse.ArgumentParser:
         loop_command.add_argument("profile", choices=("wiki-health-check",))
         loop_command.add_argument("--json", action="store_true", dest="json_output")
 
+    route_command = commands.add_parser(
+        "route", help="Compute one deterministic, non-authorizing model route"
+    )
+    route_commands = route_command.add_subparsers(dest="route_command", required=True)
+    route_plan = route_commands.add_parser(
+        "plan",
+        help="Route one request over canonical deployments; computes a decision, grants nothing",
+    )
+    route_plan.add_argument(
+        "--policy", required=True, type=Path, help="ModelRoutingPolicy JSON record"
+    )
+    route_plan.add_argument(
+        "--prices", required=True, type=Path, help="TrustedPriceCatalog JSON record"
+    )
+    route_plan.add_argument(
+        "--request", required=True, type=Path, help="ModelRouteRequest JSON record"
+    )
+    route_plan.add_argument(
+        "--observation", action="append", type=Path, default=[],
+        help="ObservedModelCapabilities JSON record (repeatable)",
+    )
+    route_plan.add_argument(
+        "--at", help="Deterministic UTC routing time (YYYY-MM-DDTHH:MM:SSZ); default: now"
+    )
+    route_plan.add_argument("--decision-id", default="route-plan-decision")
+    route_plan.add_argument("--explain-id", default="route-plan-explain")
+    route_plan.add_argument("--json", action="store_true", dest="json_output")
+
     runtime = commands.add_parser("runtime", help="Inspect the embedded runtime composition")
     runtime_commands = runtime.add_subparsers(dest="runtime_command", required=True)
     runtime_doctor = runtime_commands.add_parser(
@@ -267,6 +295,14 @@ def _parser() -> argparse.ArgumentParser:
     source_review.add_argument(
         "--check", action="store_true",
         help="Verify configuration, evidence and external state locations without writing",
+    )
+    source_review.add_argument(
+        "--route-decision", type=Path, default=None,
+        help="Optional ModelRouteDecision JSON to consume durably for this run",
+    )
+    source_review.add_argument(
+        "--route-request", type=Path, default=None,
+        help="ModelRouteRequest JSON bound to --route-decision",
     )
     source_review.add_argument("--json", action="store_true", dest="json_output")
 
@@ -1091,6 +1127,8 @@ def command_team(args: argparse.Namespace) -> int:
                 "run_id": args.run_id,
                 "created_at": args.created_at,
                 "deadline_at": args.deadline_at,
+                "route_decision_path": args.route_decision,
+                "route_request_path": args.route_request,
             }
             result = (
                 preflight_source_review(**common)
@@ -1193,6 +1231,80 @@ def command_run(args: argparse.Namespace) -> int:
         print(f"Status: {result['status']} ({result['code']})")
         print("Safety: no model, network, write authority, adapter, or document content")
     return 0 if result["available"] else 1
+
+
+_ROUTE_INPUT_LIMIT_BYTES = 1_048_576
+
+
+def _read_routing_json(path: Path, *, field: str) -> dict[str, Any]:
+    try:
+        resolved = Path(path)
+        if not resolved.is_file() or resolved.stat().st_size > _ROUTE_INPUT_LIMIT_BYTES:
+            raise EcoError(f"Route {field} file is missing or exceeds the input limit")
+        payload = json.loads(resolved.read_text(encoding="utf-8"))
+    except EcoError:
+        raise
+    except (OSError, UnicodeDecodeError, ValueError) as exc:
+        raise EcoError(f"Route {field} file is not bounded UTF-8 JSON") from exc
+    if not isinstance(payload, dict):
+        raise EcoError(f"Route {field} file must contain one JSON object")
+    return payload
+
+
+def command_route(args: argparse.Namespace) -> int:
+    from eco_routing import (
+        DeterministicModelRouter,
+        RoutingError,
+        candidates_from_deployment_catalog,
+    )
+
+    repo = _repo(args)
+    errors, bundle, _paths = _validate(repo, args.config_root)
+    if errors:
+        _print_errors(errors)
+        return 1
+    policy = _read_routing_json(args.policy, field="policy")
+    prices = _read_routing_json(args.prices, field="price-catalog")
+    request = _read_routing_json(args.request, field="request")
+    observations = [
+        _read_routing_json(item, field="observation") for item in args.observation
+    ]
+    if args.at is None:
+        routed_at = datetime.now(timezone.utc)
+    else:
+        try:
+            routed_at = datetime.fromisoformat(str(args.at).replace("Z", "+00:00"))
+        except ValueError as exc:
+            raise EcoError("Route time is invalid") from exc
+        if routed_at.tzinfo is None:
+            raise EcoError("Route time is invalid")
+    try:
+        router = DeterministicModelRouter(policy, prices)
+        candidates = candidates_from_deployment_catalog(bundle["deployments"])
+        outcome = router.route(
+            request,
+            candidates,
+            observations,
+            now=routed_at,
+            decision_id=args.decision_id,
+            explain_id=args.explain_id,
+        )
+    except RoutingError as exc:
+        raise EcoError(exc.code) from exc
+    decision = outcome.decision
+    result = {"decision": decision, "explain": outcome.explain}
+    allowed = decision["spec"]["decision"] == "allowed"
+    if args.json_output:
+        print(stable_json(result), end="")
+    else:
+        verdict = decision["spec"]["decision"]
+        reason = decision["spec"]["reasonCode"]
+        print(f"Route: {verdict} ({reason})")
+        if allowed:
+            selected = decision["spec"]["selected"]
+            print(f"Selected deployment: {selected['deploymentId']}")
+            print(f"Reserved cost (microUSD): {selected['reservedCostMicrousd']}")
+    return 0 if allowed else 1
 
 
 def command_loops(args: argparse.Namespace) -> int:
@@ -1365,6 +1477,7 @@ COMMANDS = {
     "identity": command_identity,
     "skills": command_skills,
     "loops": command_loops,
+    "route": command_route,
     "team": command_team,
     "run": command_run,
     "eval": command_eval,
