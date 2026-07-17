@@ -56,7 +56,12 @@ from .adapters import (
     OpenAIChatInvocation,
     OpenAICompatibleAdapter,
     OpenAICompatibleInvoker,
+    OpenAITypedChatInvocation,
+    OpenAITypedChatMessage,
+    OpenAITypedCompatibleInvoker,
+    LoopbackOpenAITypedHTTPInvoker,
     PinnedOpenAICompatibleDeployment,
+    TypedOpenAICompatibleAdapter,
 )
 from .artifact_store import ArtifactAvailabilityProof, ContentAddressedArtifactStore
 from .approval import (
@@ -123,7 +128,12 @@ __all__ = [
     "OpenAIChatInvocation",
     "OpenAICompatibleAdapter",
     "OpenAICompatibleInvoker",
+    "OpenAITypedChatInvocation",
+    "OpenAITypedChatMessage",
+    "OpenAITypedCompatibleInvoker",
+    "LoopbackOpenAITypedHTTPInvoker",
     "PinnedOpenAICompatibleDeployment",
+    "TypedOpenAICompatibleAdapter",
     "RuntimeAdapterError",
     "ContentAddressedArtifactStore",
     "ControlledWriteExecution",

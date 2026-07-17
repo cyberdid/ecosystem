@@ -13,7 +13,7 @@ from pathlib import Path
 from eco_runtime.errors import RuntimeStoreError
 from eco_runtime.contracts import schema_bundle_digest
 from eco_runtime.digests import canonical_json, semantic_digest
-from eco_runtime.store import SQLiteRuntimeStore
+from eco_runtime.store import STORE_SCHEMA_VERSION, SQLiteRuntimeStore
 from eco_runtime.persistence import (
     HmacKeyring,
     MemoryAnchorSink,
@@ -250,7 +250,7 @@ class SQLiteRuntimeStoreTests(unittest.TestCase):
             self.assertEqual(self.path.stat().st_mode & 0o777, 0o600)
             self.assertEqual(self.path.parent.stat().st_mode & 0o777, 0o700)
 
-    def test_authenticated_empty_v2_store_migrates_atomically_to_v3(self) -> None:
+    def test_authenticated_empty_v2_store_migrates_atomically_to_current(self) -> None:
         with self.store():
             pass
         connection = sqlite3.connect(self.path)
@@ -280,6 +280,8 @@ class SQLiteRuntimeStoreTests(unittest.TestCase):
             DROP TRIGGER run_events_immutable_delete;
             DROP TRIGGER run_event_baselines_immutable_update;
             DROP TRIGGER run_event_baselines_immutable_delete;
+            DROP TABLE model_budget_reservations;
+            DROP TABLE model_operations;
             DROP TABLE run_checkpoints;
             DROP TABLE key_rotations;
             DROP TABLE run_events;
@@ -300,7 +302,9 @@ class SQLiteRuntimeStoreTests(unittest.TestCase):
         with self.store() as migrated:
             migrated.verify()
         connection = sqlite3.connect(self.path)
-        self.assertEqual(connection.execute("PRAGMA user_version").fetchone()[0], 3)
+        self.assertEqual(
+            connection.execute("PRAGMA user_version").fetchone()[0], STORE_SCHEMA_VERSION
+        )
         self.assertIsNotNone(
             connection.execute(
                 "SELECT 1 FROM sqlite_master WHERE type='table' AND name='run_events'"

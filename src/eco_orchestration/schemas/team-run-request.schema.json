@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "eco://orchestration/team-run-request/v1alpha1",
+  "title": "TeamRunRequest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "orchestration.ai.ecosystem/v1alpha1" },
+    "kind": { "const": "TeamRunRequest" },
+    "metadata": { "$ref": "eco://orchestration/common/v1alpha1#/$defs/metadataRun" },
+    "spec": {
+      "type": "object", "additionalProperties": false,
+      "required": ["workflow", "sourceBundle", "teamManifest", "loopDefinition", "requestedRoles", "policySnapshotDigest", "budget", "deadlineAt"],
+      "properties": {
+        "workflow": { "const": "source-review" },
+        "sourceBundle": { "$ref": "eco://orchestration/common/v1alpha1#/$defs/recordBinding" },
+        "teamManifest": { "$ref": "eco://orchestration/common/v1alpha1#/$defs/recordBinding" },
+        "loopDefinition": { "$ref": "eco://orchestration/common/v1alpha1#/$defs/recordBinding" },
+        "requestedRoles": {
+          "type": "array", "minItems": 5, "maxItems": 5,
+          "prefixItems": [
+            { "const": "planner" }, { "const": "analyst" }, { "const": "verifier" },
+            { "const": "synthesizer" }, { "const": "reviewer" }
+          ],
+          "items": false
+        },
+        "policySnapshotDigest": { "$ref": "eco://orchestration/common/v1alpha1#/$defs/sha256" },
+        "budget": { "$ref": "eco://orchestration/common/v1alpha1#/$defs/budget" },
+        "deadlineAt": { "$ref": "eco://orchestration/common/v1alpha1#/$defs/timestamp" }
+      }
+    }
+  }
+}

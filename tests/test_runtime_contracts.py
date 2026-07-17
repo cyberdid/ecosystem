@@ -12,6 +12,7 @@ from eco_runtime.contracts import (
     validate_tool_arguments,
 )
 from eco_runtime.errors import ContractValidationError
+from eco_runtime.policy import POLICY_ENGINE_VERSION
 from tests.test_m3_contracts import positive_m3_records
 
 
@@ -79,7 +80,7 @@ def run_plan() -> dict:
                 "digestProfile": "eco-python-json-v1",
                 "contractProfile": "runtime-contracts-v1alpha1",
                 "schemaBundleDigest": DIGEST,
-                "policyEngineVersion": "0.1.0",
+                "policyEngineVersion": POLICY_ENGINE_VERSION,
             },
             "effectivePolicy": {
                 "dataClass": "D1",
@@ -341,7 +342,7 @@ def policy_decision() -> dict:
                 "digestProfile": "eco-python-json-v1",
                 "contractProfile": "runtime-contracts-v1alpha1",
                 "schemaBundleDigest": DIGEST,
-                "policyEngineVersion": "0.1.0",
+                "policyEngineVersion": POLICY_ENGINE_VERSION,
             },
             "constraints": {"singleUse": True, "expiresAt": "2026-07-15T12:05:00Z"},
         },

@@ -36,7 +36,7 @@ ARGUMENT_CONTRACTS = {
     "repository.read": "eco://tools/repository-read/v1alpha1",
     "repository.write": "eco://tools/repository-write/v1alpha1",
 }
-POLICY_ENGINE_VERSION = "0.1.0"
+POLICY_ENGINE_VERSION = "0.2.0"
 
 # M4 deliberately starts with one profile rather than a generic deterministic
 # workflow language.  Adding another workflow is a contract/version change,
@@ -1250,6 +1250,182 @@ class PolicyEngine:
                 if code is None
                 else None
             ),
+        )
+
+    def authorize_model(
+        self,
+        plan: dict[str, Any],
+        request: dict[str, Any],
+        endpoint_binding: dict[str, Any],
+        input_artifact: dict[str, Any],
+        *,
+        decision_id: str,
+        now: datetime,
+        require_in_memory_activation: bool = True,
+    ) -> dict[str, Any]:
+        """Authorize one exact model call, never a route or input class.
+
+        The decision binds the active plan, resolved endpoint evidence, immutable
+        input artifact metadata, deployment identity, and bounded parameters.
+        Endpoint URLs and content bytes are intentionally outside this policy
+        record surface.
+        """
+
+        _timestamp(now)
+        self._refresh_trusted_evidence(now)
+        plan = copy.deepcopy(validate_record(plan))
+        request = copy.deepcopy(validate_record(request))
+        endpoint_binding = copy.deepcopy(validate_record(endpoint_binding))
+        input_artifact = copy.deepcopy(validate_record(input_artifact))
+        if (
+            plan["kind"] != "RunPlan"
+            or request["kind"] != "ModelRequest"
+            or endpoint_binding["kind"] != "EndpointBinding"
+            or input_artifact["kind"] != "ArtifactRecord"
+        ):
+            raise RuntimePolicyError(
+                "ECO_MODEL_AUTHORITY_INVALID", "Model authorization records are invalid"
+            )
+
+        run_id = plan["metadata"]["runId"]
+        plan_digest = semantic_digest(plan)
+        request_digest = semantic_digest(request)
+        now_utc = now.astimezone(timezone.utc)
+        with self._lock:
+            active_plan_digest = self._active_plans.get(run_id)
+
+        code: str | None = None
+        try:
+            request_created_at = _parse_timestamp(request["metadata"]["createdAt"])
+            plan_created_at = _parse_timestamp(plan["metadata"]["createdAt"])
+            endpoint_resolved_at = _parse_timestamp(endpoint_binding["metadata"]["resolvedAt"])
+            endpoint_valid_until = _parse_timestamp(endpoint_binding["metadata"]["validUntil"])
+        except RuntimePolicyError:
+            request_created_at = plan_created_at = endpoint_resolved_at = endpoint_valid_until = None
+            code = "ECO_MODEL_REQUEST_TIME_INVALID"
+
+        route = plan["spec"]["route"]
+        request_spec = request["spec"]
+        endpoint_spec = endpoint_binding["spec"]
+        artifact_spec = input_artifact["spec"]
+        planned_input = next(
+            (
+                item
+                for item in plan["spec"]["inputs"]
+                if item["artifactRecordDigest"] == request_spec["input"]["artifactRecordDigest"]
+            ),
+            None,
+        )
+        deployment = self._deployments.get(route["deploymentId"])
+        observation = self._observations.get(route["deploymentId"])
+        role = self._bundle["deployments"].get("logicalRoles", {}).get(
+            route["logicalRole"]
+        )
+        if code is None and (
+            request_created_at < plan_created_at
+            or request_created_at
+            > now_utc + timedelta(seconds=self._maximum_clock_skew_seconds)
+        ):
+            code = "ECO_MODEL_REQUEST_TIME_INVALID"
+        elif request["metadata"]["runId"] != run_id or input_artifact["metadata"]["runId"] != run_id:
+            code = "ECO_RUN_MISMATCH"
+        elif require_in_memory_activation and active_plan_digest != plan_digest:
+            code = "ECO_PLAN_NOT_ACTIVE"
+        elif plan["spec"]["project"]["semanticConfigDigest"] != self._config_digest:
+            code = "ECO_CONFIG_DRIFT"
+        elif request_spec["planDigest"] != plan_digest:
+            code = "ECO_PLAN_MISMATCH"
+        elif deployment is None or observation is None or not isinstance(role, dict):
+            code = "ECO_MODEL_ROUTE_STALE"
+        elif (
+            route["deploymentDigest"] != semantic_digest(deployment)
+            or route["observedCapabilitiesDigest"] != semantic_digest(observation)
+            or route["brokerModelEgress"].get("allowed") is not True
+        ):
+            code = "ECO_MODEL_ROUTE_STALE"
+        elif (
+            request_spec["deploymentId"] != route["deploymentId"]
+            or request_spec["deploymentIdentityDigest"] != route["deploymentIdentityDigest"]
+            or request_spec["endpointBindingDigest"] != semantic_digest(endpoint_binding)
+        ):
+            code = "ECO_MODEL_ROUTE_MISMATCH"
+        elif (
+            plan["spec"]["budget"]["maxCostMicrousd"] != 0
+            or route["identity"]["provider"] != "local"
+            or endpoint_spec["transportProfile"] != "local-loopback-http"
+            or endpoint_spec["credentialMode"] != "none"
+        ):
+            code = "ECO_PRICING_AUTHORITY_REQUIRED"
+        elif (
+            endpoint_binding["metadata"]["deploymentId"] != route["deploymentId"]
+            or endpoint_spec["deploymentIdentityDigest"] != route["deploymentIdentityDigest"]
+            or endpoint_spec["endpointReferenceDigest"]
+            != route["brokerModelEgress"]["endpointReferenceDigest"]
+            or endpoint_spec["endpointReferenceDigest"]
+            != route["identity"]["endpointReferenceDigest"]
+            or endpoint_spec["adapter"] != route["identity"]["adapter"]
+            or endpoint_spec["adapterVersion"] != route["identity"]["adapterVersion"]
+            or endpoint_spec["model"] != route["identity"]["model"]
+        ):
+            code = "ECO_ENDPOINT_BINDING_MISMATCH"
+        elif not (endpoint_resolved_at <= now_utc < endpoint_valid_until):
+            code = "ECO_ENDPOINT_BINDING_EXPIRED"
+        elif planned_input is None:
+            code = "ECO_MODEL_INPUT_NOT_PLANNED"
+        elif semantic_digest(input_artifact) != request_spec["input"]["artifactRecordDigest"]:
+            code = "ECO_MODEL_INPUT_MISMATCH"
+        elif (
+            planned_input["ref"] != artifact_spec["storageRef"]
+            or planned_input["contentDigest"] != artifact_spec["sha256"]
+            or planned_input["byteLength"] != artifact_spec["byteLength"]
+            or planned_input["dataClass"] != artifact_spec["dataClass"]
+            or request_spec["input"]
+            != {
+                "artifactRecordDigest": semantic_digest(input_artifact),
+                "contentDigest": artifact_spec["sha256"],
+                "byteLength": artifact_spec["byteLength"],
+                "dataClass": artifact_spec["dataClass"],
+                "trust": artifact_spec["trust"],
+            }
+        ):
+            code = "ECO_MODEL_INPUT_MISMATCH"
+        elif artifact_spec["role"] != "input" or artifact_spec["dataClass"] == "D4":
+            code = "ECO_DATA_CLASS_DENIED"
+        elif DATA_ORDER[artifact_spec["dataClass"]] > DATA_ORDER[
+            plan["spec"]["effectivePolicy"]["dataClass"]
+        ]:
+            code = "ECO_DATA_CLASS_DENIED"
+        elif TRUST_ORDER[artifact_spec["trust"]] < TRUST_ORDER.get(
+            role.get("minimumArtifactTrust"), -1
+        ):
+            code = "ECO_ARTIFACT_TRUST_INSUFFICIENT"
+        elif (
+            request_spec["parameters"]["maxOutputBytes"] > plan["spec"]["budget"]["maxOutputBytes"]
+            or request_spec["parameters"]["maxOutputTokens"]
+            > plan["spec"]["budget"]["maxTotalTokens"]
+            or request_spec["timeoutMs"]
+            > plan["spec"]["budget"]["maxDurationSeconds"] * 1000
+        ):
+            code = "ECO_BUDGET_INVALID"
+
+        maximum_expiry = None
+        if code is None:
+            maximum_expiry = min(
+                endpoint_valid_until,
+                self._evidence_deadline(
+                    route["deploymentId"], include_snapshot=False
+                ),
+            )
+        return self._decision(
+            decision_id=decision_id,
+            run_id=run_id,
+            now=now,
+            subject_kind="ModelRequest",
+            subject_id=request["metadata"]["id"],
+            subject_digest=request_digest,
+            effect="deny" if code else "allow",
+            reason_codes=[code or "ECO_MODEL_ALLOWED"],
+            maximum_expiry=maximum_expiry,
         )
 
     def assert_decision_current(

@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "eco://orchestration/loop-definition/v1alpha1",
+  "title": "LoopDefinition",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "orchestration.ai.ecosystem/v1alpha1" },
+    "kind": { "const": "LoopDefinition" },
+    "metadata": { "$ref": "eco://orchestration/common/v1alpha1#/$defs/metadataDefinitionRun" },
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["workflow", "teamManifest", "trigger", "maxIterations", "budget", "gate", "hardStops"],
+      "properties": {
+        "workflow": { "const": "source-review" },
+        "teamManifest": { "$ref": "eco://orchestration/common/v1alpha1#/$defs/recordBinding" },
+        "trigger": { "const": "manual" },
+        "maxIterations": { "const": 2 },
+        "budget": { "$ref": "eco://orchestration/common/v1alpha1#/$defs/budget" },
+        "gate": {
+          "type": "object", "additionalProperties": false,
+          "required": ["owner", "reviewRole", "rubricDigest", "acceptedVerdict"],
+          "properties": {
+            "owner": { "const": "runtime" },
+            "reviewRole": { "const": "reviewer" },
+            "rubricDigest": { "$ref": "eco://orchestration/common/v1alpha1#/$defs/sha256" },
+            "acceptedVerdict": { "const": "accepted" }
+          }
+        },
+        "hardStops": {
+          "type": "array", "minItems": 6, "maxItems": 6, "uniqueItems": true,
+          "items": { "enum": ["budget-exhausted", "cancelled", "deadline", "policy-denied", "revision-exhausted", "verification-failed"] }
+        }
+      }
+    }
+  }
+}

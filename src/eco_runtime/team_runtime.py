@@ -24,6 +24,7 @@ _T = TypeVar("_T")
 RUNTIME_ACTION_SUBJECT_PROFILE: dict[str, tuple[str, str | None]] = {
     "repository.read": ("ToolRequest", "repository.read"),
     "repository.write": ("ToolRequest", "repository.write"),
+    "model.invoke": ("ModelRequest", None),
 }
 
 
@@ -66,10 +67,27 @@ def _exact_runtime_subject_binding(
             "digest": semantic_digest(subject),
         }
         resource = team_request["resource"]
-        if (
-            binding != decision["spec"]["subject"]
-            or binding["kind"] != expected_kind
-            or resource["id"] != binding["id"]
+        if binding != decision["spec"]["subject"] or binding["kind"] != expected_kind:
+            return False
+        # Repository actions authorize the exact ToolRequest because its
+        # resource identifier is the request identifier.  Model invocation is
+        # intentionally different: the runtime decision still binds the exact
+        # ModelRequest, while M5 access policy binds the deployment selected by
+        # that request.  Reusing repository subject/resource equality here
+        # either made model.invoke unusable or encouraged callers to substitute
+        # a request digest for deployment identity.
+        if action == "model.invoke":
+            spec = subject["spec"]
+            if resource != {
+                "kind": "deployment",
+                "id": spec["deploymentId"],
+                "digest": spec["deploymentIdentityDigest"],
+            }:
+                return False
+            if team_request.get("dataClass") != spec["input"]["dataClass"]:
+                return False
+        elif (
+            resource["id"] != binding["id"]
             or resource["digest"] != binding["digest"]
         ):
             return False
@@ -460,8 +478,9 @@ class TeamAuthorizationGate:
         if (
             team_request.get("principal") != context["principal"]
             or team_request.get("membership") != context["membership"]
-            or team_request.get("resource", {}).get("digest")
-            != runtime_spec["subject"]["digest"]
+            or not _exact_runtime_subject_binding(
+                runtime_decision, subject, team_request
+            )
         ):
             return self._deny(
                 code="ECO_TEAM_RUNTIME_BINDING_MISMATCH",

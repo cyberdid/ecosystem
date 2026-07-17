@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "eco://orchestration/team-manifest/v1alpha1",
+  "title": "TeamManifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "orchestration.ai.ecosystem/v1alpha1" },
+    "kind": { "const": "TeamManifest" },
+    "metadata": { "$ref": "eco://orchestration/common/v1alpha1#/$defs/metadataDefinitionRun" },
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["workflow", "roles", "edges", "maxRevisionCycles", "gate"],
+      "properties": {
+        "workflow": { "const": "source-review" },
+        "roles": {
+          "type": "array", "minItems": 5, "maxItems": 5,
+          "items": { "$ref": "eco://orchestration/common/v1alpha1#/$defs/roleBinding" }
+        },
+        "edges": {
+          "type": "array", "minItems": 4, "maxItems": 4,
+          "items": {
+            "type": "object", "additionalProperties": false, "required": ["from", "to"],
+            "properties": {
+              "from": { "$ref": "eco://orchestration/common/v1alpha1#/$defs/roleId" },
+              "to": { "$ref": "eco://orchestration/common/v1alpha1#/$defs/roleId" }
+            }
+          }
+        },
+        "maxRevisionCycles": { "const": 1 },
+        "gate": {
+          "type": "object", "additionalProperties": false, "required": ["owner", "rubric", "acceptedVerdict"],
+          "properties": {
+            "owner": { "const": "runtime" },
+            "rubric": { "$ref": "eco://orchestration/common/v1alpha1#/$defs/artifactBinding" },
+            "acceptedVerdict": { "const": "accepted" }
+          }
+        }
+      }
+    }
+  }
+}

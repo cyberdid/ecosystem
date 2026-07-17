@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Any, Iterator, Mapping
 
 from .artifact_store import ArtifactAvailabilityProof, ContentAddressedArtifactStore
-from .contracts import CONTRACT_PROFILE, schema_bundle_digest, validate_record
+from .contracts import API_VERSION, CONTRACT_PROFILE, schema_bundle_digest, validate_record
 from .digests import DIGEST_PROFILE, canonical_json, semantic_digest
 from .errors import ContractValidationError, RuntimeStateError, RuntimeStoreError
 from .policy import POLICY_ENGINE_VERSION
@@ -23,7 +23,7 @@ from .state import EVENT_SEMANTICS
 from .state_reducer import RunProjection, RunState, TERMINAL_STATES, reduce_run_event
 
 
-STORE_SCHEMA_VERSION = 3
+STORE_SCHEMA_VERSION = 4
 STORE_APPLICATION_ID = 0x45434F31
 GENESIS_DIGEST = "0" * 64
 # The M3 contracts are additive, while this class remains the proven M2 read
@@ -45,6 +45,21 @@ SAFE_BROKER_ERROR_MESSAGES = {
     "ECO_SNAPSHOT_CONTENT_MISMATCH": "Repository content differs from the approved snapshot",
     "ECO_TEXT_ENCODING": "Repository content is not valid approved text",
 }
+SAFE_MODEL_ERROR_MESSAGES = {
+    "ECO_ADAPTER_OUTPUT_LIMIT": "Model output exceeded the approved limit",
+    "ECO_ADAPTER_RESPONSE_INVALID": "Model response failed adapter validation",
+    "ECO_ADAPTER_TIMEOUT": "Model invocation timed out",
+    "ECO_ADAPTER_TRANSPORT": "Model transport failed",
+    "ECO_ENDPOINT_BINDING_EXPIRED": "Approved endpoint binding expired",
+    "ECO_DEADLINE_EXCEEDED": "Model invocation completed after its approved deadline",
+    "ECO_MODEL_INPUT_MISMATCH": "Model input did not match its approved binding",
+    "ECO_MODEL_FINALIZATION_DENIED": "Model output failed the current policy gate",
+    "ECO_MODEL_REQUEST_INVALID": "Model request failed adapter validation",
+    "ECO_MODEL_ROUTE_MISMATCH": "Model route did not match its approved binding",
+}
+MODEL_AMBIGUOUS_MESSAGE = (
+    "Model invocation outcome is ambiguous after a durable STARTED fence"
+)
 RECOVERY_EXPIRED_MESSAGE = "Prepared operation cannot be retried without a trusted recovery payload"
 SAFE_JOURNAL_KINDS = frozenset(
     {
@@ -59,6 +74,9 @@ SAFE_JOURNAL_KINDS = frozenset(
         "RepositoryReadReceipt",
         "ToolExecutionOutcome",
         "RunCheckpoint",
+        "EndpointBinding",
+        "ModelRequest",
+        "ModelResult",
     }
 )
 AUTHORITY_MANAGED_KINDS = frozenset(
@@ -72,6 +90,9 @@ AUTHORITY_MANAGED_KINDS = frozenset(
         "ArtifactRecord",
         "ErrorRecord",
         "RunCheckpoint",
+        "EndpointBinding",
+        "ModelRequest",
+        "ModelResult",
     }
 )
 
@@ -433,7 +454,12 @@ class SQLiteRuntimeStore:
     def _migrate_or_verify(self) -> None:
         application_id = self._connection.execute("PRAGMA application_id").fetchone()[0]
         user_version = self._connection.execute("PRAGMA user_version").fetchone()[0]
-        if application_id not in {0, STORE_APPLICATION_ID} or user_version not in {0, 2, STORE_SCHEMA_VERSION}:
+        if application_id not in {0, STORE_APPLICATION_ID} or user_version not in {
+            0,
+            2,
+            3,
+            STORE_SCHEMA_VERSION,
+        }:
             raise RuntimeStoreError("ECO_STORE_PROFILE_MISMATCH", "Runtime store profile is unsupported")
         if self._read_only and user_version != STORE_SCHEMA_VERSION:
             raise RuntimeStoreError(
@@ -441,6 +467,9 @@ class SQLiteRuntimeStore:
             )
         if user_version == 2:
             self._migrate_v2_to_v3()
+            user_version = 3
+        if user_version == 3:
+            self._migrate_v3_to_v4()
             user_version = STORE_SCHEMA_VERSION
         if user_version == 0:
             if self._read_only:
@@ -581,6 +610,42 @@ class SQLiteRuntimeStore:
                     created_at TEXT NOT NULL,
                     updated_at TEXT NOT NULL
                 );
+                CREATE TABLE model_operations (
+                    request_id TEXT PRIMARY KEY REFERENCES records(record_id),
+                    run_id TEXT NOT NULL REFERENCES runs(run_id),
+                    idempotency_key_digest TEXT NOT NULL,
+                    request_digest TEXT NOT NULL UNIQUE,
+                    plan_digest TEXT NOT NULL,
+                    endpoint_binding_digest TEXT NOT NULL,
+                    input_artifact_record_digest TEXT NOT NULL,
+                    allow_decision_digest TEXT NOT NULL,
+                    state TEXT NOT NULL CHECK (state IN ('prepared', 'started', 'succeeded', 'failed', 'ambiguous')),
+                    recovery_mode TEXT NOT NULL CHECK (recovery_mode IN ('no_retry')),
+                    started_at TEXT,
+                    resume_decision_digest TEXT,
+                    finalization_decision_digest TEXT,
+                    model_result_digest TEXT,
+                    output_artifact_record_digest TEXT,
+                    error_record_digest TEXT,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    UNIQUE(run_id, idempotency_key_digest)
+                );
+                CREATE TABLE model_budget_reservations (
+                    request_id TEXT PRIMARY KEY REFERENCES model_operations(request_id),
+                    run_id TEXT NOT NULL REFERENCES runs(run_id),
+                    plan_digest TEXT NOT NULL,
+                    reserved_output_bytes INTEGER NOT NULL CHECK (reserved_output_bytes >= 0),
+                    reserved_total_tokens INTEGER NOT NULL CHECK (reserved_total_tokens >= 0),
+                    reserved_cost_microusd INTEGER NOT NULL CHECK (reserved_cost_microusd >= 0),
+                    actual_output_bytes INTEGER CHECK (actual_output_bytes >= 0),
+                    actual_total_tokens INTEGER CHECK (actual_total_tokens >= 0),
+                    charged_total_tokens INTEGER CHECK (charged_total_tokens >= 0),
+                    charged_cost_microusd INTEGER CHECK (charged_cost_microusd >= 0),
+                    state TEXT NOT NULL CHECK (state IN ('reserved', 'committed', 'uncertain')),
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                );
                 CREATE TABLE run_event_baselines (
                     run_id TEXT PRIMARY KEY REFERENCES runs(run_id),
                     projection_json BLOB NOT NULL,
@@ -650,7 +715,7 @@ class SQLiteRuntimeStore:
                 CREATE TRIGGER key_rotations_immutable_delete
                 BEFORE DELETE ON key_rotations BEGIN SELECT RAISE(ABORT, 'immutable key rotation'); END;
                 PRAGMA application_id = 1162039089;
-                PRAGMA user_version = 3;
+                PRAGMA user_version = 4;
                 COMMIT;
                 """
             )
@@ -951,7 +1016,7 @@ class SQLiteRuntimeStore:
                     transaction_id=transaction_id, occurred_at=operation["updated_at"],
                 )
             new_payload = dict(old_payload)
-            new_payload["schemaVersion"] = STORE_SCHEMA_VERSION
+            new_payload["schemaVersion"] = 3
             new_payload["producerIssuersDigest"] = issuer_digest
             new_hmac = hmac.new(
                 self._hmac_key, canonical_json(new_payload).encode("utf-8"), hashlib.sha256
@@ -959,7 +1024,159 @@ class SQLiteRuntimeStore:
             self._connection.execute(
                 """UPDATE store_meta SET schema_version = ?, producer_issuers_digest = ?,
                    meta_hmac = ? WHERE singleton = 1""",
-                (STORE_SCHEMA_VERSION, issuer_digest, new_hmac),
+                (3, issuer_digest, new_hmac),
+            )
+            self._connection.execute("PRAGMA user_version = 3")
+
+    def _migrate_v3_to_v4(self) -> None:
+        """Authenticate a v3 journal before adding model-invocation authority.
+
+        Runtime JSON contracts are unchanged.  The migration only adds empty
+        durable projections for governed model calls and re-authenticates store
+        metadata with the new SQLite schema version.
+        """
+
+        if self._read_only:
+            raise RuntimeStoreError(
+                "ECO_STORE_PROFILE_MISMATCH",
+                "Read-only runtime store requires current schema",
+            )
+        if self._connection.execute("PRAGMA quick_check").fetchone()[0] != "ok":
+            raise RuntimeStoreError("ECO_JOURNAL_CORRUPT", "SQLite integrity check failed")
+        meta = self._connection.execute(
+            "SELECT * FROM store_meta WHERE singleton = 1"
+        ).fetchone()
+        if (
+            meta is None
+            or meta["schema_version"] != 3
+            or meta["audit_key_id"] != self._key_id
+            or meta["policy_engine_version"] not in {"0.1.0", POLICY_ENGINE_VERSION}
+        ):
+            raise RuntimeStoreError(
+                "ECO_STORE_PROFILE_MISMATCH", "Version-3 metadata is incompatible"
+            )
+        old_payload = {
+            "domain": "eco-store-meta-v1",
+            "storeId": meta["store_id"],
+            "schemaVersion": 3,
+            "digestProfile": meta["digest_profile"],
+            "contractProfile": meta["contract_profile"],
+            "schemaBundleDigest": meta["schema_bundle_digest"],
+            "policyEngineVersion": meta["policy_engine_version"],
+            "auditKeyId": meta["audit_key_id"],
+            "producerIssuersDigest": meta["producer_issuers_digest"],
+            "createdAt": meta["created_at"],
+        }
+        expected = hmac.new(
+            self._hmac_key, canonical_json(old_payload).encode("utf-8"), hashlib.sha256
+        ).hexdigest()
+        if not hmac.compare_digest(meta["meta_hmac"], expected):
+            raise RuntimeStoreError(
+                "ECO_JOURNAL_CORRUPT", "Version-3 metadata authentication failed"
+            )
+        previous = GENESIS_DIGEST
+        expected_sequence = 1
+        for row in self._connection.execute("SELECT * FROM audit_entries ORDER BY sequence"):
+            payload = {
+                "domain": "eco-audit-v1",
+                "storeId": meta["store_id"],
+                "sequence": row["sequence"],
+                "transactionId": row["transaction_id"],
+                "recordType": row["record_type"],
+                "recordId": row["record_id"],
+                "action": row["action"],
+                "payloadDigest": row["payload_digest"],
+                "previousEntryHash": row["previous_entry_hash"],
+                "occurredAt": row["occurred_at"],
+            }
+            entry_hash = semantic_digest(payload)
+            verification_key = self._audit_keys.get(row["key_id"])
+            tag = (
+                hmac.new(verification_key, bytes.fromhex(entry_hash), hashlib.sha256).hexdigest()
+                if verification_key is not None
+                else None
+            )
+            if (
+                row["sequence"] != expected_sequence
+                or row["previous_entry_hash"] != previous
+                or row["entry_hash"] != entry_hash
+                or tag is None
+                or not hmac.compare_digest(row["hmac_tag"], tag)
+            ):
+                raise RuntimeStoreError(
+                    "ECO_JOURNAL_CORRUPT", "Version-3 audit authentication failed"
+                )
+            previous = entry_hash
+            expected_sequence += 1
+        for row in self._connection.execute("SELECT * FROM records"):
+            try:
+                record = json.loads(bytes(row["canonical_json"]).decode("utf-8"))
+                validate_record(record)
+            except (UnicodeDecodeError, json.JSONDecodeError, ContractValidationError) as exc:
+                raise RuntimeStoreError(
+                    "ECO_JOURNAL_CORRUPT", "Version-3 record verification failed"
+                ) from exc
+            if (
+                canonical_json(record).encode("utf-8") != bytes(row["canonical_json"])
+                or semantic_digest(record) != row["record_digest"]
+            ):
+                raise RuntimeStoreError(
+                    "ECO_JOURNAL_CORRUPT", "Version-3 record digest differs"
+                )
+
+        self._store_id = meta["store_id"]
+        with self._transaction():
+            self._connection.execute(
+                """CREATE TABLE model_operations (
+                    request_id TEXT PRIMARY KEY REFERENCES records(record_id),
+                    run_id TEXT NOT NULL REFERENCES runs(run_id),
+                    idempotency_key_digest TEXT NOT NULL,
+                    request_digest TEXT NOT NULL UNIQUE,
+                    plan_digest TEXT NOT NULL,
+                    endpoint_binding_digest TEXT NOT NULL,
+                    input_artifact_record_digest TEXT NOT NULL,
+                    allow_decision_digest TEXT NOT NULL,
+                    state TEXT NOT NULL CHECK (state IN ('prepared', 'started', 'succeeded', 'failed', 'ambiguous')),
+                    recovery_mode TEXT NOT NULL CHECK (recovery_mode IN ('no_retry')),
+                    started_at TEXT,
+                    resume_decision_digest TEXT,
+                    finalization_decision_digest TEXT,
+                    model_result_digest TEXT,
+                    output_artifact_record_digest TEXT,
+                    error_record_digest TEXT,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    UNIQUE(run_id, idempotency_key_digest)
+                )"""
+            )
+            self._connection.execute(
+                """CREATE TABLE model_budget_reservations (
+                    request_id TEXT PRIMARY KEY REFERENCES model_operations(request_id),
+                    run_id TEXT NOT NULL REFERENCES runs(run_id),
+                    plan_digest TEXT NOT NULL,
+                    reserved_output_bytes INTEGER NOT NULL CHECK (reserved_output_bytes >= 0),
+                    reserved_total_tokens INTEGER NOT NULL CHECK (reserved_total_tokens >= 0),
+                    reserved_cost_microusd INTEGER NOT NULL CHECK (reserved_cost_microusd >= 0),
+                    actual_output_bytes INTEGER CHECK (actual_output_bytes >= 0),
+                    actual_total_tokens INTEGER CHECK (actual_total_tokens >= 0),
+                    charged_total_tokens INTEGER CHECK (charged_total_tokens >= 0),
+                    charged_cost_microusd INTEGER CHECK (charged_cost_microusd >= 0),
+                    state TEXT NOT NULL CHECK (state IN ('reserved', 'committed', 'uncertain')),
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                )"""
+            )
+            new_payload = dict(old_payload)
+            new_payload["schemaVersion"] = STORE_SCHEMA_VERSION
+            new_payload["policyEngineVersion"] = POLICY_ENGINE_VERSION
+            new_hmac = hmac.new(
+                self._hmac_key, canonical_json(new_payload).encode("utf-8"), hashlib.sha256
+            ).hexdigest()
+            self._connection.execute(
+                """UPDATE store_meta
+                   SET schema_version = ?, policy_engine_version = ?, meta_hmac = ?
+                   WHERE singleton = 1""",
+                (STORE_SCHEMA_VERSION, POLICY_ENGINE_VERSION, new_hmac),
             )
             self._connection.execute(f"PRAGMA user_version = {STORE_SCHEMA_VERSION}")
 
@@ -1103,6 +1320,8 @@ class SQLiteRuntimeStore:
             "budget_reservations",
             "run_event_baselines",
             "run_checkpoints",
+            "model_operations",
+            "model_budget_reservations",
         }:
             raise RuntimeStoreError("ECO_STORE_INTERNAL", "Unsupported authority entity")
         row = self._connection.execute(
@@ -2004,6 +2223,15 @@ class SQLiteRuntimeStore:
         except KeyError as exc:
             raise ValueError("outcome must be succeeded, failed, cancelled, or exhausted") from exc
         with self._transaction():
+            if self._connection.execute(
+                """SELECT 1 FROM model_operations
+                   WHERE run_id = ? AND state IN ('prepared', 'started') LIMIT 1""",
+                (run_id,),
+            ).fetchone() is not None:
+                raise RuntimeStoreError(
+                    "ECO_MODEL_OPERATION_OPEN",
+                    "Run cannot terminate while a model operation is open",
+                )
             return self._append_generated_event_tx(
                 run_id=run_id,
                 event_type=event_type,
@@ -3090,6 +3318,1482 @@ class SQLiteRuntimeStore:
                 ).fetchone()
             )
 
+    @staticmethod
+    def _model_idempotency_digest(value: str) -> str:
+        if not isinstance(value, str) or not 1 <= len(value) <= 512:
+            raise ValueError("idempotency_key must be a bounded non-empty string")
+        return semantic_digest({"domain": "eco-model-idempotency-v1", "key": value})
+
+    def _record_if_new_tx(
+        self, record: dict[str, Any], *, transaction_id: str
+    ) -> str:
+        digest, inserted = self._insert_record(record)
+        if inserted:
+            record_id, _, occurred_at = self._record_identity(record)
+            self._append_audit(
+                transaction_id=transaction_id,
+                record_type=record["kind"],
+                record_id=record_id,
+                action="recorded",
+                payload_digest=digest,
+                occurred_at=occurred_at,
+            )
+        return digest
+
+    def prepare_model_invocation(
+        self,
+        plan: dict[str, Any],
+        request: dict[str, Any],
+        endpoint_binding: dict[str, Any],
+        input_artifact: dict[str, Any],
+        decision: dict[str, Any],
+        *,
+        input_availability_proof: ArtifactAvailabilityProof,
+        idempotency_key: str,
+        cost_reservation_microusd: int,
+        now: datetime,
+        policy_capability: object,
+        runtime_capability: object,
+        adapter_capability: object,
+    ) -> dict[str, Any]:
+        """Durably PREPARE one exact model call before any adapter egress."""
+
+        self._require_policy_capability(policy_capability)
+        self._require_runtime_capability(runtime_capability)
+        self._require_adapter_capability(adapter_capability)
+        if (
+            not isinstance(cost_reservation_microusd, int)
+            or isinstance(cost_reservation_microusd, bool)
+            or cost_reservation_microusd < 0
+        ):
+            raise ValueError("cost_reservation_microusd must be a non-negative integer")
+        idempotency_digest = self._model_idempotency_digest(idempotency_key)
+        try:
+            plan = copy.deepcopy(validate_record(plan))
+            request = copy.deepcopy(validate_record(request))
+            endpoint_binding = copy.deepcopy(validate_record(endpoint_binding))
+            input_artifact = copy.deepcopy(validate_record(input_artifact))
+            decision = copy.deepcopy(validate_record(decision))
+        except ContractValidationError as exc:
+            raise RuntimeStoreError(
+                "ECO_STORE_RECORD_INVALID", "Model invocation input is invalid"
+            ) from exc
+        if (
+            plan["kind"] != "RunPlan"
+            or request["kind"] != "ModelRequest"
+            or endpoint_binding["kind"] != "EndpointBinding"
+            or input_artifact["kind"] != "ArtifactRecord"
+            or decision["kind"] != "PolicyDecision"
+        ):
+            raise RuntimeStoreError(
+                "ECO_STORE_RECORD_INVALID", "Model invocation record kinds are invalid"
+            )
+        if self._artifact_store is None:
+            raise RuntimeStoreError(
+                "ECO_ARTIFACT_PROOF_REQUIRED",
+                "Model input requires durable artifact availability proof",
+            )
+        artifact_spec = input_artifact["spec"]
+        if (
+            input_availability_proof.storage_ref != artifact_spec["storageRef"]
+            or input_availability_proof.sha256 != artifact_spec["sha256"]
+            or input_availability_proof.byte_length != artifact_spec["byteLength"]
+        ):
+            raise RuntimeStoreError(
+                "ECO_ARTIFACT_PROOF_INVALID", "Model input proof binding differs"
+            )
+        self._artifact_store.verify_availability(input_availability_proof)
+
+        run_id = plan["metadata"]["runId"]
+        request_id = request["metadata"]["id"]
+        plan_digest = semantic_digest(plan)
+        request_digest = semantic_digest(request)
+        endpoint_digest = semantic_digest(endpoint_binding)
+        input_artifact_digest = semantic_digest(input_artifact)
+        decision_digest = semantic_digest(decision)
+        now_utc = now.astimezone(timezone.utc) if now.tzinfo is not None else None
+        if now_utc is None:
+            raise RuntimeStoreError("ECO_CLOCK_INVALID", "Store clock must be timezone-aware")
+        now_text = _utc(now)
+        now_epoch_us = int(now_utc.timestamp() * 1_000_000)
+        self._require_plan_profile(plan)
+        self._require_decision_profile(
+            decision, semantic_config_digest=plan["spec"]["project"]["semanticConfigDigest"]
+        )
+
+        route = plan["spec"]["route"]
+        request_spec = request["spec"]
+        endpoint_spec = endpoint_binding["spec"]
+        planned_input = next(
+            (
+                item
+                for item in plan["spec"]["inputs"]
+                if item["artifactRecordDigest"] == input_artifact_digest
+            ),
+            None,
+        )
+        decision_subject = decision["spec"]["subject"]
+        if (
+            cost_reservation_microusd != 0
+            or plan["spec"]["budget"]["maxCostMicrousd"] != 0
+            or route["identity"]["provider"] != "local"
+            or endpoint_spec["transportProfile"] != "local-loopback-http"
+            or endpoint_spec["credentialMode"] != "none"
+        ):
+            raise RuntimeStoreError(
+                "ECO_PRICING_AUTHORITY_REQUIRED",
+                "M6.1 model execution is limited to an exact zero-cost local profile",
+            )
+        try:
+            resolved_at = _parse(endpoint_binding["metadata"]["resolvedAt"])
+            valid_until = _parse(endpoint_binding["metadata"]["validUntil"])
+        except RuntimeStoreError:
+            raise RuntimeStoreError(
+                "ECO_ENDPOINT_BINDING_INVALID", "Endpoint binding time is invalid"
+            ) from None
+        if (
+            request["metadata"]["runId"] != run_id
+            or input_artifact["metadata"]["runId"] != run_id
+            or request_spec["planDigest"] != plan_digest
+            or decision["metadata"]["runId"] != run_id
+            or decision["spec"]["effect"] != "allow"
+            or decision_subject
+            != {"kind": "ModelRequest", "id": request_id, "digest": request_digest}
+            or request_spec["deploymentId"] != route["deploymentId"]
+            or request_spec["deploymentIdentityDigest"] != route["deploymentIdentityDigest"]
+            or request_spec["endpointBindingDigest"] != endpoint_digest
+            or endpoint_binding["metadata"]["deploymentId"] != route["deploymentId"]
+            or endpoint_spec["deploymentIdentityDigest"] != route["deploymentIdentityDigest"]
+            or endpoint_spec["endpointReferenceDigest"]
+            != route["brokerModelEgress"]["endpointReferenceDigest"]
+            or endpoint_spec["adapter"] != route["identity"]["adapter"]
+            or endpoint_spec["adapterVersion"] != route["identity"]["adapterVersion"]
+            or endpoint_spec["model"] != route["identity"]["model"]
+            or route["brokerModelEgress"].get("allowed") is not True
+            or planned_input is None
+            or artifact_spec["role"] != "input"
+            or planned_input
+            != {
+                "ref": artifact_spec["storageRef"],
+                "artifactRecordDigest": input_artifact_digest,
+                "contentDigest": artifact_spec["sha256"],
+                "dataClass": artifact_spec["dataClass"],
+                "byteLength": artifact_spec["byteLength"],
+            }
+            or request_spec["input"]
+            != {
+                "artifactRecordDigest": input_artifact_digest,
+                "contentDigest": artifact_spec["sha256"],
+                "byteLength": artifact_spec["byteLength"],
+                "dataClass": artifact_spec["dataClass"],
+                "trust": artifact_spec["trust"],
+            }
+        ):
+            raise RuntimeStoreError(
+                "ECO_MODEL_BINDING_INVALID", "Model invocation binding is invalid"
+            )
+
+        reserved_output_bytes = request_spec["parameters"]["maxOutputBytes"]
+        reserved_total_tokens = (
+            request_spec["input"]["byteLength"]
+            + request_spec["parameters"]["maxOutputTokens"]
+        )
+        transaction_id = secrets.token_hex(16)
+        with self._transaction():
+            existing = self._connection.execute(
+                "SELECT * FROM model_operations WHERE run_id = ? AND idempotency_key_digest = ?",
+                (run_id, idempotency_digest),
+            ).fetchone()
+            if existing is not None:
+                reservation = self._connection.execute(
+                    "SELECT * FROM model_budget_reservations WHERE request_id = ?",
+                    (existing["request_id"],),
+                ).fetchone()
+                if (
+                    existing["request_digest"] != request_digest
+                    or existing["plan_digest"] != plan_digest
+                    or existing["endpoint_binding_digest"] != endpoint_digest
+                    or existing["input_artifact_record_digest"] != input_artifact_digest
+                    or existing["allow_decision_digest"] != decision_digest
+                    or reservation is None
+                    or reservation["plan_digest"] != plan_digest
+                    or reservation["reserved_output_bytes"] != reserved_output_bytes
+                    or reservation["reserved_total_tokens"] != reserved_total_tokens
+                    or reservation["reserved_cost_microusd"] != cost_reservation_microusd
+                ):
+                    raise RuntimeStoreError(
+                        "ECO_IDEMPOTENCY_CONFLICT",
+                        "Model idempotency key is bound to another invocation",
+                    )
+                return {**dict(existing), "replayed": True}
+            if not (resolved_at <= now_utc < valid_until):
+                raise RuntimeStoreError(
+                    "ECO_ENDPOINT_BINDING_EXPIRED",
+                    "Endpoint binding is not currently valid",
+                )
+            duplicate_request = self._connection.execute(
+                "SELECT request_id FROM model_operations WHERE request_digest = ?",
+                (request_digest,),
+            ).fetchone()
+            if duplicate_request is not None:
+                raise RuntimeStoreError(
+                    "ECO_OPERATION_SUBJECT_CONFLICT",
+                    "Model request already has an invocation",
+                )
+            run = self._connection.execute(
+                "SELECT * FROM runs WHERE run_id = ?", (run_id,)
+            ).fetchone()
+            plan_row = self._connection.execute(
+                "SELECT * FROM plans WHERE plan_id = ?", (plan["metadata"]["id"],)
+            ).fetchone()
+            if (
+                run is None
+                or plan_row is None
+                or run["state"] != "RUNNING"
+                or run["active_plan_digest"] != plan_digest
+                or plan_row["plan_digest"] != plan_digest
+            ):
+                raise RuntimeStoreError(
+                    "ECO_PLAN_UNTRUSTED", "Plan is not the active model authority"
+                )
+            if _parse(run["updated_at"]) > now_utc:
+                raise RuntimeStoreError("ECO_CLOCK_ROLLBACK", "Runtime clock moved backwards")
+            if run["deadline_epoch_us"] is None or run["deadline_epoch_us"] <= now_epoch_us:
+                raise RuntimeStoreError("ECO_DEADLINE_EXCEEDED", "Run deadline has elapsed")
+            outstanding = self._connection.execute(
+                """SELECT
+                       COALESCE(SUM(reserved_output_bytes), 0) AS output_bytes,
+                       COALESCE(SUM(reserved_total_tokens), 0) AS total_tokens,
+                       COALESCE(SUM(reserved_cost_microusd), 0) AS cost_microusd
+                   FROM model_budget_reservations
+                   WHERE run_id = ? AND state = 'reserved'""",
+                (run_id,),
+            ).fetchone()
+            budget = self._connection.execute(
+                "SELECT * FROM budgets WHERE run_id = ? AND plan_digest = ?",
+                (run_id, plan_digest),
+            ).fetchone()
+            if (
+                budget is None
+                or budget["model_requests"] + 1 > budget["max_model_requests"]
+                or budget["output_bytes"] + outstanding["output_bytes"] + reserved_output_bytes
+                > budget["max_output_bytes"]
+                or budget["total_tokens"] + outstanding["total_tokens"] + reserved_total_tokens
+                > budget["max_total_tokens"]
+                or budget["cost_microusd"] + outstanding["cost_microusd"]
+                + cost_reservation_microusd
+                > budget["max_cost_microusd"]
+            ):
+                raise RuntimeStoreError(
+                    "ECO_BUDGET_EXHAUSTED", "Model invocation budget is exhausted"
+                )
+            self._issue_decision_tx(decision, transaction_id=transaction_id)
+            self._consume_decision_tx(
+                decision,
+                subject_digest=request_digest,
+                nonce=request_id,
+                now=now,
+                transaction_id=transaction_id,
+            )
+            for record in (endpoint_binding, input_artifact, request):
+                self._record_if_new_tx(record, transaction_id=transaction_id)
+            updated = self._connection.execute(
+                """UPDATE budgets SET model_requests = model_requests + 1, updated_at = ?
+                   WHERE run_id = ? AND plan_digest = ?
+                     AND deadline_epoch_us > ?
+                     AND model_requests + 1 <= max_model_requests""",
+                (now_text, run_id, plan_digest, now_epoch_us),
+            )
+            if updated.rowcount != 1:
+                raise RuntimeStoreError(
+                    "ECO_BUDGET_EXHAUSTED", "Model request budget is exhausted"
+                )
+            self._connection.execute(
+                """INSERT INTO model_operations
+                   (request_id, run_id, idempotency_key_digest, request_digest,
+                    plan_digest, endpoint_binding_digest, input_artifact_record_digest,
+                    allow_decision_digest, state, recovery_mode, started_at,
+                    model_result_digest, output_artifact_record_digest,
+                    error_record_digest, created_at, updated_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'prepared', 'no_retry',
+                           NULL, NULL, NULL, NULL, ?, ?)""",
+                (
+                    request_id,
+                    run_id,
+                    idempotency_digest,
+                    request_digest,
+                    plan_digest,
+                    endpoint_digest,
+                    input_artifact_digest,
+                    decision_digest,
+                    now_text,
+                    now_text,
+                ),
+            )
+            self._connection.execute(
+                """INSERT INTO model_budget_reservations
+                   VALUES (?, ?, ?, ?, ?, ?, NULL, NULL, NULL, NULL, 'reserved', ?, ?)""",
+                (
+                    request_id,
+                    run_id,
+                    plan_digest,
+                    reserved_output_bytes,
+                    reserved_total_tokens,
+                    cost_reservation_microusd,
+                    now_text,
+                    now_text,
+                ),
+            )
+            for entity_type, entity_id, table, id_column in (
+                ("budget", run_id, "budgets", "run_id"),
+                ("model-operation", request_id, "model_operations", "request_id"),
+                (
+                    "model-reservation",
+                    request_id,
+                    "model_budget_reservations",
+                    "request_id",
+                ),
+            ):
+                self._record_authority_revision(
+                    entity_type=entity_type,
+                    entity_id=entity_id,
+                    table=table,
+                    id_column=id_column,
+                    transaction_id=transaction_id,
+                    occurred_at=now_text,
+                )
+        return {
+            "request_id": request_id,
+            "state": "prepared",
+            "request_digest": request_digest,
+            "replayed": False,
+        }
+
+    def start_model_invocation(
+        self,
+        request_id: str,
+        *,
+        now: datetime,
+        adapter_capability: object,
+    ) -> dict[str, Any]:
+        """Commit STARTED immediately before egress; STARTED is no-retry."""
+
+        self._require_adapter_capability(adapter_capability)
+        now_text = _utc(now)
+        transaction_id = secrets.token_hex(16)
+        with self._transaction():
+            operation = self._connection.execute(
+                "SELECT * FROM model_operations WHERE request_id = ?", (request_id,)
+            ).fetchone()
+            if operation is None:
+                raise RuntimeStoreError(
+                    "ECO_MODEL_OPERATION_UNKNOWN", "Model operation does not exist"
+                )
+            if operation["state"] == "started":
+                raise RuntimeStoreError(
+                    "ECO_MODEL_INVOCATION_AMBIGUOUS",
+                    "Started model invocation cannot be retried automatically",
+                )
+            if operation["state"] != "prepared":
+                return {**dict(operation), "replayed": True}
+            self._require_live_run_time_tx(
+                operation["run_id"],
+                now=now,
+                now_epoch_us=int(now.astimezone(timezone.utc).timestamp() * 1_000_000),
+            )
+            updated = self._connection.execute(
+                """UPDATE model_operations
+                   SET state = 'started', started_at = ?, updated_at = ?
+                   WHERE request_id = ? AND state = 'prepared'""",
+                (now_text, now_text, request_id),
+            )
+            if updated.rowcount != 1:
+                raise RuntimeStoreError(
+                    "ECO_MODEL_INVOCATION_AMBIGUOUS",
+                    "Model invocation start raced with another worker",
+                )
+            self._record_authority_revision(
+                entity_type="model-operation",
+                entity_id=request_id,
+                table="model_operations",
+                id_column="request_id",
+                transaction_id=transaction_id,
+                occurred_at=now_text,
+            )
+            return {
+                **dict(
+                    self._connection.execute(
+                        "SELECT * FROM model_operations WHERE request_id = ?", (request_id,)
+                    ).fetchone()
+                ),
+                "replayed": False,
+            }
+
+    def resume_prepared_model_invocation(
+        self,
+        request: dict[str, Any],
+        decision: dict[str, Any],
+        *,
+        now: datetime,
+        policy_capability: object,
+        adapter_capability: object,
+    ) -> dict[str, Any]:
+        """Consume fresh authority and atomically cross a recovered PREPARE fence."""
+
+        self._require_policy_capability(policy_capability)
+        self._require_adapter_capability(adapter_capability)
+        try:
+            request = copy.deepcopy(validate_record(request))
+            decision = copy.deepcopy(validate_record(decision))
+        except ContractValidationError as exc:
+            raise RuntimeStoreError(
+                "ECO_STORE_RECORD_INVALID", "Model resume authority is invalid"
+            ) from exc
+        if request["kind"] != "ModelRequest" or decision["kind"] != "PolicyDecision":
+            raise RuntimeStoreError(
+                "ECO_STORE_RECORD_INVALID", "Model resume record kinds are invalid"
+            )
+        request_id = request["metadata"]["id"]
+        request_digest = semantic_digest(request)
+        decision_digest = semantic_digest(decision)
+        now_text = _utc(now)
+        now_epoch_us = int(now.astimezone(timezone.utc).timestamp() * 1_000_000)
+        transaction_id = secrets.token_hex(16)
+        with self._transaction():
+            operation = self._connection.execute(
+                "SELECT * FROM model_operations WHERE request_id = ?", (request_id,)
+            ).fetchone()
+            if operation is None:
+                raise RuntimeStoreError(
+                    "ECO_MODEL_OPERATION_UNKNOWN", "Model operation does not exist"
+                )
+            if operation["state"] != "prepared":
+                if operation["state"] == "started":
+                    raise RuntimeStoreError(
+                        "ECO_MODEL_INVOCATION_AMBIGUOUS",
+                        "Started model invocation cannot be retried automatically",
+                    )
+                return {**dict(operation), "replayed": True}
+            plan_row = self._connection.execute(
+                "SELECT plan_id FROM plans WHERE plan_digest = ?",
+                (operation["plan_digest"],),
+            ).fetchone()
+            if plan_row is None:
+                raise RuntimeStoreError("ECO_PLAN_UNTRUSTED", "Model plan is unavailable")
+            plan = self._load_record_tx(plan_row["plan_id"])
+            self._require_decision_profile(
+                decision,
+                semantic_config_digest=plan["spec"]["project"]["semanticConfigDigest"],
+            )
+            if (
+                request_digest != operation["request_digest"]
+                or decision["metadata"]["runId"] != operation["run_id"]
+                or decision["spec"]["effect"] != "allow"
+                or decision["spec"]["subject"]
+                != {
+                    "kind": "ModelRequest",
+                    "id": request_id,
+                    "digest": request_digest,
+                }
+            ):
+                raise RuntimeStoreError(
+                    "ECO_MODEL_BINDING_INVALID", "Model resume binding is invalid"
+                )
+            self._require_live_run_time_tx(
+                operation["run_id"], now=now, now_epoch_us=now_epoch_us
+            )
+            self._issue_decision_tx(decision, transaction_id=transaction_id)
+            resume_nonce = f"resume-{semantic_digest({'requestId': request_id, 'decision': decision_digest})}"
+            self._consume_decision_tx(
+                decision,
+                subject_digest=request_digest,
+                nonce=resume_nonce,
+                now=now,
+                transaction_id=transaction_id,
+            )
+            updated = self._connection.execute(
+                """UPDATE model_operations
+                   SET state = 'started', started_at = ?, resume_decision_digest = ?,
+                       updated_at = ?
+                   WHERE request_id = ? AND state = 'prepared'""",
+                (now_text, decision_digest, now_text, request_id),
+            )
+            if updated.rowcount != 1:
+                raise RuntimeStoreError(
+                    "ECO_MODEL_INVOCATION_AMBIGUOUS",
+                    "Model resume raced with another worker",
+                )
+            self._record_authority_revision(
+                entity_type="model-operation",
+                entity_id=request_id,
+                table="model_operations",
+                id_column="request_id",
+                transaction_id=transaction_id,
+                occurred_at=now_text,
+            )
+            return {
+                **dict(
+                    self._connection.execute(
+                        "SELECT * FROM model_operations WHERE request_id = ?", (request_id,)
+                    ).fetchone()
+                ),
+                "replayed": False,
+            }
+
+    def abort_prepared_model_invocation(
+        self,
+        request: dict[str, Any],
+        *,
+        reason: str,
+        now: datetime,
+        runtime_capability: object,
+    ) -> dict[str, Any]:
+        """Terminally release a PREPARED call that never crossed egress.
+
+        Runtime authority may cancel explicitly, or may attest an observed run
+        deadline / endpoint expiry.  STARTED and ambiguous operations are never
+        abortable through this path.  No reserved token or cost ceiling is
+        charged because adapter egress was durably proven not to have started.
+        """
+
+        self._require_runtime_capability(runtime_capability)
+        if reason not in {"cancelled", "deadline-expired", "endpoint-expired"}:
+            raise ValueError("reason must be a supported prepared-abort reason")
+        try:
+            request = copy.deepcopy(validate_record(request))
+        except ContractValidationError as exc:
+            raise RuntimeStoreError(
+                "ECO_STORE_RECORD_INVALID", "Model abort request is invalid"
+            ) from exc
+        if request["kind"] != "ModelRequest":
+            raise RuntimeStoreError(
+                "ECO_STORE_RECORD_INVALID", "Model abort request kind is invalid"
+            )
+        request_id = request["metadata"]["id"]
+        request_digest = semantic_digest(request)
+        now_text = _utc(now)
+        now_utc = now.astimezone(timezone.utc)
+        now_epoch_us = int(now_utc.timestamp() * 1_000_000)
+        transaction_id = secrets.token_hex(16)
+        with self._transaction():
+            operation = self._connection.execute(
+                "SELECT * FROM model_operations WHERE request_id = ?", (request_id,)
+            ).fetchone()
+            if operation is None:
+                raise RuntimeStoreError(
+                    "ECO_MODEL_OPERATION_UNKNOWN", "Model operation does not exist"
+                )
+            if operation["request_digest"] != request_digest:
+                raise RuntimeStoreError(
+                    "ECO_MODEL_BINDING_INVALID", "Model abort request binding is invalid"
+                )
+            if operation["state"] == "failed":
+                row = self._connection.execute(
+                    "SELECT canonical_json FROM records WHERE record_digest = ?",
+                    (operation["error_record_digest"],),
+                ).fetchone()
+                if row is not None:
+                    recorded = json.loads(bytes(row["canonical_json"]).decode("utf-8"))
+                    if recorded.get("spec", {}).get("code") == "ECO_MODEL_PREPARED_ABORTED":
+                        return {**dict(operation), "replayed": True}
+                raise RuntimeStoreError(
+                    "ECO_OPERATION_CONFLICT", "Model operation has another failure"
+                )
+            if operation["state"] in {"started", "ambiguous"}:
+                raise RuntimeStoreError(
+                    "ECO_MODEL_INVOCATION_AMBIGUOUS",
+                    "Model operation crossed or may have crossed its egress fence",
+                )
+            if operation["state"] != "prepared":
+                raise RuntimeStoreError(
+                    "ECO_OPERATION_CONFLICT", "Terminal model operation cannot be aborted"
+                )
+            run = self._connection.execute(
+                "SELECT * FROM runs WHERE run_id = ?", (operation["run_id"],)
+            ).fetchone()
+            endpoint_row = self._connection.execute(
+                "SELECT canonical_json FROM records WHERE record_digest = ?",
+                (operation["endpoint_binding_digest"],),
+            ).fetchone()
+            reservation = self._connection.execute(
+                "SELECT * FROM model_budget_reservations WHERE request_id = ?",
+                (request_id,),
+            ).fetchone()
+            if run is None or endpoint_row is None or reservation is None:
+                raise RuntimeStoreError(
+                    "ECO_JOURNAL_CORRUPT", "Prepared model authority is incomplete"
+                )
+            endpoint = json.loads(bytes(endpoint_row["canonical_json"]).decode("utf-8"))
+            if _parse(run["updated_at"]) > now_utc:
+                raise RuntimeStoreError(
+                    "ECO_CLOCK_ROLLBACK", "Runtime clock moved backwards"
+                )
+            if reason == "deadline-expired" and run["deadline_epoch_us"] > now_epoch_us:
+                raise RuntimeStoreError(
+                    "ECO_MODEL_ABORT_NOT_OBSERVED", "Run deadline has not elapsed"
+                )
+            if reason == "endpoint-expired" and _parse(
+                endpoint["metadata"]["validUntil"]
+            ) > now_utc:
+                raise RuntimeStoreError(
+                    "ECO_MODEL_ABORT_NOT_OBSERVED", "Endpoint binding has not expired"
+                )
+            if reservation["state"] != "reserved":
+                raise RuntimeStoreError(
+                    "ECO_RESERVATION_INVALID", "Prepared reservation is not releasable"
+                )
+            error = validate_record(
+                {
+                    "apiVersion": API_VERSION,
+                    "kind": "ErrorRecord",
+                    "metadata": {
+                        "id": f"error-{semantic_digest({'requestId': request_id})}",
+                        "runId": operation["run_id"],
+                        "requestId": request_id,
+                        "createdAt": now_text,
+                    },
+                    "spec": {
+                        "code": "ECO_MODEL_PREPARED_ABORTED",
+                        "category": "internal",
+                        "stage": "model",
+                        "retryable": False,
+                        "safeMessage": "Prepared model invocation was aborted before egress",
+                    },
+                }
+            )
+            error_digest = semantic_digest(error)
+            self._record_if_new_tx(error, transaction_id=transaction_id)
+            self._connection.execute(
+                """UPDATE model_budget_reservations
+                   SET actual_output_bytes = NULL, actual_total_tokens = NULL,
+                       charged_total_tokens = 0, charged_cost_microusd = 0,
+                       state = 'committed', updated_at = ?
+                   WHERE request_id = ? AND state = 'reserved'""",
+                (now_text, request_id),
+            )
+            updated = self._connection.execute(
+                """UPDATE model_operations
+                   SET state = 'failed', error_record_digest = ?, updated_at = ?
+                   WHERE request_id = ? AND state = 'prepared'""",
+                (error_digest, now_text, request_id),
+            )
+            if updated.rowcount != 1:
+                raise RuntimeStoreError(
+                    "ECO_MODEL_INVOCATION_AMBIGUOUS", "Prepared abort raced with start"
+                )
+            self._connection.execute(
+                "UPDATE nonces SET result_digest = ? WHERE nonce = ?",
+                (error_digest, request_id),
+            )
+            for entity_type, entity_id, table, id_column in (
+                ("model-operation", request_id, "model_operations", "request_id"),
+                (
+                    "model-reservation",
+                    request_id,
+                    "model_budget_reservations",
+                    "request_id",
+                ),
+            ):
+                self._record_authority_revision(
+                    entity_type=entity_type,
+                    entity_id=entity_id,
+                    table=table,
+                    id_column=id_column,
+                    transaction_id=transaction_id,
+                    occurred_at=now_text,
+                )
+            return {
+                **dict(
+                    self._connection.execute(
+                        "SELECT * FROM model_operations WHERE request_id = ?",
+                        (request_id,),
+                    ).fetchone()
+                ),
+                "replayed": False,
+            }
+
+    def model_operation_status(self, request_id: str) -> dict[str, Any]:
+        with self._lock:
+            operation = self._connection.execute(
+                "SELECT * FROM model_operations WHERE request_id = ?", (request_id,)
+            ).fetchone()
+            if operation is None:
+                raise RuntimeStoreError(
+                    "ECO_MODEL_OPERATION_UNKNOWN", "Model operation does not exist"
+                )
+            return dict(operation)
+
+    def recover_succeeded_model_output_record(
+        self, request_id: str, *, runtime_capability: object
+    ) -> dict[str, Any]:
+        """Load exact content-free output metadata for an authorized recovery.
+
+        Raw output bytes never enter SQLite.  This API authenticates the
+        terminal operation and its journal records, then returns only the
+        committed ``ArtifactRecord`` needed for a separate verified CAS read.
+        """
+
+        self._require_runtime_capability(runtime_capability)
+        self._require_owner_id(request_id)
+        with self._lock:
+            operation = self._connection.execute(
+                "SELECT * FROM model_operations WHERE request_id = ?", (request_id,)
+            ).fetchone()
+            if operation is None:
+                raise RuntimeStoreError(
+                    "ECO_MODEL_OPERATION_UNKNOWN", "Model operation does not exist"
+                )
+            if (
+                operation["state"] != "succeeded"
+                or operation["model_result_digest"] is None
+                or operation["output_artifact_record_digest"] is None
+                or operation["error_record_digest"] is not None
+            ):
+                raise RuntimeStoreError(
+                    "ECO_MODEL_RECOVERY_UNAVAILABLE",
+                    "Succeeded model output is not available for recovery",
+                )
+            artifact_row = self._connection.execute(
+                """SELECT kind, record_digest, canonical_json FROM records
+                   WHERE record_digest = ?""",
+                (operation["output_artifact_record_digest"],),
+            ).fetchone()
+            result_row = self._connection.execute(
+                """SELECT kind, record_digest, canonical_json FROM records
+                   WHERE record_digest = ?""",
+                (operation["model_result_digest"],),
+            ).fetchone()
+            if artifact_row is None or result_row is None:
+                raise RuntimeStoreError(
+                    "ECO_JOURNAL_CORRUPT", "Model recovery record is missing"
+                )
+            try:
+                artifact = validate_record(
+                    json.loads(bytes(artifact_row["canonical_json"]).decode("utf-8"))
+                )
+                result = validate_record(
+                    json.loads(bytes(result_row["canonical_json"]).decode("utf-8"))
+                )
+            except (ContractValidationError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+                raise RuntimeStoreError(
+                    "ECO_JOURNAL_CORRUPT", "Model recovery record is invalid"
+                ) from exc
+            output = result["spec"]["output"]
+            spec = artifact["spec"]
+            if (
+                artifact_row["kind"] != "ArtifactRecord"
+                or result_row["kind"] != "ModelResult"
+                or semantic_digest(artifact) != artifact_row["record_digest"]
+                or semantic_digest(result) != result_row["record_digest"]
+                or artifact["metadata"]["runId"] != operation["run_id"]
+                or result["metadata"]["runId"] != operation["run_id"]
+                or result["metadata"]["requestId"] != request_id
+                or spec["role"] != "output"
+                or spec["mediaType"] != "text/plain"
+                or spec["trust"] != "P0"
+                or spec["producer"]["type"] != "model"
+                or spec["sha256"] != output["contentDigest"]
+                or spec["byteLength"] != output["byteLength"]
+                or spec["dataClass"] != output["dataClass"]
+            ):
+                raise RuntimeStoreError(
+                    "ECO_JOURNAL_CORRUPT", "Model recovery binding is invalid"
+                )
+            return copy.deepcopy(artifact)
+
+    def exact_model_replay_status(
+        self,
+        request: dict[str, Any],
+        endpoint_binding: dict[str, Any],
+        input_artifact: dict[str, Any],
+        decision: dict[str, Any],
+        *,
+        idempotency_key: str,
+        cost_reservation_microusd: int,
+    ) -> dict[str, Any] | None:
+        """Return existing content-free state only for an exact invocation replay."""
+
+        idempotency_digest = self._model_idempotency_digest(idempotency_key)
+        try:
+            request = copy.deepcopy(validate_record(request))
+            endpoint_binding = copy.deepcopy(validate_record(endpoint_binding))
+            input_artifact = copy.deepcopy(validate_record(input_artifact))
+            decision = copy.deepcopy(validate_record(decision))
+        except ContractValidationError as exc:
+            raise RuntimeStoreError(
+                "ECO_STORE_RECORD_INVALID", "Model replay input is invalid"
+            ) from exc
+        request_id = request["metadata"]["id"]
+        with self._lock:
+            operation = self._connection.execute(
+                "SELECT * FROM model_operations WHERE request_id = ?", (request_id,)
+            ).fetchone()
+            if operation is None:
+                return None
+            reservation = self._connection.execute(
+                "SELECT * FROM model_budget_reservations WHERE request_id = ?", (request_id,)
+            ).fetchone()
+            if (
+                reservation is None
+                or operation["run_id"] != request["metadata"]["runId"]
+                or operation["idempotency_key_digest"] != idempotency_digest
+                or operation["request_digest"] != semantic_digest(request)
+                or operation["plan_digest"] != request["spec"]["planDigest"]
+                or operation["endpoint_binding_digest"] != semantic_digest(endpoint_binding)
+                or operation["input_artifact_record_digest"]
+                != semantic_digest(input_artifact)
+                or operation["allow_decision_digest"] != semantic_digest(decision)
+                or reservation["reserved_output_bytes"]
+                != request["spec"]["parameters"]["maxOutputBytes"]
+                or reservation["reserved_total_tokens"]
+                != request["spec"]["input"]["byteLength"]
+                + request["spec"]["parameters"]["maxOutputTokens"]
+                or reservation["reserved_cost_microusd"] != cost_reservation_microusd
+            ):
+                raise RuntimeStoreError(
+                    "ECO_IDEMPOTENCY_CONFLICT",
+                    "Model replay differs from its durable invocation",
+                )
+            return dict(operation)
+
+    def complete_model_invocation(
+        self,
+        request_id: str,
+        *,
+        result: dict[str, Any],
+        output_artifact: dict[str, Any],
+        finalization_decision: dict[str, Any],
+        availability_proof: ArtifactAvailabilityProof,
+        now: datetime,
+        adapter_capability: object,
+    ) -> dict[str, Any]:
+        """Atomically bind CAS output metadata and settle a started model call."""
+
+        self._require_adapter_capability(adapter_capability)
+        try:
+            result = copy.deepcopy(validate_record(result))
+            output_artifact = copy.deepcopy(validate_record(output_artifact))
+            finalization_decision = copy.deepcopy(validate_record(finalization_decision))
+        except ContractValidationError as exc:
+            raise RuntimeStoreError(
+                "ECO_STORE_RECORD_INVALID", "Model success result is invalid"
+            ) from exc
+        if (
+            result["kind"] != "ModelResult"
+            or output_artifact["kind"] != "ArtifactRecord"
+            or finalization_decision["kind"] != "PolicyDecision"
+        ):
+            raise RuntimeStoreError(
+                "ECO_STORE_RECORD_INVALID", "Model success record kinds are invalid"
+            )
+        if self._artifact_store is None:
+            raise RuntimeStoreError(
+                "ECO_ARTIFACT_PROOF_REQUIRED", "Model output requires durable availability proof"
+            )
+        artifact_spec = output_artifact["spec"]
+        if (
+            availability_proof.storage_ref != artifact_spec["storageRef"]
+            or availability_proof.sha256 != artifact_spec["sha256"]
+            or availability_proof.byte_length != artifact_spec["byteLength"]
+        ):
+            raise RuntimeStoreError(
+                "ECO_ARTIFACT_PROOF_INVALID", "Model output proof binding differs"
+            )
+        self._artifact_store.verify_availability(availability_proof)
+        result_digest = semantic_digest(result)
+        artifact_digest = semantic_digest(output_artifact)
+        finalization_decision_digest = semantic_digest(finalization_decision)
+        now_text = _utc(now)
+        now_epoch_us = int(now.astimezone(timezone.utc).timestamp() * 1_000_000)
+        transaction_id = secrets.token_hex(16)
+        with self._transaction():
+            operation = self._connection.execute(
+                "SELECT * FROM model_operations WHERE request_id = ?", (request_id,)
+            ).fetchone()
+            if operation is None:
+                raise RuntimeStoreError(
+                    "ECO_MODEL_OPERATION_UNKNOWN", "Model operation does not exist"
+                )
+            if operation["state"] == "succeeded":
+                if (
+                    operation["model_result_digest"] != result_digest
+                    or operation["output_artifact_record_digest"] != artifact_digest
+                ):
+                    raise RuntimeStoreError(
+                        "ECO_OPERATION_CONFLICT", "Model operation has another result"
+                    )
+                return {**dict(operation), "replayed": True}
+            if operation["state"] != "started":
+                raise RuntimeStoreError(
+                    "ECO_MODEL_INVOCATION_AMBIGUOUS", "Model invocation is not safely completable"
+                )
+            run = self._connection.execute(
+                "SELECT state, active_plan_digest, updated_at FROM runs WHERE run_id = ?",
+                (operation["run_id"],),
+            ).fetchone()
+            if (
+                run is None
+                or run["state"] != "RUNNING"
+                or run["active_plan_digest"] != operation["plan_digest"]
+                or _parse(run["updated_at"]) > now.astimezone(timezone.utc)
+            ):
+                raise RuntimeStoreError(
+                    "ECO_PLAN_NOT_ACTIVE", "Model completion requires its active running plan"
+                )
+            request = self._load_record_tx(request_id)
+            plan_row = self._connection.execute(
+                "SELECT plan_id FROM plans WHERE plan_digest = ?",
+                (operation["plan_digest"],),
+            ).fetchone()
+            if plan_row is None:
+                raise RuntimeStoreError("ECO_PLAN_UNTRUSTED", "Model plan is unavailable")
+            plan = self._load_record_tx(plan_row["plan_id"])
+            self._require_decision_profile(
+                finalization_decision,
+                semantic_config_digest=plan["spec"]["project"]["semanticConfigDigest"],
+            )
+            if (
+                finalization_decision["metadata"]["runId"] != operation["run_id"]
+                or finalization_decision["spec"]["effect"] != "allow"
+                or finalization_decision["spec"]["subject"]
+                != {
+                    "kind": "ModelRequest",
+                    "id": request_id,
+                    "digest": operation["request_digest"],
+                }
+            ):
+                raise RuntimeStoreError(
+                    "ECO_MODEL_BINDING_INVALID", "Model finalization authority is invalid"
+                )
+            input_row = self._connection.execute(
+                "SELECT canonical_json FROM records WHERE record_digest = ?",
+                (operation["input_artifact_record_digest"],),
+            ).fetchone()
+            if input_row is None:
+                raise RuntimeStoreError(
+                    "ECO_JOURNAL_CORRUPT", "Model input artifact record is missing"
+                )
+            input_artifact = json.loads(bytes(input_row["canonical_json"]).decode("utf-8"))
+            endpoint_row = self._connection.execute(
+                "SELECT canonical_json FROM records WHERE record_digest = ?",
+                (operation["endpoint_binding_digest"],),
+            ).fetchone()
+            if endpoint_row is None:
+                raise RuntimeStoreError(
+                    "ECO_JOURNAL_CORRUPT", "Model endpoint binding record is missing"
+                )
+            endpoint_binding = json.loads(bytes(endpoint_row["canonical_json"]).decode("utf-8"))
+            result_spec = result["spec"]
+            output = result_spec["output"]
+            expected_artifact_id = f"model-output-{semantic_digest({'requestId': request_id})}"
+            if (
+                result["metadata"]["runId"] != operation["run_id"]
+                or result["metadata"]["requestId"] != request_id
+                or result["metadata"]["createdAt"] != now_text
+                or result_spec["modelRequestDigest"] != operation["request_digest"]
+                or result_spec["deploymentId"] != request["spec"]["deploymentId"]
+                or result_spec["deploymentIdentityDigest"]
+                != request["spec"]["deploymentIdentityDigest"]
+                or result_spec["endpointBindingDigest"] != operation["endpoint_binding_digest"]
+                or result_spec["adapterVersion"]
+                != endpoint_binding["spec"]["adapterVersion"]
+                or output_artifact["metadata"]["id"] != expected_artifact_id
+                or output_artifact["metadata"]["runId"] != operation["run_id"]
+                or output_artifact["metadata"]["createdAt"] != now_text
+                or artifact_spec["role"] != "output"
+                or artifact_spec["mediaType"] != "text/plain"
+                or artifact_spec["byteLength"] != output["byteLength"]
+                or artifact_spec["sha256"] != output["contentDigest"]
+                or artifact_spec["dataClass"] != output["dataClass"]
+                or artifact_spec["trust"] != "P0"
+                or artifact_spec["producer"]
+                != {"type": "model", "id": request["spec"]["deploymentId"]}
+                or artifact_spec.get("parentRefs") != [input_artifact["spec"]["storageRef"]]
+                or artifact_spec["storageRef"]
+                != f"artifact://runs/{operation['run_id']}/{expected_artifact_id}"
+                or artifact_spec["retention"] != "run"
+            ):
+                raise RuntimeStoreError(
+                    "ECO_MODEL_BINDING_INVALID", "Model success binding is invalid"
+                )
+            reservation = self._connection.execute(
+                "SELECT * FROM model_budget_reservations WHERE request_id = ?",
+                (request_id,),
+            ).fetchone()
+            usage = result_spec["usage"]
+            if (
+                reservation is None
+                or reservation["state"] != "reserved"
+                or output["byteLength"] > reservation["reserved_output_bytes"]
+                or usage["totalTokens"] > reservation["reserved_total_tokens"]
+            ):
+                raise RuntimeStoreError(
+                    "ECO_RESERVATION_INVALID", "Model reservation cannot settle"
+                )
+            self._record_if_new_tx(result, transaction_id=transaction_id)
+            self._record_if_new_tx(output_artifact, transaction_id=transaction_id)
+            self._issue_decision_tx(
+                finalization_decision, transaction_id=transaction_id
+            )
+            finalization_nonce = f"finalize-{semantic_digest({'requestId': request_id, 'decision': finalization_decision_digest})}"
+            self._consume_decision_tx(
+                finalization_decision,
+                subject_digest=operation["request_digest"],
+                nonce=finalization_nonce,
+                now=now,
+                transaction_id=transaction_id,
+            )
+            updated = self._connection.execute(
+                """UPDATE budgets
+                   SET output_bytes = output_bytes + ?,
+                       total_tokens = total_tokens + ?,
+                       cost_microusd = cost_microusd + ?, updated_at = ?
+                   WHERE run_id = ?
+                     AND output_bytes + ? <= max_output_bytes
+                     AND total_tokens + ? <= max_total_tokens
+                     AND cost_microusd + ? <= max_cost_microusd""",
+                (
+                    output["byteLength"],
+                    reservation["reserved_total_tokens"],
+                    reservation["reserved_cost_microusd"],
+                    now_text,
+                    operation["run_id"],
+                    output["byteLength"],
+                    reservation["reserved_total_tokens"],
+                    reservation["reserved_cost_microusd"],
+                ),
+            )
+            if updated.rowcount != 1:
+                raise RuntimeStoreError(
+                    "ECO_RESERVATION_INVALID", "Model budget cannot settle"
+                )
+            self._connection.execute(
+                """UPDATE model_budget_reservations
+                   SET actual_output_bytes = ?, actual_total_tokens = ?,
+                       charged_total_tokens = ?,
+                       charged_cost_microusd = reserved_cost_microusd,
+                       state = 'committed', updated_at = ?
+                   WHERE request_id = ?""",
+                (
+                    output["byteLength"],
+                    usage["totalTokens"],
+                    reservation["reserved_total_tokens"],
+                    now_text,
+                    request_id,
+                ),
+            )
+            self._connection.execute(
+                """UPDATE model_operations
+                   SET state = 'succeeded', model_result_digest = ?,
+                       output_artifact_record_digest = ?,
+                       finalization_decision_digest = ?, updated_at = ?
+                   WHERE request_id = ? AND state = 'started'""",
+                (
+                    result_digest,
+                    artifact_digest,
+                    finalization_decision_digest,
+                    now_text,
+                    request_id,
+                ),
+            )
+            self._connection.execute(
+                "UPDATE nonces SET result_digest = ? WHERE nonce = ?",
+                (result_digest, request_id),
+            )
+            self._append_generated_event_tx(
+                run_id=operation["run_id"],
+                event_type="artifact.recorded",
+                producer="adapter",
+                producer_capability=adapter_capability,
+                now=now,
+                transaction_id=transaction_id,
+                subject_id=output_artifact["metadata"]["id"],
+                subject_digest=artifact_digest,
+                result_digest=artifact_digest,
+            )
+            for entity_type, entity_id, table, id_column in (
+                ("budget", operation["run_id"], "budgets", "run_id"),
+                ("model-operation", request_id, "model_operations", "request_id"),
+                (
+                    "model-reservation",
+                    request_id,
+                    "model_budget_reservations",
+                    "request_id",
+                ),
+            ):
+                self._record_authority_revision(
+                    entity_type=entity_type,
+                    entity_id=entity_id,
+                    table=table,
+                    id_column=id_column,
+                    transaction_id=transaction_id,
+                    occurred_at=now_text,
+                )
+            return {
+                **dict(
+                    self._connection.execute(
+                        "SELECT * FROM model_operations WHERE request_id = ?", (request_id,)
+                    ).fetchone()
+                ),
+                "replayed": False,
+            }
+
+    def fail_model_invocation(
+        self,
+        request_id: str,
+        *,
+        error: dict[str, Any],
+        now: datetime,
+        adapter_capability: object,
+    ) -> dict[str, Any]:
+        """Fail a started call and conservatively charge its reserved ceiling."""
+
+        self._require_adapter_capability(adapter_capability)
+        try:
+            error = copy.deepcopy(validate_record(error))
+        except ContractValidationError as exc:
+            raise RuntimeStoreError(
+                "ECO_STORE_RECORD_INVALID", "Model failure result is invalid"
+            ) from exc
+        if error["kind"] != "ErrorRecord":
+            raise RuntimeStoreError(
+                "ECO_STORE_RECORD_INVALID", "Model failure record kind is invalid"
+            )
+        error_digest = semantic_digest(error)
+        now_text = _utc(now)
+        now_epoch_us = int(now.astimezone(timezone.utc).timestamp() * 1_000_000)
+        transaction_id = secrets.token_hex(16)
+        with self._transaction():
+            operation = self._connection.execute(
+                "SELECT * FROM model_operations WHERE request_id = ?", (request_id,)
+            ).fetchone()
+            if operation is None:
+                raise RuntimeStoreError(
+                    "ECO_MODEL_OPERATION_UNKNOWN", "Model operation does not exist"
+                )
+            if operation["state"] == "failed":
+                if operation["error_record_digest"] != error_digest:
+                    raise RuntimeStoreError(
+                        "ECO_OPERATION_CONFLICT", "Model operation has another failure"
+                    )
+                return {**dict(operation), "replayed": True}
+            if operation["state"] != "started":
+                raise RuntimeStoreError(
+                    "ECO_MODEL_INVOCATION_AMBIGUOUS", "Model invocation is not safely failable"
+                )
+            run = self._connection.execute(
+                "SELECT state, active_plan_digest, updated_at FROM runs WHERE run_id = ?",
+                (operation["run_id"],),
+            ).fetchone()
+            if (
+                run is None
+                or run["state"] != "RUNNING"
+                or run["active_plan_digest"] != operation["plan_digest"]
+                or _parse(run["updated_at"]) > now.astimezone(timezone.utc)
+            ):
+                raise RuntimeStoreError(
+                    "ECO_PLAN_NOT_ACTIVE", "Model failure requires its active running plan"
+                )
+            request = self._load_record_tx(request_id)
+            code = error["spec"]["code"]
+            expected_message = SAFE_MODEL_ERROR_MESSAGES.get(code)
+            if code == "ECO_MODEL_FINALIZATION_DENIED":
+                policy_rule = error["spec"].get("details", {}).get("policyRule")
+                expected_category = "policy"
+                expected_details = {"policyRule": policy_rule}
+            else:
+                policy_rule = None
+                expected_category = (
+                    "budget" if code == "ECO_DEADLINE_EXCEEDED" else "adapter"
+                )
+                expected_details = {"deploymentId": request["spec"]["deploymentId"]}
+            if (
+                expected_message is None
+                or (
+                    code == "ECO_MODEL_FINALIZATION_DENIED"
+                    and (
+                        not isinstance(policy_rule, str)
+                        or re.fullmatch(r"ECO_[A-Z0-9_]+", policy_rule) is None
+                    )
+                )
+                or error["metadata"]
+                != {
+                    "id": f"error-{semantic_digest({'requestId': request_id})}",
+                    "runId": operation["run_id"],
+                    "requestId": request_id,
+                    "createdAt": now_text,
+                }
+                or error["spec"]
+                != {
+                    "code": code,
+                    "category": expected_category,
+                    "stage": "model",
+                    "retryable": False,
+                    "safeMessage": expected_message,
+                    "details": expected_details,
+                }
+            ):
+                raise RuntimeStoreError(
+                    "ECO_MODEL_BINDING_INVALID", "Model failure binding is invalid"
+                )
+            reservation = self._connection.execute(
+                "SELECT * FROM model_budget_reservations WHERE request_id = ?",
+                (request_id,),
+            ).fetchone()
+            if reservation is None or reservation["state"] != "reserved":
+                raise RuntimeStoreError(
+                    "ECO_RESERVATION_INVALID", "Model reservation cannot fail"
+                )
+            self._record_if_new_tx(error, transaction_id=transaction_id)
+            updated = self._connection.execute(
+                """UPDATE budgets
+                   SET total_tokens = total_tokens + ?,
+                       cost_microusd = cost_microusd + ?, updated_at = ?
+                   WHERE run_id = ?
+                     AND total_tokens + ? <= max_total_tokens
+                     AND cost_microusd + ? <= max_cost_microusd""",
+                (
+                    reservation["reserved_total_tokens"],
+                    reservation["reserved_cost_microusd"],
+                    now_text,
+                    operation["run_id"],
+                    reservation["reserved_total_tokens"],
+                    reservation["reserved_cost_microusd"],
+                ),
+            )
+            if updated.rowcount != 1:
+                raise RuntimeStoreError(
+                    "ECO_RESERVATION_INVALID", "Model failure budget cannot settle"
+                )
+            self._connection.execute(
+                """UPDATE model_budget_reservations
+                   SET actual_output_bytes = NULL,
+                       actual_total_tokens = NULL,
+                       charged_total_tokens = reserved_total_tokens,
+                       charged_cost_microusd = reserved_cost_microusd,
+                       state = 'uncertain', updated_at = ?
+                   WHERE request_id = ?""",
+                (now_text, request_id),
+            )
+            self._connection.execute(
+                """UPDATE model_operations
+                   SET state = 'failed', error_record_digest = ?, updated_at = ?
+                   WHERE request_id = ? AND state = 'started'""",
+                (error_digest, now_text, request_id),
+            )
+            self._connection.execute(
+                "UPDATE nonces SET result_digest = ? WHERE nonce = ?",
+                (error_digest, request_id),
+            )
+            self._append_generated_event_tx(
+                run_id=operation["run_id"],
+                event_type="adapter.failed",
+                producer="adapter",
+                producer_capability=adapter_capability,
+                now=now,
+                transaction_id=transaction_id,
+                subject_id=request_id,
+                subject_digest=operation["request_digest"],
+                result_digest=error_digest,
+            )
+            for entity_type, entity_id, table, id_column in (
+                ("budget", operation["run_id"], "budgets", "run_id"),
+                ("model-operation", request_id, "model_operations", "request_id"),
+                (
+                    "model-reservation",
+                    request_id,
+                    "model_budget_reservations",
+                    "request_id",
+                ),
+            ):
+                self._record_authority_revision(
+                    entity_type=entity_type,
+                    entity_id=entity_id,
+                    table=table,
+                    id_column=id_column,
+                    transaction_id=transaction_id,
+                    occurred_at=now_text,
+                )
+            return {
+                **dict(
+                    self._connection.execute(
+                        "SELECT * FROM model_operations WHERE request_id = ?", (request_id,)
+                    ).fetchone()
+                ),
+                "replayed": False,
+            }
+
+    def scan_started_model_invocations(
+        self, *, runtime_capability: object
+    ) -> tuple[dict[str, Any], ...]:
+        """List content-free STARTED operations requiring explicit resolution."""
+
+        self._require_runtime_capability(runtime_capability)
+        with self._lock:
+            rows = self._connection.execute(
+                """SELECT o.request_id, o.run_id, o.request_digest, o.started_at,
+                          r.reserved_output_bytes, r.reserved_total_tokens,
+                          r.reserved_cost_microusd
+                   FROM model_operations AS o
+                   JOIN model_budget_reservations AS r USING (request_id)
+                   WHERE o.state = 'started' ORDER BY o.request_id"""
+            ).fetchall()
+            return tuple(
+                {
+                    "requestId": row["request_id"],
+                    "runId": row["run_id"],
+                    "requestDigest": row["request_digest"],
+                    "startedAt": row["started_at"],
+                    "reservedOutputBytes": row["reserved_output_bytes"],
+                    "reservedTotalTokens": row["reserved_total_tokens"],
+                    "reservedCostMicrousd": row["reserved_cost_microusd"],
+                    "recoveryMode": "no_retry",
+                }
+                for row in rows
+            )
+
+    def resolve_ambiguous_model_invocation(
+        self,
+        request_id: str,
+        *,
+        observed_started_at: str,
+        now: datetime,
+        runtime_capability: object,
+        adapter_capability: object,
+    ) -> dict[str, Any]:
+        """Fence STARTED permanently, charge its ceiling once, and fail adapter."""
+
+        self._require_runtime_capability(runtime_capability)
+        self._require_adapter_capability(adapter_capability)
+        now_text = _utc(now)
+        transaction_id = secrets.token_hex(16)
+        with self._transaction():
+            operation = self._connection.execute(
+                "SELECT * FROM model_operations WHERE request_id = ?", (request_id,)
+            ).fetchone()
+            if operation is None:
+                raise RuntimeStoreError(
+                    "ECO_MODEL_OPERATION_UNKNOWN", "Model operation does not exist"
+                )
+            if operation["state"] == "ambiguous":
+                if operation["started_at"] != observed_started_at:
+                    raise RuntimeStoreError(
+                        "ECO_MODEL_OPERATION_FENCED", "Observed STARTED fence differs"
+                    )
+                return {**dict(operation), "replayed": True}
+            if operation["state"] != "started" or operation["started_at"] != observed_started_at:
+                raise RuntimeStoreError(
+                    "ECO_MODEL_OPERATION_FENCED", "Model STARTED fence is stale or terminal"
+                )
+            request = self._load_record_tx(request_id)
+            reservation = self._connection.execute(
+                "SELECT * FROM model_budget_reservations WHERE request_id = ?",
+                (request_id,),
+            ).fetchone()
+            if reservation is None or reservation["state"] != "reserved":
+                raise RuntimeStoreError(
+                    "ECO_RESERVATION_INVALID", "Ambiguous model reservation is invalid"
+                )
+            error = validate_record(
+                {
+                    "apiVersion": "runtime.ai.ecosystem/v1alpha1",
+                    "kind": "ErrorRecord",
+                    "metadata": {
+                        "id": f"error-{semantic_digest({'requestId': request_id})}",
+                        "runId": operation["run_id"],
+                        "requestId": request_id,
+                        "createdAt": now_text,
+                    },
+                    "spec": {
+                        "code": "ECO_MODEL_OUTCOME_AMBIGUOUS",
+                        "category": "internal",
+                        "stage": "model",
+                        "retryable": False,
+                        "safeMessage": MODEL_AMBIGUOUS_MESSAGE,
+                        "details": {
+                            "deploymentId": request["spec"]["deploymentId"]
+                        },
+                    },
+                }
+            )
+            error_digest = self._record_if_new_tx(error, transaction_id=transaction_id)
+            updated = self._connection.execute(
+                """UPDATE budgets
+                   SET total_tokens = total_tokens + ?,
+                       cost_microusd = cost_microusd + ?, updated_at = ?
+                   WHERE run_id = ?
+                     AND total_tokens + ? <= max_total_tokens
+                     AND cost_microusd + ? <= max_cost_microusd""",
+                (
+                    reservation["reserved_total_tokens"],
+                    reservation["reserved_cost_microusd"],
+                    now_text,
+                    operation["run_id"],
+                    reservation["reserved_total_tokens"],
+                    reservation["reserved_cost_microusd"],
+                ),
+            )
+            if updated.rowcount != 1:
+                raise RuntimeStoreError(
+                    "ECO_RESERVATION_INVALID", "Ambiguous model budget cannot settle"
+                )
+            self._connection.execute(
+                """UPDATE model_budget_reservations
+                   SET actual_output_bytes = NULL, actual_total_tokens = NULL,
+                       charged_total_tokens = reserved_total_tokens,
+                       charged_cost_microusd = reserved_cost_microusd,
+                       state = 'uncertain', updated_at = ?
+                   WHERE request_id = ?""",
+                (now_text, request_id),
+            )
+            self._connection.execute(
+                """UPDATE model_operations
+                   SET state = 'ambiguous', error_record_digest = ?, updated_at = ?
+                   WHERE request_id = ? AND state = 'started'""",
+                (error_digest, now_text, request_id),
+            )
+            self._connection.execute(
+                "UPDATE nonces SET result_digest = ? WHERE nonce = ?",
+                (error_digest, request_id),
+            )
+            self._append_generated_event_tx(
+                run_id=operation["run_id"],
+                event_type="adapter.failed",
+                producer="adapter",
+                producer_capability=adapter_capability,
+                now=now,
+                transaction_id=transaction_id,
+                subject_id=request_id,
+                subject_digest=operation["request_digest"],
+                result_digest=error_digest,
+            )
+            for entity_type, entity_id, table, id_column in (
+                ("budget", operation["run_id"], "budgets", "run_id"),
+                ("model-operation", request_id, "model_operations", "request_id"),
+                (
+                    "model-reservation",
+                    request_id,
+                    "model_budget_reservations",
+                    "request_id",
+                ),
+            ):
+                self._record_authority_revision(
+                    entity_type=entity_type,
+                    entity_id=entity_id,
+                    table=table,
+                    id_column=id_column,
+                    transaction_id=transaction_id,
+                    occurred_at=now_text,
+                )
+            return {
+                **dict(
+                    self._connection.execute(
+                        "SELECT * FROM model_operations WHERE request_id = ?", (request_id,)
+                    ).fetchone()
+                ),
+                "replayed": False,
+            }
+
     def issue_decision(
         self,
         decision: dict[str, Any],
@@ -3324,6 +5028,14 @@ class SQLiteRuntimeStore:
         operations = {
             row["operation_id"]: row
             for row in self._connection.execute("SELECT * FROM operations")
+        }
+        model_reservations = {
+            row["request_id"]: row
+            for row in self._connection.execute("SELECT * FROM model_budget_reservations")
+        }
+        model_operations = {
+            row["request_id"]: row
+            for row in self._connection.execute("SELECT * FROM model_operations")
         }
         decisions_by_digest = {
             row["decision_digest"]: row
@@ -3573,6 +5285,33 @@ class SQLiteRuntimeStore:
                 or budget["input_bytes"] != initial_input + expected_committed
             ):
                 raise RuntimeStoreError("ECO_JOURNAL_CORRUPT", "Budget accounting is inconsistent")
+            run_model_reservations = [
+                row for row in model_reservations.values() if row["run_id"] == run_id
+            ]
+            expected_model_output = sum(
+                row["actual_output_bytes"] or 0
+                for row in run_model_reservations
+                if row["state"] == "committed"
+            )
+            expected_model_tokens = sum(
+                row["charged_total_tokens"]
+                for row in run_model_reservations
+                if row["state"] in {"committed", "uncertain"}
+            )
+            expected_model_cost = sum(
+                row["charged_cost_microusd"]
+                for row in run_model_reservations
+                if row["state"] in {"committed", "uncertain"}
+            )
+            if (
+                budget["model_requests"] != len(run_model_reservations)
+                or budget["output_bytes"] != expected_model_output
+                or budget["total_tokens"] != expected_model_tokens
+                or budget["cost_microusd"] != expected_model_cost
+            ):
+                raise RuntimeStoreError(
+                    "ECO_JOURNAL_CORRUPT", "Model budget accounting is inconsistent"
+                )
 
         if set(reservations) != set(operations):
             raise RuntimeStoreError("ECO_JOURNAL_CORRUPT", "Operation reservation inventory differs")
@@ -3702,6 +5441,292 @@ class SQLiteRuntimeStore:
                     raise RuntimeStoreError("ECO_JOURNAL_CORRUPT", "Failed operation is inconsistent")
             else:
                 raise RuntimeStoreError("ECO_JOURNAL_CORRUPT", "Unsupported operation state")
+
+        expected_model_request_ids = {
+            record_id
+            for record_id, record in record_objects.items()
+            if record["kind"] == "ModelRequest"
+        }
+        if set(model_operations) != expected_model_request_ids or set(model_reservations) != set(
+            model_operations
+        ):
+            raise RuntimeStoreError(
+                "ECO_JOURNAL_CORRUPT", "Model operation inventory differs"
+            )
+        for request_id, operation in model_operations.items():
+            request = record_objects[request_id]
+            reservation = model_reservations[request_id]
+            endpoint = records_by_digest.get(operation["endpoint_binding_digest"])
+            input_artifact = records_by_digest.get(
+                operation["input_artifact_record_digest"]
+            )
+            decision = decisions_by_digest.get(operation["allow_decision_digest"])
+            nonce = nonces.get(request_id)
+            run = runs.get(operation["run_id"])
+            if (
+                record_digests[request_id][1] != operation["request_digest"]
+                or request["metadata"]["runId"] != operation["run_id"]
+                or request["spec"]["planDigest"] != operation["plan_digest"]
+                or request["spec"]["endpointBindingDigest"]
+                != operation["endpoint_binding_digest"]
+                or request["spec"]["input"]["artifactRecordDigest"]
+                != operation["input_artifact_record_digest"]
+                or operation["recovery_mode"] != "no_retry"
+                or endpoint is None
+                or endpoint["kind"] != "EndpointBinding"
+                or semantic_digest(endpoint) != operation["endpoint_binding_digest"]
+                or input_artifact is None
+                or input_artifact["kind"] != "ArtifactRecord"
+                or semantic_digest(input_artifact)
+                != operation["input_artifact_record_digest"]
+                or decision is None
+                or nonce is None
+                or reservation["run_id"] != operation["run_id"]
+                or reservation["plan_digest"] != operation["plan_digest"]
+                or run is None
+            ):
+                raise RuntimeStoreError(
+                    "ECO_JOURNAL_CORRUPT", "Model operation binding is inconsistent"
+                )
+            decision_record = record_objects[decision["decision_id"]]
+            if (
+                decision["consumed_nonce"] != request_id
+                or decision_record["spec"]["effect"] != "allow"
+                or decision_record["spec"]["subject"]
+                != {
+                    "kind": "ModelRequest",
+                    "id": request_id,
+                    "digest": operation["request_digest"],
+                }
+                or endpoint["metadata"]["deploymentId"]
+                != request["spec"]["deploymentId"]
+                or endpoint["spec"]["deploymentIdentityDigest"]
+                != request["spec"]["deploymentIdentityDigest"]
+                or input_artifact["spec"]["sha256"]
+                != request["spec"]["input"]["contentDigest"]
+                or input_artifact["spec"]["byteLength"]
+                != request["spec"]["input"]["byteLength"]
+                or input_artifact["spec"]["dataClass"]
+                != request["spec"]["input"]["dataClass"]
+                or input_artifact["spec"]["trust"]
+                != request["spec"]["input"]["trust"]
+                or reservation["reserved_output_bytes"]
+                != request["spec"]["parameters"]["maxOutputBytes"]
+                or reservation["reserved_total_tokens"]
+                != request["spec"]["input"]["byteLength"]
+                + request["spec"]["parameters"]["maxOutputTokens"]
+            ):
+                raise RuntimeStoreError(
+                    "ECO_JOURNAL_CORRUPT", "Model authority binding is inconsistent"
+                )
+            resume_digest = operation["resume_decision_digest"]
+            if resume_digest is not None:
+                resume = decisions_by_digest.get(resume_digest)
+                resume_record = (
+                    record_objects.get(resume["decision_id"]) if resume is not None else None
+                )
+                if (
+                    resume is None
+                    or resume_record is None
+                    or resume_record["spec"]["effect"] != "allow"
+                    or resume_record["spec"]["subject"]
+                    != {
+                        "kind": "ModelRequest",
+                        "id": request_id,
+                        "digest": operation["request_digest"],
+                    }
+                    or resume["consumed_nonce"] is None
+                    or not resume["consumed_nonce"].startswith("resume-")
+                ):
+                    raise RuntimeStoreError(
+                        "ECO_JOURNAL_CORRUPT", "Model resume authority is inconsistent"
+                    )
+            finalization_digest = operation["finalization_decision_digest"]
+            if finalization_digest is not None:
+                finalization = decisions_by_digest.get(finalization_digest)
+                finalization_record = (
+                    record_objects.get(finalization["decision_id"])
+                    if finalization is not None
+                    else None
+                )
+                if (
+                    finalization is None
+                    or finalization_record is None
+                    or finalization_record["spec"]["effect"] != "allow"
+                    or finalization_record["spec"]["subject"]
+                    != {
+                        "kind": "ModelRequest",
+                        "id": request_id,
+                        "digest": operation["request_digest"],
+                    }
+                    or finalization["consumed_nonce"] is None
+                    or not finalization["consumed_nonce"].startswith("finalize-")
+                ):
+                    raise RuntimeStoreError(
+                        "ECO_JOURNAL_CORRUPT",
+                        "Model finalization authority is inconsistent",
+                    )
+
+            state = operation["state"]
+            if state == "prepared":
+                if (
+                    operation["started_at"] is not None
+                    or operation["resume_decision_digest"] is not None
+                    or operation["finalization_decision_digest"] is not None
+                    or reservation["state"] != "reserved"
+                    or nonce["result_digest"] is not None
+                    or any(
+                        operation[column] is not None
+                        for column in (
+                            "model_result_digest",
+                            "output_artifact_record_digest",
+                            "error_record_digest",
+                        )
+                    )
+                    or any(
+                        reservation[column] is not None
+                        for column in (
+                            "actual_output_bytes",
+                            "actual_total_tokens",
+                            "charged_total_tokens",
+                            "charged_cost_microusd",
+                        )
+                    )
+                ):
+                    raise RuntimeStoreError(
+                        "ECO_JOURNAL_CORRUPT", "Prepared model operation is inconsistent"
+                    )
+                continue
+            if state == "started":
+                if (
+                    operation["started_at"] is None
+                    or operation["finalization_decision_digest"] is not None
+                    or reservation["state"] != "reserved"
+                    or nonce["result_digest"] is not None
+                    or any(
+                        operation[column] is not None
+                        for column in (
+                            "model_result_digest",
+                            "output_artifact_record_digest",
+                            "error_record_digest",
+                        )
+                    )
+                    or any(
+                        reservation[column] is not None
+                        for column in (
+                            "actual_output_bytes",
+                            "actual_total_tokens",
+                            "charged_total_tokens",
+                            "charged_cost_microusd",
+                        )
+                    )
+                ):
+                    raise RuntimeStoreError(
+                        "ECO_JOURNAL_CORRUPT", "Started model operation is inconsistent"
+                    )
+                continue
+            if state == "succeeded":
+                result = records_by_digest.get(operation["model_result_digest"])
+                artifact = records_by_digest.get(
+                    operation["output_artifact_record_digest"]
+                )
+                if (
+                    operation["started_at"] is None
+                    or operation["finalization_decision_digest"] is None
+                    or operation["error_record_digest"] is not None
+                    or reservation["state"] != "committed"
+                    or result is None
+                    or result["kind"] != "ModelResult"
+                    or artifact is None
+                    or artifact["kind"] != "ArtifactRecord"
+                    or nonce["result_digest"] != operation["model_result_digest"]
+                    or result["metadata"]["requestId"] != request_id
+                    or result["spec"]["modelRequestDigest"]
+                    != operation["request_digest"]
+                    or result["spec"]["endpointBindingDigest"]
+                    != operation["endpoint_binding_digest"]
+                    or artifact["spec"]["sha256"]
+                    != result["spec"]["output"]["contentDigest"]
+                    or artifact["spec"]["byteLength"]
+                    != result["spec"]["output"]["byteLength"]
+                    or reservation["actual_output_bytes"]
+                    != result["spec"]["output"]["byteLength"]
+                    or reservation["actual_total_tokens"]
+                    != result["spec"]["usage"]["totalTokens"]
+                    or reservation["charged_total_tokens"]
+                    != reservation["reserved_total_tokens"]
+                    or reservation["charged_cost_microusd"]
+                    != reservation["reserved_cost_microusd"]
+                ):
+                    raise RuntimeStoreError(
+                        "ECO_JOURNAL_CORRUPT", "Successful model operation is inconsistent"
+                    )
+                if self._artifact_store is None:
+                    raise RuntimeStoreError(
+                        "ECO_ARTIFACT_PROOF_REQUIRED",
+                        "Artifact store is required to verify model output",
+                    )
+                self._artifact_store.verify_record(
+                    storage_ref=artifact["spec"]["storageRef"],
+                    sha256=artifact["spec"]["sha256"],
+                    byte_length=artifact["spec"]["byteLength"],
+                )
+                continue
+            if state in {"failed", "ambiguous"}:
+                error = records_by_digest.get(operation["error_record_digest"])
+                aborted_before_egress = (
+                    state == "failed"
+                    and operation["started_at"] is None
+                    and error is not None
+                    and error.get("spec", {}).get("code")
+                    == "ECO_MODEL_PREPARED_ABORTED"
+                )
+                if aborted_before_egress:
+                    if (
+                        operation["resume_decision_digest"] is not None
+                        or operation["finalization_decision_digest"] is not None
+                        or operation["model_result_digest"] is not None
+                        or operation["output_artifact_record_digest"] is not None
+                        # Store-v4 calls a terminal settlement ``committed``;
+                        # the explicit zero charges and abort error distinguish
+                        # this certain pre-egress release from model success.
+                        or reservation["state"] != "committed"
+                        or error["kind"] != "ErrorRecord"
+                        or nonce["result_digest"]
+                        != operation["error_record_digest"]
+                        or reservation["actual_output_bytes"] is not None
+                        or reservation["actual_total_tokens"] is not None
+                        or reservation["charged_total_tokens"] != 0
+                        or reservation["charged_cost_microusd"] != 0
+                    ):
+                        raise RuntimeStoreError(
+                            "ECO_JOURNAL_CORRUPT",
+                            "Aborted prepared model operation is inconsistent",
+                        )
+                    continue
+                if (
+                    operation["started_at"] is None
+                    or operation["finalization_decision_digest"] is not None
+                    or operation["model_result_digest"] is not None
+                    or operation["output_artifact_record_digest"] is not None
+                    or reservation["state"] != "uncertain"
+                    or error is None
+                    or error["kind"] != "ErrorRecord"
+                    or nonce["result_digest"] != operation["error_record_digest"]
+                    or reservation["actual_output_bytes"] is not None
+                    or reservation["actual_total_tokens"] is not None
+                    or reservation["charged_total_tokens"]
+                    != reservation["reserved_total_tokens"]
+                    or reservation["charged_cost_microusd"]
+                    != reservation["reserved_cost_microusd"]
+                ):
+                    raise RuntimeStoreError(
+                        "ECO_JOURNAL_CORRUPT", "Uncertain model operation is inconsistent"
+                    )
+                continue
+            raise RuntimeStoreError(
+                "ECO_JOURNAL_CORRUPT", "Unsupported model operation state"
+            )
 
     def verify(self) -> None:
         """Verify one coherent SQLite read snapshot, never a mix of writer commits."""
@@ -3908,6 +5933,8 @@ class SQLiteRuntimeStore:
                 "reservation": ("budget_reservations", "operation_id"),
                 "event-baseline": ("run_event_baselines", "run_id"),
                 "checkpoint": ("run_checkpoints", "run_id"),
+                "model-operation": ("model_operations", "request_id"),
+                "model-reservation": ("model_budget_reservations", "request_id"),
             }
             live_entities: set[tuple[str, str]] = set()
             for entity_type, (table, id_column) in authority_tables.items():

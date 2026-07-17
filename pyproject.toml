@@ -34,7 +34,13 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 eco_cli = ["schemas/*.json"]
+eco_memory = ["schemas/*.json"]
+eco_orchestration = ["schemas/*.json", "profiles/source-review.v1/*.json"]
+eco_research = ["schemas/*.json"]
+eco_routing = ["schemas/*.json"]
 eco_runtime = ["schemas/*.json", "schemas/tools/*.json"]
+eco_skills = ["schemas/*.json", "catalog/registry.json", "catalog/*/SKILL.md"]
+eco_teams = ["schemas/*.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -73,6 +73,31 @@ def _parser() -> argparse.ArgumentParser:
     doctor = commands.add_parser("doctor", help="Validate configuration and projection health")
     doctor.add_argument("--json", action="store_true", dest="json_output")
 
+    skills = commands.add_parser(
+        "skills", help="Plan and synchronize package-owned portable skills"
+    )
+    skills_commands = skills.add_subparsers(dest="skills_command", required=True)
+    for name, help_text in (
+        ("plan", "Preview deterministic skill projections without writing"),
+        ("sync", "Synchronize only eco-owned skill projections"),
+        ("check", "Detect projection, ownership, and lock drift"),
+        ("uninstall", "Remove only unchanged eco-owned skill projections"),
+    ):
+        skill_command = skills_commands.add_parser(name, help=help_text)
+        skill_command.add_argument("--json", action="store_true", dest="json_output")
+
+    loops = commands.add_parser(
+        "loops", help="Validate or run an M6.3 deterministic no-effect loop profile"
+    )
+    loops_commands = loops.add_subparsers(dest="loops_command", required=True)
+    for name, help_text in (
+        ("validate", "Validate a package-owned deterministic loop profile"),
+        ("run", "Run a deterministic report-only loop through its existing boundary"),
+    ):
+        loop_command = loops_commands.add_parser(name, help=help_text)
+        loop_command.add_argument("profile", choices=("wiki-health-check",))
+        loop_command.add_argument("--json", action="store_true", dest="json_output")
+
     runtime = commands.add_parser("runtime", help="Inspect the embedded runtime composition")
     runtime_commands = runtime.add_subparsers(dest="runtime_command", required=True)
     runtime_doctor = runtime_commands.add_parser(
@@ -208,6 +233,42 @@ def _parser() -> argparse.ArgumentParser:
     team_activate.add_argument("--expected-digest", required=True)
     team_activate.add_argument("--expected-snapshot-digest", required=True)
     team_activate.add_argument("--apply", action="store_true", required=True)
+    team_run = team_commands.add_parser(
+        "run", help="Run one package-owned, policy-bound AI team workflow"
+    )
+    team_run_commands = team_run.add_subparsers(
+        dest="team_run_command", required=True
+    )
+    source_review = team_run_commands.add_parser(
+        "source-review",
+        help="Run the fixed five-role source-review workflow through a local model",
+    )
+    source_review.add_argument(
+        "--manifest", required=True, type=Path,
+        help="Strict repository-relative source manifest",
+    )
+    source_review.add_argument("--database", required=True, type=Path)
+    source_review.add_argument("--artifact-store", required=True, type=Path)
+    source_review.add_argument(
+        "--hmac-env", default="ECO_SOURCE_REVIEW_HMAC_KEY"
+    )
+    source_review.add_argument(
+        "--proof-env", default="ECO_SOURCE_REVIEW_PROOF_KEY"
+    )
+    source_review.add_argument("--team-id", default="research-team")
+    source_review.add_argument("--run-id", required=True)
+    source_review.add_argument("--store-id", required=True)
+    source_review.add_argument(
+        "--created-at", required=True, help="Stable UTC run time (YYYY-MM-DDTHH:MM:SSZ)"
+    )
+    source_review.add_argument(
+        "--deadline-at", required=True, help="Absolute UTC deadline (YYYY-MM-DDTHH:MM:SSZ)"
+    )
+    source_review.add_argument(
+        "--check", action="store_true",
+        help="Verify configuration, evidence and external state locations without writing",
+    )
+    source_review.add_argument("--json", action="store_true", dest="json_output")
 
     runtime_trust = runtime_commands.add_parser(
         "trust", help="Verify external runtime trust evidence without enabling execution"
@@ -947,53 +1008,126 @@ def command_identity(args: argparse.Namespace) -> int:
     return 0 if result["available"] else 1
 
 
+def command_skills(args: argparse.Namespace) -> int:
+    from eco_skills import (
+        SkillSyncError,
+        check_skills,
+        plan_skills,
+        sync_skills,
+        uninstall_skills,
+    )
+
+    operations = {
+        "plan": plan_skills,
+        "sync": sync_skills,
+        "check": check_skills,
+        "uninstall": uninstall_skills,
+    }
+    operation = args.skills_command
+    try:
+        result = operations[operation](_repo(args))
+    except SkillSyncError as exc:
+        if not args.json_output:
+            raise
+        result = {
+            "available": False,
+            "operation": operation,
+            "status": "blocked",
+            "code": exc.code,
+            "safety": {
+                "skillCodeExecuted": False,
+                "networkAccessed": False,
+                "unmanagedFilesOverwritten": False,
+                "runtimeAuthorityCreated": False,
+            },
+        }
+    if args.json_output:
+        print(stable_json(result), end="")
+    elif operation == "plan":
+        state = "ready" if result["available"] else "blocked"
+        print(f"Skill synchronization plan: {state} ({result['projectionCount']} projections)")
+    elif operation == "sync" and result["available"]:
+        print(f"Skill projections synchronized ({result['changed']} changes)")
+    elif operation == "check" and result["available"]:
+        print("Skill projections are synchronized")
+    elif operation == "uninstall" and result["available"]:
+        print(f"Skill projections removed ({result['removed']} files)")
+    else:
+        print(f"Skill operation blocked ({result.get('code', 'ECO_SKILL_DRIFT')})", file=sys.stderr)
+    if operation == "plan":
+        return 0
+    return 0 if result["available"] else 1
+
+
 def command_team(args: argparse.Namespace) -> int:
-    import sqlite3
-
-    from eco_runtime.errors import RuntimePolicyError, RuntimeStoreError
-
     from .team import activate_team_policy_file, doctor_team_authority
 
-    operation = f"team-{args.team_command}"
+    operation = (
+        "team-run-source-review-check"
+        if args.team_command == "run" and args.check
+        else "team-run-source-review"
+        if args.team_command == "run"
+        else f"team-{args.team_command}"
+    )
     try:
         repo = _repo(args)
-        common = {
-            "database_path": args.database,
-            "trust_anchor_path": args.trust_anchor,
-            "forbidden_root": repo,
-            "project_id": args.project,
-            "audit_key_id": args.audit_key_id,
-            "hmac_env": args.hmac_env,
-            "store_id": args.store_id,
-        }
-        if args.team_command == "doctor":
-            result = doctor_team_authority(**common)
-        elif args.team_command == "activate":
-            if not args.apply:
-                raise EcoError("ECO_TEAM_ACTIVATION_CONFIRMATION_REQUIRED")
-            result = activate_team_policy_file(
-                **common,
-                envelope_path=args.envelope,
-                activation_id=args.activation_id,
-                expected_previous=(
-                    args.expected_revision,
-                    args.expected_digest,
-                ),
-                expected_snapshot_digest=args.expected_snapshot_digest,
+        if args.team_command == "run":
+            if args.team_run_command != "source-review":
+                raise EcoError("ECO_SOURCE_REVIEW_COMMAND_INVALID")
+            errors, bundle, _ = _validate(repo, args.config_root)
+            if errors:
+                raise EcoError("ECO_CONFIG_INVALID")
+            from .source_review import preflight_source_review, run_source_review
+
+            common = {
+                "repository": repo,
+                "bundle": bundle,
+                "manifest_path": str(args.manifest),
+                "database_path": args.database,
+                "artifact_store_path": args.artifact_store,
+                "hmac_env": args.hmac_env,
+                "proof_env": args.proof_env,
+                "team_id": args.team_id,
+                "run_id": args.run_id,
+                "created_at": args.created_at,
+                "deadline_at": args.deadline_at,
+            }
+            result = (
+                preflight_source_review(**common)
+                if args.check
+                else run_source_review(
+                    **common,
+                    store_id=args.store_id,
+                )
             )
         else:
-            raise EcoError("ECO_AUTHORITY_COMMAND_INVALID")
-    except (
-        EcoError,
-        RuntimePolicyError,
-        RuntimeStoreError,
-        OSError,
-        sqlite3.Error,
-        KeyError,
-        IndexError,
-        TypeError,
-        ValueError,
-    ) as exc:
+            common = {
+                "database_path": args.database,
+                "trust_anchor_path": args.trust_anchor,
+                "forbidden_root": repo,
+                "project_id": args.project,
+                "audit_key_id": args.audit_key_id,
+                "hmac_env": args.hmac_env,
+                "store_id": args.store_id,
+            }
+            if args.team_command == "doctor":
+                result = doctor_team_authority(**common)
+            elif args.team_command != "activate":
+                raise EcoError("ECO_AUTHORITY_COMMAND_INVALID")
+            else:
+                if not args.apply:
+                    raise EcoError("ECO_TEAM_ACTIVATION_CONFIRMATION_REQUIRED")
+                result = activate_team_policy_file(
+                    **common,
+                    envelope_path=args.envelope,
+                    activation_id=args.activation_id,
+                    expected_previous=(
+                        args.expected_revision,
+                        args.expected_digest,
+                    ),
+                    expected_snapshot_digest=args.expected_snapshot_digest,
+                )
+    except Exception as exc:
         code = getattr(exc, "code", str(exc))
         result = {
             "available": False,
@@ -1011,11 +1145,18 @@ def command_team(args: argparse.Namespace) -> int:
     if args.json_output:
         print(stable_json(result), end="")
     elif result["available"]:
-        print(
-            "Team authority verified"
-            if args.team_command == "doctor"
-            else f"Team policy {result['status']}"
-        )
+        if args.team_command == "run":
+            print(
+                "Source-review preflight is ready"
+                if args.check
+                else f"Source-review {result['status']}"
+            )
+        else:
+            print(
+                "Team authority verified"
+                if args.team_command == "doctor"
+                else f"Team policy {result['status']}"
+            )
     else:
         print(f"Team operation blocked ({result['code']})", file=sys.stderr)
     return 0 if result["available"] else 1
@@ -1051,6 +1192,95 @@ def command_run(args: argparse.Namespace) -> int:
         print(f"Workflow: {result['workflow']}")
         print(f"Status: {result['status']} ({result['code']})")
         print("Safety: no model, network, write authority, adapter, or document content")
+    return 0 if result["available"] else 1
+
+
+def command_loops(args: argparse.Namespace) -> int:
+    from datetime import timedelta
+
+    from eco_loops import BoundedLoopEngine, InMemoryLoopJournal, LoopEngineError
+    from eco_loops.compatibility import wiki_health_executor
+    from eco_loops.profiles import profile, validate_profile
+    from eco_runtime.digests import semantic_digest
+
+    try:
+        definition = profile(
+            args.profile,
+            deadline=datetime.now(timezone.utc) + timedelta(minutes=5),
+        )
+    except KeyError as exc:
+        raise EcoError("ECO_LOOP_PROFILE_UNKNOWN") from exc
+
+    if args.loops_command == "validate":
+        result = validate_profile(definition)
+    elif args.loops_command == "run":
+        repo = _repo(args)
+        errors, bundle, _ = _validate(repo, args.config_root)
+        if errors:
+            result = {
+                "available": False,
+                "loop": definition.loop_id,
+                "profile": definition.profile,
+                "state": "failed",
+                "code": "ECO_CONFIG_INVALID",
+                "safety": {
+                    "repositoryMutation": "denied",
+                    "modelEgress": "not-used",
+                    "network": "not-used",
+                    "writeAuthority": "not-created",
+                    "content": "not-emitted",
+                },
+            }
+        else:
+            executor, gate, holder = wiki_health_executor(repo, bundle)
+            run_seed = semantic_digest(
+                {
+                    "definition": definition.digest,
+                    "config": semantic_digest(bundle),
+                    "profile": definition.profile,
+                }
+            )
+            journal = InMemoryLoopJournal()
+            try:
+                checkpoint = BoundedLoopEngine(definition, journal).run(
+                    f"loop-wiki-{run_seed[:24]}", executor, gate
+                )
+            except LoopEngineError as exc:
+                raise EcoError(exc.code) from exc
+            delegated = holder.get("result", {})
+            result = {
+                "available": checkpoint.state == "succeeded",
+                "loop": definition.loop_id,
+                "profile": definition.profile,
+                "definitionDigest": definition.digest,
+                "state": checkpoint.state,
+                "code": checkpoint.terminal_reason,
+                "usage": checkpoint.usage.record(),
+                "evidence": {
+                    "eventCount": len(journal.events(checkpoint.run_id)),
+                    "headDigest": checkpoint.head_digest,
+                    "delegatedReportDigest": delegated.get("report", {}).get("digest"),
+                },
+                "safety": {
+                    "repositoryMutation": "denied",
+                    "modelEgress": "not-used",
+                    "network": "not-used",
+                    "writeAuthority": "not-created",
+                    "content": "not-emitted",
+                },
+            }
+    else:
+        raise EcoError("ECO_LOOP_COMMAND_INVALID")
+
+    if args.json_output:
+        print(stable_json(result), end="")
+    else:
+        print(f"Loop: {result['loop']} ({result['profile']})")
+        if "state" in result:
+            print(f"State: {result['state']} ({result['code']})")
+        else:
+            print("Profile: valid")
+        print("Safety: deterministic no-model/report-only boundary")
     return 0 if result["available"] else 1
 
 
@@ -1133,6 +1363,8 @@ COMMANDS = {
     "conformance": command_conformance,
     "policy": command_policy,
     "identity": command_identity,
+    "skills": command_skills,
+    "loops": command_loops,
     "team": command_team,
     "run": command_run,
     "eval": command_eval,

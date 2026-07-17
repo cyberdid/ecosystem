@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "eco://orchestration/handoff-record/v1alpha1",
+  "title": "HandoffRecord",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "orchestration.ai.ecosystem/v1alpha1" },
+    "kind": { "const": "HandoffRecord" },
+    "metadata": { "$ref": "eco://orchestration/common/v1alpha1#/$defs/metadataRun" },
+    "spec": {
+      "type": "object", "additionalProperties": false,
+      "required": ["planId", "planDigest", "ordinal", "cycle", "fromRoleId", "toRoleId", "toAttempt", "roleAttemptResult", "status", "artifacts", "claims", "evidence", "verifications", "uncertainty", "openQuestions"],
+      "properties": {
+        "planId": { "$ref": "eco://orchestration/common/v1alpha1#/$defs/identifier" },
+        "planDigest": { "$ref": "eco://orchestration/common/v1alpha1#/$defs/sha256" },
+        "ordinal": { "type": "integer", "minimum": 1, "maximum": 6 },
+        "cycle": { "type": "integer", "minimum": 0, "maximum": 1 },
+        "fromRoleId": { "$ref": "eco://orchestration/common/v1alpha1#/$defs/roleId" },
+        "toRoleId": { "$ref": "eco://orchestration/common/v1alpha1#/$defs/roleId" },
+        "toAttempt": { "type": "integer", "minimum": 1, "maximum": 2 },
+        "roleAttemptResult": { "$ref": "eco://orchestration/common/v1alpha1#/$defs/recordBinding" },
+        "status": { "enum": ["ready", "incomplete", "failed"] },
+        "artifacts": { "type": "array", "maxItems": 64, "items": { "$ref": "eco://orchestration/common/v1alpha1#/$defs/artifactBinding" } },
+        "claims": { "type": "array", "maxItems": 1000, "items": { "$ref": "eco://orchestration/common/v1alpha1#/$defs/recordBinding" } },
+        "evidence": { "type": "array", "maxItems": 2000, "items": { "$ref": "eco://orchestration/common/v1alpha1#/$defs/recordBinding" } },
+        "verifications": { "type": "array", "maxItems": 1000, "items": { "$ref": "eco://orchestration/common/v1alpha1#/$defs/recordBinding" } },
+        "uncertainty": { "enum": ["none", "low", "material", "blocking"] },
+        "openQuestions": {
+          "oneOf": [{ "$ref": "eco://orchestration/common/v1alpha1#/$defs/artifactBinding" }, { "type": "null" }]
+        }
+      }
+    }
+  }
+}

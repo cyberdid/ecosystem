@@ -1,16 +1,22 @@
 from __future__ import annotations
 
+import base64
 import copy
 import hashlib
 import ipaddress
+import json
 import re
+import socket
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Mapping, Protocol
+from types import MappingProxyType
+from typing import Any, Literal, Mapping, Protocol
 from urllib.parse import urlsplit, urlunsplit
+from urllib import error as urllib_error
+from urllib import request as urllib_request
 
 from .contracts import API_VERSION, validate_record
-from .digests import deployment_identity_digest, semantic_digest
+from .digests import canonical_json, deployment_identity_digest, semantic_digest
 from .errors import ContractValidationError, RuntimeAdapterError, RuntimePolicyError
 
 
@@ -111,6 +117,328 @@ class OpenAICompatibleInvoker(Protocol):
     """Explicit network seam. Implementations own credentials and HTTP state."""
 
     def invoke(self, request: OpenAIChatInvocation, *, timeout_ms: int) -> Mapping[str, Any]: ...
+
+
+@dataclass(frozen=True)
+class OpenAITypedChatMessage:
+    """One broker-assigned message; payload bytes cannot select their role."""
+
+    role: Literal["system", "user"]
+    channel: Literal[
+        "trusted_instruction",
+        "runtime_state",
+        "untrusted_source",
+        "untrusted_artifact",
+    ]
+    trust: Literal["trusted", "P0"]
+    content: str = field(repr=False)
+
+    def __post_init__(self) -> None:
+        allowed = {
+            "trusted_instruction": ("system", "trusted"),
+            "runtime_state": ("user", "trusted"),
+            "untrusted_source": ("user", "P0"),
+            "untrusted_artifact": ("user", "P0"),
+        }
+        if allowed.get(self.channel) != (self.role, self.trust):
+            raise ValueError("message authority is invalid")
+        if not isinstance(self.content, str):
+            raise TypeError("message content must be text")
+
+
+@dataclass(frozen=True)
+class OpenAITypedChatInvocation:
+    """Typed, credential-free request handed to the broker-owned transport.
+
+    ``tools`` is structurally fixed to an empty tuple and ``tool_choice`` is
+    fixed to ``none``.  A transport must serialize those values explicitly;
+    it must not infer provider defaults.
+    """
+
+    endpoint_url: str
+    model: str
+    request_id: str
+    messages: tuple[OpenAITypedChatMessage, ...] = field(repr=False)
+    response_schema: Mapping[str, Any] = field(repr=False)
+    max_output_tokens: int
+    temperature_millis: int
+    tools: tuple[Mapping[str, Any], ...] = ()
+    tool_choice: Literal["none"] = "none"
+
+    def __post_init__(self) -> None:
+        messages = tuple(self.messages)
+        if not messages or messages[0].channel != "trusted_instruction":
+            raise ValueError("typed invocation must start with its trusted instruction")
+        if self.tools != () or self.tool_choice != "none":
+            raise ValueError("typed invocation tools must remain disabled")
+        if not isinstance(self.response_schema, Mapping):
+            raise TypeError("response_schema must be a mapping")
+        object.__setattr__(self, "messages", messages)
+        object.__setattr__(
+            self,
+            "response_schema",
+            MappingProxyType(copy.deepcopy(dict(self.response_schema))),
+        )
+
+
+class OpenAITypedCompatibleInvoker(Protocol):
+    """Network seam for typed OpenAI-compatible chat requests."""
+
+    def invoke(
+        self, request: OpenAITypedChatInvocation, *, timeout_ms: int
+    ) -> Mapping[str, Any]: ...
+
+
+class _NoRedirects(urllib_request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
+class LoopbackOpenAITypedHTTPInvoker:
+    """Bounded credential-free HTTP transport for a pinned loopback endpoint."""
+
+    def __init__(self, *, maximum_response_bytes: int = 8 * 1024 * 1024) -> None:
+        if (
+            not isinstance(maximum_response_bytes, int)
+            or isinstance(maximum_response_bytes, bool)
+            or maximum_response_bytes < 1
+        ):
+            raise ValueError("maximum_response_bytes must be a positive integer")
+        self._maximum_response_bytes = maximum_response_bytes
+        self._opener = urllib_request.build_opener(
+            urllib_request.ProxyHandler({}), _NoRedirects()
+        )
+
+    def invoke(
+        self, request: OpenAITypedChatInvocation, *, timeout_ms: int
+    ) -> Mapping[str, Any]:
+        if not isinstance(request, OpenAITypedChatInvocation):
+            raise TypeError("request must be OpenAITypedChatInvocation")
+        if not isinstance(timeout_ms, int) or isinstance(timeout_ms, bool) or timeout_ms < 1:
+            raise ValueError("timeout_ms must be a positive integer")
+        # Recheck at the concrete network boundary; construction through a
+        # pinned deployment is not treated as sufficient transport authority.
+        endpoint = _normalized_endpoint(request.endpoint_url, "local-loopback-http")
+        body = canonical_json(
+            {
+                "max_tokens": request.max_output_tokens,
+                "messages": [
+                    {"content": message.content, "role": message.role}
+                    for message in request.messages
+                ],
+                "model": request.model,
+                "response_format": {
+                    "json_schema": {
+                        "name": "eco_structured_output",
+                        "schema": dict(request.response_schema),
+                        "strict": True,
+                    },
+                    "type": "json_schema",
+                },
+                "temperature": request.temperature_millis / 1000,
+                "tool_choice": "none",
+                "tools": [],
+            }
+        ).encode("utf-8")
+        network_request = urllib_request.Request(
+            endpoint,
+            data=body,
+            headers={"Accept": "application/json", "Content-Type": "application/json"},
+            method="POST",
+        )
+        try:
+            with self._opener.open(
+                network_request, timeout=timeout_ms / 1000
+            ) as response:
+                if getattr(response, "status", None) != 200:
+                    raise OSError("unexpected provider status")
+                length = response.headers.get("Content-Length")
+                if length is not None:
+                    try:
+                        declared = int(length)
+                    except (TypeError, ValueError):
+                        raise OSError("invalid provider content length") from None
+                    if declared < 0 or declared > self._maximum_response_bytes:
+                        raise OSError("provider response exceeded limit")
+                payload = response.read(self._maximum_response_bytes + 1)
+        except (TimeoutError, socket.timeout):
+            raise TimeoutError("loopback model transport timed out") from None
+        except (OSError, urllib_error.URLError, urllib_error.HTTPError):
+            raise OSError("loopback model transport failed") from None
+        if len(payload) > self._maximum_response_bytes:
+            raise OSError("loopback model transport failed")
+        try:
+            value = json.loads(
+                payload.decode("utf-8", errors="strict"),
+                object_pairs_hook=_reject_duplicate_envelope_keys,
+                parse_constant=lambda _: (_ for _ in ()).throw(
+                    ValueError("non-finite")
+                ),
+            )
+        except (
+            UnicodeDecodeError,
+            json.JSONDecodeError,
+            _DuplicateEnvelopeKey,
+            ValueError,
+        ):
+            raise OSError("loopback model transport failed") from None
+        if not isinstance(value, dict):
+            raise OSError("loopback model transport failed")
+        return value
+
+
+_TYPED_ENVELOPE_FORMAT = "eco.openai-typed-messages/v1"
+_TYPED_ENVELOPE_KEYS = {
+    "attempt",
+    "format",
+    "roleId",
+    "runtimeState",
+    "trustedInstruction",
+    "trustedOutputSchema",
+    "untrustedArtifacts",
+    "untrustedSources",
+}
+_TYPED_PAYLOAD_KEYS = {
+    "binding",
+    "contentBase64",
+    "mediaType",
+    "sourceEntryId",
+    "trust",
+}
+
+
+class _DuplicateEnvelopeKey(ValueError):
+    pass
+
+
+def _reject_duplicate_envelope_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    value: dict[str, Any] = {}
+    for key, item in pairs:
+        if key in value:
+            raise _DuplicateEnvelopeKey(key)
+        value[key] = item
+    return value
+
+
+def _typed_payload_message(
+    value: Any, *, channel: Literal["untrusted_source", "untrusted_artifact"]
+) -> OpenAITypedChatMessage:
+    if not isinstance(value, dict) or set(value) != _TYPED_PAYLOAD_KEYS:
+        raise RuntimeAdapterError(
+            "ECO_MODEL_INPUT_MISMATCH", "Typed model input is invalid"
+        )
+    binding = value["binding"]
+    encoded = value["contentBase64"]
+    media_type = value["mediaType"]
+    entry_id = value["sourceEntryId"]
+    if (
+        not isinstance(binding, dict)
+        or not isinstance(encoded, str)
+        or not isinstance(media_type, str)
+        or not media_type
+        or (entry_id is not None and not isinstance(entry_id, str))
+        or value["trust"] != "P0"
+    ):
+        raise RuntimeAdapterError(
+            "ECO_MODEL_INPUT_MISMATCH", "Typed model input is invalid"
+        )
+    try:
+        raw = base64.b64decode(encoded, validate=True)
+        if base64.b64encode(raw).decode("ascii") != encoded:
+            raise ValueError("non-canonical base64")
+        content = raw.decode("utf-8", errors="strict")
+    except (UnicodeDecodeError, ValueError):
+        raise RuntimeAdapterError(
+            "ECO_MODEL_INPUT_MISMATCH", "Typed model input is invalid"
+        ) from None
+    message_content = canonical_json(
+        {
+            "binding": binding,
+            "channel": channel,
+            "content": content,
+            "mediaType": media_type,
+            "sourceEntryId": entry_id,
+            "trust": "P0",
+        }
+    )
+    return OpenAITypedChatMessage(
+        role="user", channel=channel, trust="P0", content=message_content
+    )
+
+
+def _parse_typed_envelope(
+    input_text: str,
+) -> tuple[tuple[OpenAITypedChatMessage, ...], Mapping[str, Any]]:
+    try:
+        value = json.loads(
+            input_text,
+            object_pairs_hook=_reject_duplicate_envelope_keys,
+            parse_constant=lambda _: (_ for _ in ()).throw(ValueError("non-finite")),
+        )
+        if not isinstance(value, dict) or set(value) != _TYPED_ENVELOPE_KEYS:
+            raise ValueError("shape")
+        if canonical_json(value) != input_text:
+            raise ValueError("non-canonical")
+        if value["format"] != _TYPED_ENVELOPE_FORMAT:
+            raise ValueError("format")
+        if not isinstance(value["roleId"], str) or not value["roleId"]:
+            raise ValueError("role")
+        if value["attempt"] not in {1, 2} or isinstance(value["attempt"], bool):
+            raise ValueError("attempt")
+        instruction = value["trustedInstruction"]
+        output_schema = value["trustedOutputSchema"]
+        runtime_state = value["runtimeState"]
+        sources = value["untrustedSources"]
+        artifacts = value["untrustedArtifacts"]
+        if (
+            not isinstance(instruction, str)
+            or not instruction
+            or not isinstance(output_schema, dict)
+            or not isinstance(runtime_state, dict)
+            or not isinstance(sources, list)
+            or not isinstance(artifacts, list)
+            or len(sources) > 256
+            or len(artifacts) > 256
+        ):
+            raise ValueError("channels")
+        messages = [
+            OpenAITypedChatMessage(
+                role="system",
+                channel="trusted_instruction",
+                trust="trusted",
+                content=instruction,
+            ),
+            OpenAITypedChatMessage(
+                role="user",
+                channel="runtime_state",
+                trust="trusted",
+                content=canonical_json(runtime_state),
+            ),
+        ]
+        messages.extend(
+            _typed_payload_message(item, channel="untrusted_source")
+            for item in sources
+        )
+        messages.extend(
+            _typed_payload_message(item, channel="untrusted_artifact")
+            for item in artifacts
+        )
+        return tuple(messages), output_schema
+    except RuntimeAdapterError:
+        raise
+    except (
+        ContractValidationError,
+        json.JSONDecodeError,
+        _DuplicateEnvelopeKey,
+        RecursionError,
+        RuntimePolicyError,
+        TypeError,
+        UnicodeError,
+        ValueError,
+    ):
+        raise RuntimeAdapterError(
+            "ECO_MODEL_INPUT_MISMATCH", "Typed model input is invalid"
+        ) from None
 
 
 @dataclass(frozen=True)
@@ -352,3 +680,106 @@ class OpenAICompatibleAdapter:
         except ContractValidationError as exc:
             raise RuntimeAdapterError("ECO_ADAPTER_RESPONSE_INVALID", "Model result is invalid") from exc
         return AdapterInvocationResult(record=record, untrusted_output=content)
+
+
+class TypedOpenAICompatibleAdapter:
+    """OpenAI-compatible adapter that preserves authority-separated channels.
+
+    The canonical input envelope is checked against ``ModelRequest`` before it
+    is parsed.  Only this adapter assigns provider roles.  Inert source bytes
+    therefore cannot manufacture a system message or enable a tool channel.
+    """
+
+    def __init__(
+        self,
+        deployment: PinnedOpenAICompatibleDeployment,
+        invoker: OpenAITypedCompatibleInvoker,
+    ) -> None:
+        self._deployment = deployment
+        self._invoker = invoker
+        # Response normalization is deliberately shared with the established
+        # one-shot adapter so typed and legacy calls have identical result
+        # contracts and provider-output rejection rules.
+        self._response_adapter = OpenAICompatibleAdapter(deployment, invoker)  # type: ignore[arg-type]
+
+    def invoke(
+        self,
+        request: dict[str, Any],
+        input_text: str,
+        *,
+        now: datetime,
+    ) -> AdapterInvocationResult:
+        try:
+            request = copy.deepcopy(validate_record(request))
+        except ContractValidationError as exc:
+            raise RuntimeAdapterError(
+                "ECO_MODEL_REQUEST_INVALID", "Model request is invalid"
+            ) from exc
+        if request["kind"] != "ModelRequest" or not isinstance(input_text, str):
+            raise RuntimeAdapterError(
+                "ECO_MODEL_REQUEST_INVALID", "Model request is invalid"
+            )
+        now_utc = now.astimezone(timezone.utc) if now.tzinfo is not None else None
+        if now_utc is None:
+            raise RuntimeAdapterError(
+                "ECO_CLOCK_INVALID", "Adapter clock must be timezone-aware"
+            )
+        binding = self._deployment._binding
+        if not (
+            _parse_time(binding["metadata"]["resolvedAt"])
+            <= now_utc
+            < _parse_time(binding["metadata"]["validUntil"])
+        ):
+            raise RuntimeAdapterError(
+                "ECO_ENDPOINT_BINDING_EXPIRED",
+                "Endpoint binding is not currently valid",
+            )
+        spec = request["spec"]
+        if (
+            spec["deploymentId"] != self._deployment.deployment_id
+            or spec["deploymentIdentityDigest"] != self._deployment.identity_digest
+            or spec["endpointBindingDigest"]
+            != self._deployment.endpoint_binding_digest
+            or spec["timeoutMs"] > self._deployment._maximum_timeout_ms
+        ):
+            raise RuntimeAdapterError(
+                "ECO_MODEL_ROUTE_MISMATCH", "Model request route is not pinned"
+            )
+        try:
+            encoded_input = input_text.encode("utf-8")
+        except UnicodeEncodeError:
+            raise RuntimeAdapterError(
+                "ECO_MODEL_INPUT_MISMATCH", "Model input is not valid UTF-8"
+            ) from None
+        if (
+            len(encoded_input) != spec["input"]["byteLength"]
+            or hashlib.sha256(encoded_input).hexdigest()
+            != spec["input"]["contentDigest"]
+        ):
+            raise RuntimeAdapterError(
+                "ECO_MODEL_INPUT_MISMATCH",
+                "Model input does not match its binding",
+            )
+        messages, output_schema = _parse_typed_envelope(input_text)
+        invocation = OpenAITypedChatInvocation(
+            endpoint_url=self._deployment._endpoint_url,
+            model=self._deployment.model,
+            request_id=request["metadata"]["id"],
+            messages=messages,
+            response_schema=output_schema,
+            max_output_tokens=spec["parameters"]["maxOutputTokens"],
+            temperature_millis=spec["parameters"]["temperatureMillis"],
+            tools=(),
+            tool_choice="none",
+        )
+        try:
+            response = self._invoker.invoke(invocation, timeout_ms=spec["timeoutMs"])
+        except TimeoutError:
+            raise RuntimeAdapterError(
+                "ECO_ADAPTER_TIMEOUT", "Model invocation timed out"
+            ) from None
+        except Exception:
+            raise RuntimeAdapterError(
+                "ECO_ADAPTER_TRANSPORT", "Model transport failed"
+            ) from None
+        return self._response_adapter._normalize_response(request, response, now=now)
