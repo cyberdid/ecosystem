@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai.ecosystem.local/schemas/routing/observed-model-capabilities.schema.json",
+  "type": "object", "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": {"const": "routing.ai.ecosystem/v1alpha1"},
+    "kind": {"const": "ObservedModelCapabilities"},
+    "metadata": {"$ref": "common.schema.json#/$defs/metadata"},
+    "spec": {
+      "type": "object", "additionalProperties": false,
+      "required": ["authority", "deploymentId", "deploymentIdentityDigest", "capabilities", "contextWindowTokens", "latencyP95Millis", "observedAt", "validUntil", "evidenceEnvelopeDigest", "suiteDigest"],
+      "properties": {
+        "authority": {"const": "trusted-observation"},
+        "deploymentId": {"$ref": "common.schema.json#/$defs/id"},
+        "deploymentIdentityDigest": {"$ref": "common.schema.json#/$defs/digest"},
+        "capabilities": {"type": "array", "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/capability"}},
+        "contextWindowTokens": {"type": "integer", "minimum": 1},
+        "latencyP95Millis": {"type": "integer", "minimum": 1, "maximum": 3600000},
+        "observedAt": {"$ref": "common.schema.json#/$defs/timestamp"},
+        "validUntil": {"$ref": "common.schema.json#/$defs/timestamp"},
+        "evidenceEnvelopeDigest": {"$ref": "common.schema.json#/$defs/digest"},
+        "suiteDigest": {"$ref": "common.schema.json#/$defs/digest"}
+      }
+    }
+  }
+}

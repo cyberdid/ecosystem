@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai.ecosystem.local/schemas/routing/trusted-price-catalog.schema.json",
+  "type": "object", "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": {"const": "routing.ai.ecosystem/v1alpha1"},
+    "kind": {"const": "TrustedPriceCatalog"},
+    "metadata": {"$ref": "common.schema.json#/$defs/metadata"},
+    "spec": {
+      "type": "object", "additionalProperties": false,
+      "required": ["authority", "currency", "validFrom", "validUntil", "sourceProvenanceDigest", "entries"],
+      "properties": {
+        "authority": {"const": "operator"},
+        "currency": {"const": "microUSD"},
+        "validFrom": {"$ref": "common.schema.json#/$defs/timestamp"},
+        "validUntil": {"$ref": "common.schema.json#/$defs/timestamp"},
+        "sourceProvenanceDigest": {"$ref": "common.schema.json#/$defs/digest"},
+        "entries": {
+          "type": "array", "minItems": 1,
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["deploymentId", "deploymentIdentityDigest", "inputMicrousdPerMillionTokens", "outputMicrousdPerMillionTokens", "fixedRequestMicrousd"],
+            "properties": {
+              "deploymentId": {"$ref": "common.schema.json#/$defs/id"},
+              "deploymentIdentityDigest": {"$ref": "common.schema.json#/$defs/digest"},
+              "inputMicrousdPerMillionTokens": {"type": "integer", "minimum": 0},
+              "outputMicrousdPerMillionTokens": {"type": "integer", "minimum": 0},
+              "fixedRequestMicrousd": {"type": "integer", "minimum": 0}
+            }
+          }
+        }
+      }
+    }
+  }
+}
