@@ -151,6 +151,6 @@ M5 authority schemas use a separate registry. The M4 runtime schema bundle remai
 d7ab8041c8d42b51ff0cfe7996254fc91c3ec0555df0491328673949db316d9d
 ```
 
-M5 proves a local same-host reference authority. PostgreSQL or a network control plane, SSO/OIDC/WebAuthn, KMS/HSM/Vault integration, HA consensus, multi-region operation, remote attestation, native Windows ACL enforcement, native macOS/Windows runtime-security backends, and A3/A4 action profiles remain M6 work.
+M5 proves a local same-host reference authority. PostgreSQL or a network control plane, SSO/OIDC/WebAuthn, KMS/HSM/Vault integration, HA consensus, multi-region operation, remote attestation, native Windows ACL enforcement, native macOS/Windows runtime-security backends, and A3/A4 action profiles remain future work. ADR-027 re-sequences this unchanged backlog from the former M6 to M7 so M6 can deliver functional orchestration first.
 
-See the [M5 completion report](../research/2026-07-16-m5-team-authority-completion-report.md) and [ADR-026](../decisions/README.md#adr-026--team-authority-is-a-narrowing-same-host-authority-with-generation-based-rotation).
+See the [M5 completion report](../research/2026-07-16-m5-team-authority-completion-report.md), [ADR-026](../decisions/README.md#adr-026--team-authority-is-a-narrowing-same-host-authority-with-generation-based-rotation), and [ADR-027](../decisions/README.md#adr-027--prioritize-functional-orchestration-before-enterprise-backends).

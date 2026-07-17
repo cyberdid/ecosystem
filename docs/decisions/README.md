@@ -27,7 +27,9 @@
 | ADR-023 | Distribution integrity, package installation and project adoption are separate boundaries | Implemented for the M4.5.3 wheel-only offline profile |
 | ADR-024 | Active backend conformance produces observation, never effective authority | Implemented for the M4.6 Linux/WSL fixed suite; no runtime consumer |
 | ADR-025 | Signed team declarations authenticate bytes but do not create authority | Implemented for the M5.0–M5.2 diagnostic foundation; activation and anchor provenance remain unavailable |
-| ADR-026 | Team authority is a narrowing same-host authority with generation-based rotation | Implemented for M5; enterprise/network topology remains M6 |
+| ADR-026 | Team authority is a narrowing same-host authority with generation-based rotation | Implemented for M5; its enterprise/network follow-up is re-sequenced to M7 by ADR-027 |
+| ADR-027 | Prioritize functional orchestration before enterprise backends | Accepted; M6 is functional orchestration and the former M6 backlog becomes M7 |
+| ADR-028 | Add an orchestration plane without reinterpreting runtime authority | Accepted for M6.0; M6.1 implementation evidence remains required |
 
 ## ADR-001 — Contracts-first
 
@@ -302,6 +304,71 @@ A2 approval uses exact signed profiles, requests and votes from distinct eligibl
 **Consequences.** M5 can be embedded locally across projects and AI clients without depending on one model or vendor. The SQLite/HMAC design is not a network control plane and does not prove enterprise identity. PostgreSQL, HA/consensus, SSO/OIDC/WebAuthn, KMS/HSM/Vault, remote effect adapters, multi-region recovery, native Windows ACL enforcement and A3/A4 require separately conformant M6 backends.
 
 **Evidence.** The complete 474-test pytest and unittest gates pass, including actor impersonation, runtime-decision replay, activation contention, live tamper, revocation carry-forward, emergency recovery, quorum, permit forgery/replay, effect fencing, dual-anchor rotation, crash-resume, target-fork prevention and coherent backup. M4 runtime schemas retain their exact prior digest. See [M5 architecture](../architecture/team-authority.md), [completion report](../research/2026-07-16-m5-team-authority-completion-report.md), and [operations runbook](../operations/team-authority-runbook.md).
+
+## ADR-027 — Prioritize functional orchestration before enterprise backends
+
+**Date:** 2026-07-17
+
+**Context.** ADR-026 and the previous roadmap named PostgreSQL/network authority,
+SSO, KMS/HSM, HA and native platform backends as M6. Independent review then
+confirmed that the bounded M1–M5 trust foundation is far more mature than the
+skills, general loops, logical model roles, memory and workload-agent teams for
+which that foundation exists. Continuing deeper into enterprise control planes
+would increase infrastructure without establishing daily functional value.
+
+**Decision.** M6 becomes Universal Functional Orchestration: one governed model
+execution bridge, a fixed offline `source-review` vertical slice, canonical
+skills/harness synchronization, a bounded loop engine, policy-based model roles,
+provenance-preserving memory/handoffs, workload-agent teams and later governed
+research tools. The previous enterprise/network/native-backend backlog moves
+unchanged to M7. Training and learning systems remain optional later nodes rather
+than core dependencies.
+
+This re-sequences work; it does not supersede or weaken M1–M5. M6 remains
+embedded-first, default-deny, externally anchored where required, and subject to
+the existing broker, evidence, approval, recovery and authority boundaries. No M6
+definition or model output can create policy authority.
+
+**Consequences.** Progress is measured by reproducible useful runs and independent
+gates rather than milestone labels or line count. PostgreSQL, SSO, KMS/HSM, HA,
+remote consensus, native Windows/macOS runtime security and A3/A4 remain explicit
+M7 non-claims. See [functional orchestration](../architecture/functional-orchestration.md),
+the [M6.0 plan](../research/2026-07-17-m6.0-functional-orchestration-plan.md) and
+the [M6 threat model](../architecture/m6-functional-orchestration-threat-model.md).
+
+## ADR-028 — Add an orchestration plane without reinterpreting runtime authority
+
+**Date:** 2026-07-17
+
+**Context.** Existing `RunPlan`, `RunEvent`, terminal-state and error records were
+designed for one routed runtime plan or the fixed M4 wiki workflow. The model
+adapter also lacks a durable policy/budget/recovery composition path. Silently
+widening those records or directly invoking the adapter from a team would change
+the meaning of signed evidence and bypass M1–M5 authority.
+
+**Decision.** M6 adds the separate closed namespace
+`orchestration.ai.ecosystem/v1alpha1` and contract profile
+`orchestration-contracts-v1alpha1`, with its own schema-bundle digest. The current
+runtime schema bundle remains unchanged at
+`d7ab8041c8d42b51ff0cfe7996254fc91c3ec0555df0491328673949db316d9d`.
+`eco_orchestration` may compose public `eco_runtime` APIs; the runtime does not
+import the orchestration plane, and the CLI remains the trusted composition root.
+
+The first workflow is a package-owned, manual, sequential, local-source-only
+`source-review` with fixed planner, analyst, verifier, synthesizer and reviewer
+roles. It has no source network, tools or workspace writes, uses one explicit
+eligible deployment pin, allows one bounded synthesis/review revision and treats
+all source/model/role output as P0. Every model call must pass an exact
+`RunPlan → PolicyDecision → ModelRequest → ModelResult` chain through a durable
+PREPARE/start/complete/fail boundary. An ambiguous post-start call is not retried.
+
+**Consequences.** M6.1 can prove orchestration and role isolation without claiming
+multi-model independence or a universal router. General skills/harness projection,
+loops, routing, memory, team delegation and live research tools are separately gated
+M6 slices. After `0.8.0`, semantic changes require a new orchestration contract
+version and explicit migration. Passing deterministic fixtures proves the bounded
+offline profile, not model truth, prompt-injection immunity, provider equivalence or
+production readiness.
 
 ## Supersession
 

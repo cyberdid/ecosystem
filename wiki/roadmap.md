@@ -1,6 +1,6 @@
 # Roadmap
 
-**Updated:** 2026-07-16
+**Updated:** 2026-07-17
 
 | Milestone | Deliverable | Status |
 |---|---|---|
@@ -21,7 +21,17 @@
 | M5.5 | Revocation, emergency recovery and dual-anchor generation rotation | Complete |
 | M5.6 | Distinct-human quorum, separation of duties and single-use permits | Complete |
 | M5.7 | CLI, backup, portability, documentation and release conformance | Complete for the bounded `0.7.0` profile |
-| M6 | Enterprise/network topology and native platform backends | Next; no hidden M5 claim |
+| M6.0 | Functional-orchestration research, ADRs, contracts, threat model and acceptance gates | In progress; architecture frozen before execution claims |
+| M6.1 | Governed model bridge plus fixed offline `source-review` vertical slice | In progress; model bridge precedes team runner |
+| M6.2 | Canonical skills and harness synchronization | Implemented in working tree; integrated M6 release evidence pending |
+| M6.3 | Generic bounded loop engine | Implemented in working tree; integrated M6 release evidence pending |
+| M6.4 | Logical model roles, policy routing and explicit bounded fallback | Implemented as an additive pure library with 21 focused tests; durable integration and M6 release evidence pending |
+| M6.5 | Provenance-preserving private context and memory graph | Implemented in working tree with focused integrity/adversarial tests; integrated M6 release evidence pending |
+| M6.6 | General workload-agent team orchestration | Implemented API-first in working tree; integrated M6 release evidence pending |
+| M6.7 | Governed live research tools | Implemented API-first in working tree with adversarial broker/transport tests; real-provider and integrated M6.8 evidence pending |
+| M6.8 | Cross-platform contracts, conformance and `0.8.0` release | Planned release gate |
+| M7 | Enterprise/network authority and native security backends | Re-sequenced from old M6; not dropped or claimed |
+| M8 | Optional training/learning and experimental nodes | Future; MOLT/local GPU are adapters, not dependencies |
 
 ## M2 exit criteria
 
@@ -154,6 +164,76 @@ All criteria pass for the bounded Linux/WSL backend observation profile. See [ar
 11. M4 schema digest, existing runtime behavior and all earlier tests remain unchanged.
 
 All criteria pass for the bounded same-host reference profile. PostgreSQL/network authority, SSO/OIDC/WebAuthn, KMS/HSM/Vault, HA/consensus, multi-region operation, native Windows ACL enforcement, native macOS/Windows runtime backends and A3/A4 remain M6. See [team authority](../docs/architecture/team-authority.md), [completion report](../docs/research/2026-07-16-m5-team-authority-completion-report.md), [operations runbook](../docs/operations/team-authority-runbook.md), [ADR-025](../docs/decisions/README.md#adr-025--signed-team-declarations-authenticate-bytes-but-do-not-create-authority), and [ADR-026](../docs/decisions/README.md#adr-026--team-authority-is-a-narrowing-same-host-authority-with-generation-based-rotation).
+
+The final sentence above describes the roadmap as it stood at M5 completion. ADR-027
+re-sequences that enterprise/native backlog to M7; it does not change the M5 proof
+boundary.
+
+## M6.0 exit criteria
+
+1. Record why useful functional orchestration precedes the old enterprise M6
+   backlog without weakening M1–M5.
+2. Define a separate `orchestration.ai.ecosystem/v1alpha1` registry and keep the
+   existing runtime schema digest unchanged.
+3. Freeze the fixed offline `source-review` roles, DAG, source limits, typed-channel
+   boundary, budgets, revision rule, terminal meanings and explicit non-goals.
+4. Define the governed durable model-invocation bridge that must exist before a
+   team runner may call an adapter.
+5. Record threat boundaries and adversarial gates for source injection, routing,
+   budgets, reviewer separation, crash recovery, isolation and redaction.
+6. Register the user-supplied multi-model article and exact OpenResearcher,
+   OpenScience and MOLT snapshots as reviewed untrusted sources.
+7. Preserve the 474-test M1–M5 baseline and canonical validation/projection gates.
+
+M6.0 documentation is not M6.1 implementation evidence. See the
+[architecture](../docs/architecture/functional-orchestration.md),
+[threat model](../docs/architecture/m6-functional-orchestration-threat-model.md),
+[research plan](../docs/research/2026-07-17-m6.0-functional-orchestration-plan.md),
+[ADR-027](../docs/decisions/README.md#adr-027--prioritize-functional-orchestration-before-enterprise-backends)
+and [ADR-028](../docs/decisions/README.md#adr-028--add-an-orchestration-plane-without-reinterpreting-runtime-authority).
+
+## M6.1 exit criteria
+
+1. Every workflow model call traverses exact active-plan policy authorization,
+   durable PREPARE/start fencing, broker-owned adapter invocation, private CAS and
+   atomic result/accounting settlement.
+2. Pre-start recovery is safe; post-start ambiguity never triggers automatic retry;
+   terminal replay makes zero provider calls.
+3. SourceBundle ingestion is bounded, path-safe, digest/length exact, UTF-8-only for
+   the initial profile and never executes source code.
+4. Planner → analyst → verifier → synthesizer → reviewer runs as an exact sequential
+   DAG with typed handoffs, one possible synthesis/review revision and at most seven
+   calls.
+5. Claims, source locators, verification and reviewer records form an exact graph;
+   unsupported or conflicting claims remain visible and can force `incomplete`.
+6. The hard gate, not a model, owns terminal status; `incomplete`, `denied`,
+   `exhausted`, `failed` and `cancelled` are never reported as success.
+7. Source network, tools and workspace writes remain zero. Agent credentials and
+   direct egress remain absent.
+8. Full regression, adversarial, leak, crash, installed-wheel and repository-identity
+   gates pass with exact non-claims.
+
+M6.1 is deliberately a zero-cost `local-loopback` profile. It does not accept
+caller-asserted provider prices: cloud pricing, multi-model routing and fallback
+policy belong to M6.4.
+
+## M6.2 exit criteria
+
+1. A closed package-owned registry binds id/version, source revision, content
+   digest, license, owner, capabilities, dependencies, tests, evidence,
+   revocation and per-surface compatibility for every skill.
+2. Three dogfood skills cover ecosystem contract changes, bounded loop authoring
+   and source-review evidence discipline without granting authority.
+3. `eco skills plan|sync|check|uninstall` is deterministic, never executes skill
+   code, preserves unmanaged bytes and binds projections to an ownership lock.
+4. Codex, Claude, Gemini and generic portable outputs are separate;
+   Copilot/Cursor are explicitly instruction-only.
+5. Traversal, case/Unicode aliases, symlink, hardlink, forged ownership, drift,
+   redirected lock, partial sync and partial uninstall fail closed or roll back.
+
+See [skills and harness synchronization](../docs/architecture/skills-harness-sync.md).
+External imports, signature/transparency verification, live-client semantic
+conformance and skill execution are not part of M6.2.
 
 ## Loop rollout
 

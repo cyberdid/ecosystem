@@ -4,6 +4,154 @@ Append-only хронологічний лог операцій. Формат: `#
 
 ---
 
+## [2026-07-17] implementation | M6.7 governed research tools
+
+- Added the independent `research.ai.ecosystem/v1alpha1` policy, HMAC capability,
+  private-input request and provenance-bound untrusted artifact contracts.
+- Added an API-first search/fetch broker with exact D/Z/retention/domain/query
+  authorization, classification non-downgrade, private CAS publication and
+  content-free public records.
+- Added the credential-free pinned-public-HTTPS transport: per-hop DNS/IP and
+  redirect validation, no proxy/cookie/auth state, independent wire/decompression
+  limits, one absolute read deadline, media/UTF-8 and bounded JSON checks.
+- Added a typed exact JSON search provider and explicit test-only injected adapter
+  boundary; no unsafe arbitrary URL CLI or browser-session surface was exposed.
+- Added `research-web` provenance projection for text SourceBundle entries; HTML
+  remains CAS-only until separately governed normalization.
+- Focused deterministic tests cover forged trust, SSRF classes, suffix confusion,
+  redirects, size/decompression/JSON limits, query credentials, redaction, exact
+  CAS publication and repository identity. Real-provider and M6.8 integrated
+  evidence remain pending.
+
+## [2026-07-17] implementation | M6.6 general agent-team orchestration
+
+- Added sealed `AgentTeamManifest`, `TeamTask`, `TeamHandoff` and
+  `TeamRunResult` contracts plus an API-first embedded SQLite coordinator.
+- Bound manifests and every claim to current M5 project/team/snapshot/bundle,
+  exact access policy and active principal/membership. A separate opaque runtime
+  authorization remains mandatory at effect start; a route alone grants nothing.
+- Added serialized bounded leases, exactly-once route/effect boundaries,
+  conservative post-start ambiguity, aggregate token/cost reservations,
+  cancellation propagation, typed artifact handoffs and truthful partial-failure
+  finalization.
+- Bound route consumption to complete validated M6.4 route/request records,
+  trusted policy/price digests, current validity, selected deployment and exact
+  ModelRequest. Worker-supplied timestamps cannot revive expired authority;
+  coordinator time is sampled from a trusted injected clock at every boundary.
+- Moved state to a required private external path and HMAC-authenticated the full
+  mutable snapshot plus revision/hash chain. Tamper tests cover task status,
+  leases, reservations, cancellation, consumed routes and terminal results;
+  repository identity remains unchanged.
+- Delegation and concrete child tasks can only reduce role, action, data, tool,
+  zone, resource, deadline and budget. Cross-team/project/run substitutions fail
+  closed. `model.invoke` now binds an exact `ModelRequest` to its deployment
+  identity and data class rather than using repository request/resource equality.
+- Focused M5+M6 tests pass. This remains a single-host scheduler API, not a
+  distributed scheduler, consensus layer, provider-pricing authority or provider-
+  independence claim; integrated M6 release evidence remains pending.
+
+## [2026-07-17] implementation | M6.5 private context and memory graph
+
+- Added the closed `memory.ai.ecosystem/v1alpha1` contract for seven context types,
+  exact project/team/run namespace, D/P classification, author/time/TTL, exact
+  source artifacts and supersession/refutation/conflict links.
+- Kept raw/private bodies in the existing private CAS. The separate SQLite index
+  stores only sealed content-free metadata and authenticates every record, append
+  entry and journal head with caller-owned HMAC key material.
+- Added deterministic exact-namespace retrieval with explicit policy, TTL/data/P
+  filters and hard item/byte/token-estimate budgets. Conflict/refutation components
+  are atomic, so truncation never presents only one visible side as uncontested.
+- Added additive, reversible compaction: summaries retain all exact source records,
+  artifact bindings and relations; a hand-built summary that drops a conflict is
+  rejected. Memory remains context and cannot grant roles, routes, tools,
+  capabilities, budgets or policy.
+- Focused adversarial tests cover namespace leakage, expiry/classification,
+  forged links, deterministic boundaries, conflict preservation, CAS/DB tamper,
+  raw-content absence and concurrent idempotent replay. Integrated M6 release
+  evidence remains pending.
+
+## [2026-07-17] implementation | M6.1 production source-review CLI candidate
+
+- Added `eco team run source-review` and a zero-write/zero-egress `--check`
+  preflight. There is no scripted or fake executor reachable from the production
+  command.
+- Bound the sole enabled local OpenAI-compatible deployment to complete immutable
+  identity, exact `review.private` policy, literal loopback endpoint and externally
+  signed `model.text` plus strict structured-output observation evidence.
+- Composed every typed role envelope through its own exact child RunPlan,
+  PolicyDecision, durable SQLite model operation, private CAS,
+  GovernedModelOrchestrator and GovernedRoleExecutor. Stable idempotency keys and
+  the same external database/CAS make terminal restart replay issue zero duplicate
+  HTTP calls.
+- Kept source bytes in a strict bounded manifest→CAS path and untrusted typed
+  channels. The transport has no credentials, proxy, redirect, tool or source
+  network surface; the command creates no governed-repository writes and emits
+  only the content-free result graph/report binding.
+- Focused production-composition tests exercise a real local HTTP server, five
+  role calls, process-composition restart with the provider count still five,
+  repository byte/mode identity, default-disabled configuration, stale creation
+  time and evidence-expiry-before-deadline failures. Integrated M6 release gates
+  remain pending; structural success is not a universal truth or injection-
+  immunity claim.
+
+## [2026-07-17] implementation | M6.4 logical model roles and deterministic routing
+
+- Added five canonical provider-neutral workload roles and the separate
+  `routing.ai.ecosystem/v1alpha1` contract family for policy, observed capability
+  evidence, trusted prices, route requests, decisions and sanitized explanations.
+- Added a pure deterministic router that intersects action/data/zone/retention,
+  observed capability/context evidence, cloud permission, current identity,
+  deadline and router-computed cost. No candidate is a typed denial.
+- Preserved the M6.1 local zero-cost profile: cloud is forbidden and the catalog-
+  calculated reservation must be zero.
+- Added a maximum-two-attempt fallback that excludes the attempted candidate and
+  re-evaluates current inputs. Only policy-allowed capacity/transport failures may
+  fallback; safety, authority, schema, ambiguity, drift, deadline and budget may not.
+- Added sanitized explain records without source/prompt/provider/model/endpoint/
+  secret/raw-evidence data and focused permutation, staleness, identity, privacy,
+  cost, deadline and fallback tests. All 21 focused tests pass; integrated M6
+  release evidence remains pending.
+
+## [2026-07-17] implementation | M6.2 canonical skills and harness synchronization
+
+- Added a closed package-owned registry and three digest-bound dogfood skills for
+  contract changes, bounded loops and source-review evidence discipline.
+- Added deterministic Codex, Claude, Gemini and generic projections plus honest
+  instruction-only Copilot/Cursor subsets.
+- Added `eco skills plan|sync|check|uninstall` with ownership lock, drift refusal,
+  path alias defenses, atomic writes, catchable-failure rollback and owned-only
+  removal; imported or discovered skill code is never executed.
+- Added adversarial tests for traversal, Unicode/case aliasing, symlink, hardlink,
+  forged ownership, lock redirection, drift, rollback and uninstall. Focused M6.2
+  tests pass; the integrated M6 release gate remains pending.
+
+## [2026-07-17] architecture | M6 functional-orchestration foundation
+
+- Accepted the independent functional-gap finding: M1–M5 provide a strong bounded
+  trust foundation, while skills, general loops, role routing, memory and workload
+  agent teams remain the main product gap.
+- Added ADR-027: M6 is now Universal Functional Orchestration; the previous
+  enterprise/network/native-backend backlog moves unchanged to M7.
+- Added ADR-028: M6 uses the separate
+  `orchestration.ai.ecosystem/v1alpha1` profile and preserves the exact existing
+  runtime schema digest instead of silently widening M4/M5 records.
+- Froze the first vertical slice as manual offline `source-review`: planner →
+  analyst → verifier → synthesizer → reviewer, one bounded revision, one explicit
+  deployment pin, no source-network/tools/workspace writes, and truthful incomplete
+  or exhausted outcomes.
+- Code audit found that the current model adapter has no durable policy/budget/
+  recovery composition path. M6.1a must add model PREPARE/start/complete/fail and
+  post-start no-retry ambiguity before the team runner can be exposed.
+- Added the M6 architecture, 18-invariant threat model, source-review acceptance
+  gates, adversarial matrix and detailed M6.0–M6.8 implementation plan.
+- Registered the user-supplied multi-model-team article unchanged at SHA-256
+  `59c616d7b701449797ca747838fdd31b5c7a677017863f2a03b174fd78ee007e`
+  and recorded exact OpenResearcher, OpenScience and MOLT snapshots as untrusted
+  research inputs.
+- Three specialized agents independently audited contracts, runtime execution and
+  adversarial/security gates. The untouched M1–M5 baseline remains 474/474 green in
+  both unittest and pytest; M6.0 documentation is not an M6.1 completion claim.
+
 ## [2026-07-16] implementation | M5 team authority completed
 
 - Completed M5.3 exact narrowing team access, M5.4 private shared SQLite activation authority, M5.5 revocation/emergency/recovery/rotation, M5.6 distinct-human quorum permits, and M5.7 CLI/backup/portability/release conformance.

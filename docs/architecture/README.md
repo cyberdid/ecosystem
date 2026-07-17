@@ -1,8 +1,8 @@
 # Architecture
 
-**Status:** M1–M5 are implemented for the bounded reference profile: canonical harness, embedded Linux/WSL runtime, fixed no-model loop, portable adoption/distribution/conformance, and same-host signed team authority.
+**Status:** M1–M5 are implemented for the bounded reference profile. M6.0 now defines the additive functional-orchestration plane; M6.1 execution is in progress and is not yet a completion claim.
 
-**Updated:** 2026-07-16
+**Updated:** 2026-07-17
 
 ## Logical architecture
 
@@ -38,6 +38,12 @@ flowchart TB
     BROKER --> OUT
     OUT --> AUDIT["Audit, artifacts, signed eval evidence"]
     OUT --> EVAL["Signed evaluation gates"]
+
+    DPEP -.-> MBRIDGE["M6 governed durable model bridge"]
+    MBRIDGE -.-> TEAMPLAN["Additive orchestration plan + role DAG"]
+    TEAMPLAN -.-> SOURCE["Bounded SourceBundle"]
+    TEAMPLAN -.-> HANDOFF["Typed handoffs + claim/evidence graph"]
+    HANDOFF -.-> HARDGATE["Independent truthful terminal gate"]
 ```
 
 Solid lines are implemented. Dashed lines are contracts or future milestones, not current security claims.
@@ -145,7 +151,67 @@ The separate `authority.ai.ecosystem/v1alpha1` namespace describes teams, princi
 
 Runtime authorization is an intersection: trusted current `PolicyEngine` allow, current signed team-access allow candidate, active non-revoked signed actor state, emergency-clear state and an authority-issued single-use A2 permit when required. Explicit deny wins. Quorum uses distinct eligible human principals and excludes the requester. Emergency disable has its own signed recovery quorum. Trust-anchor rotation requires both old and new signatures and creates a new successor authority generation without rewriting history. See [M5 team authority](team-authority.md), the [operations runbook](../operations/team-authority-runbook.md), and the [completion report](../research/2026-07-16-m5-team-authority-completion-report.md).
 
-### Remaining after M5
+### M6.0 functional-orchestration boundary
+
+ADR-027 re-sequences the roadmap: M6 now builds useful vendor-neutral skills,
+loops, roles, memory and workload-agent teams above the M1–M5 enforcement
+foundation; the former enterprise/network M6 moves unchanged to M7. ADR-028 adds
+the separate `orchestration.ai.ecosystem/v1alpha1` registry rather than widening
+existing runtime or authority records.
+
+The first profile is a manual offline `source-review` with the fixed sequence
+planner → analyst → verifier → synthesizer → reviewer, one possible bounded
+revision and no source-network, tools or workspace writes. A durable governed model
+operation must exist before the workflow may call an adapter. All source and model
+output remains P0; typed handoffs and a deterministic runtime gate own completion.
+
+This section describes M6.0 architecture, not working M6.1 functionality. See
+[functional orchestration](functional-orchestration.md), the
+[threat model](m6-functional-orchestration-threat-model.md) and the
+[M6.0 plan](../research/2026-07-17-m6.0-functional-orchestration-plan.md).
+
+The bounded M6.2 package-owned registry and deterministic client projection
+lifecycle are specified in
+[skills and harness synchronization](skills-harness-sync.md). Skill guidance and
+filesystem ownership do not grant runtime authority.
+
+M6.4 adds a separate pure deterministic router with five canonical workload roles,
+digest-bound policy/evidence/price inputs, router-calculated cost reservation,
+sanitized explanations and retryable-only explicit fallback. A route is not model
+authority: the exact selected binding must still cross the M6.1 policy/store/model
+bridge. The `m6.1-local-zero-cost` profile remains local-only and zero-cost. See
+[logical model roles and deterministic routing](model-role-routing.md).
+
+M6.5 adds a separate `memory.ai.ecosystem/v1alpha1` plane. Raw/private context
+stays in the private CAS; the SQLite journal stores only sealed artifact bindings
+and HMAC-authenticated provenance. Retrieval requires exact project/team/run
+namespace, data/P class, TTL, caller-owned policy and hard item/byte/token-estimate
+budgets. Conflict/refutation components are atomic and compaction is additive and
+reversible. Memory is never an authority source. See
+[private context and memory](private-context-memory.md).
+
+M6.6 adds the `teams.ai.ecosystem/v1alpha1` plane and an embedded durable
+coordinator. Exact M5-bound manifests, narrowed child delegation, serialized
+task leases, aggregate reservations, single-use routes, typed artifact handoffs,
+cancellation and truthful partial failure are enforced at runtime. A scheduler
+claim and a route remain non-authorizing; the exact effect must cross a separate
+current runtime authorization. See [general agent teams](general-agent-teams.md).
+
+M6.7 adds a separate `research.ai.ecosystem/v1alpha1` policy/capability/request/
+artifact plane. Brokered public-HTTPS search/fetch binds domains, redirects,
+wire/decoded size, media, absolute time, credential-free query policy, data class,
+egress and retention before network access. Retrieved UTF-8 bytes enter private
+CAS with digest-only provenance and remain explicitly untrusted. See
+[governed research tools](governed-research-tools.md).
+
+### Remaining after M6.0
+
+- durable policy-authorized model operation and typed instruction/source channel;
+- fixed `source-review` runtime, hard gate and installed CLI evidence;
+- canonical skills/harness synchronization;
+- generic bounded loop engine;
+- durable consumption and CLI composition of M6.4 routing decisions;
+- real-provider research observations and integrated M6.8 conformance;
 
 - endpoint-specific network allowlist backend;
 - Windows/macOS isolation and filesystem backends;
@@ -189,7 +255,13 @@ client without credentials
 
 ## Next milestone
 
-M5 exact team access remains a narrowing intersection with the existing `PolicyEngine`, and a signed bundle is current only after durable activation in the external authority store. Neither L2 history, a passive profile, a package checksum, an M4.6 observation nor a cryptographically valid but inactive M5 bundle may become implicit scheduling, model, network or write authority.
+M6.1a is the next executable gate: exact model authorization plus durable
+PREPARE/start/complete/fail accounting and conservative recovery. Only after that
+bridge passes can M6.1b expose the fixed `eco team run source-review` workflow.
+M5 exact team access remains a narrowing intersection with the existing
+`PolicyEngine`; orchestration records, L2 history, passive profiles, package
+checksums, observations and inactive signed bundles cannot become implicit model,
+network, scheduling or write authority.
 
 ## Sources
 

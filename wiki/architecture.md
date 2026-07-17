@@ -1,11 +1,11 @@
 # Current architecture
 
-**Updated:** 2026-07-16
-**Status:** bounded M1–M5 implemented; enterprise/network authority and native cross-platform security backends remain future boundaries
+**Updated:** 2026-07-17
+**Status:** bounded M1–M5 implemented; M6.0 functional-orchestration architecture is defined, while M6.1 execution remains in progress
 
 ## TL;DR
 
-The repository implements canonical contracts/compiler plus an embedded default-deny runtime, governed model adapters, durable Linux/WSL reads and exact-approved one-file writes, one fixed no-model loop promoted only through L2, safe project adoption, platform/distribution conformance, and a portable signed team-authority layer. M5 adds exact narrowing team access, private same-host activation/currentness, revocation, emergency recovery, dual-signed rotation and distinct-human quorum permits. It remains independent of a specific AI model or client.
+The repository implements canonical contracts/compiler plus an embedded default-deny runtime, governed model adapters, durable Linux/WSL reads and exact-approved one-file writes, one fixed no-model loop promoted only through L2, safe project adoption, platform/distribution conformance, and a portable signed team-authority layer. M5 adds exact narrowing team access, private same-host activation/currentness, revocation, emergency recovery, dual-signed rotation and distinct-human quorum permits. M6 now turns that foundation toward useful skills, loops, model roles, memory and agent teams without depending on one laptop, GPU, model or client.
 
 ## Implemented
 
@@ -55,6 +55,9 @@ The repository implements canonical contracts/compiler plus an embedded default-
 - native Windows/macOS backend runners and runtime consumption of backend observations.
 - PostgreSQL/network authority, HA/consensus and multi-region recovery;
 - A3/A4 action profiles and remote transactional effect adapters.
+- durable governed model-invocation operations and typed role/source messages;
+- executable fixed `source-review` team workflow;
+- durable route-decision consumption and workload-agent team runtime.
 
 The implemented M2–M4 boundary has negative, concurrency, process-crash, artifact, migration, backup, key-rotation, anchor, adapter, isolation, evidence, parity, exact-approval, CAS-recovery, no-model replay, state-integrity, repository-nonmutation, and promotion tests. See the [M2 completion report](../docs/research/2026-07-15-m2-completion-report.md), [M3 completion report](../docs/research/2026-07-15-m3-completion-report.md), and [M4 report](../docs/research/2026-07-16-m4-no-model-wiki-health-completion-report.md).
 
@@ -84,6 +87,104 @@ Externally anchored Ed25519 bundles define exact team identities, memberships, p
 
 Contract behavior is tested on Linux/macOS/Windows; strong private-permission enforcement is POSIX-bounded. Scheduling, autonomous retry, full-wiki lint, publisher provenance, enterprise/network authority, native cross-platform runtime-security backends and every A3/A4 or L3–L5 profile remain separate future gates. See [M5 team authority](../docs/architecture/team-authority.md) and the [completion report](../docs/research/2026-07-16-m5-team-authority-completion-report.md).
 
+## Current M6.0 functional-orchestration design
+
+M6 is re-sequenced from enterprise infrastructure to Universal Functional
+Orchestration. The old PostgreSQL/SSO/KMS/HA/native-backend backlog becomes M7.
+This changes priority, not authority.
+
+The additive `orchestration.ai.ecosystem/v1alpha1` plane defines roles, team and
+loop manifests, SourceBundle, parent team plans, route decisions, role attempts,
+typed handoffs, claim/evidence/verification/review records, terminal results and
+content-free events. The existing runtime schema digest is deliberately unchanged.
+
+M6.1 begins with a durable policy-authorized model bridge, because calling the
+current adapter directly would bypass persistent model budgets and crash/replay
+semantics. Its first user-facing workflow is the fixed offline sequence planner →
+analyst → verifier → synthesizer → reviewer, with one possible revision, at most
+seven calls, one explicit deployment pin, P0 outputs and zero source-network,
+tools or workspace writes.
+
+The working-tree production composition is now reachable as
+`eco team run source-review`; `--check` performs zero-write/zero-egress preflight.
+It accepts only one enabled local OpenAI-compatible deployment, exact signed
+structured-output evidence, a literal loopback endpoint, a strict path-bearing
+manifest and private external SQLite/CAS state. Every role dynamically creates
+an exact child runtime plan and model decision, then crosses durable model
+PREPARE/STARTED/terminal fencing through the typed adapter. Reusing the exact
+run/store/time/state tuple replays terminal outputs from CAS with no duplicate
+provider call. Output is limited to the content-free result graph and report
+artifact binding.
+
+This is a bounded local zero-cost profile, not a claim of general multi-model
+routing, provider pricing, source-network research, tool use, prompt-injection
+immunity, universal factual truth, arbitrary-duration recovery or M6 release
+completion. Integrated regression, installed-wheel and release gates remain
+separate.
+
+See [functional orchestration](../docs/architecture/functional-orchestration.md),
+the [threat model](../docs/architecture/m6-functional-orchestration-threat-model.md),
+the [M6.0 plan](../docs/research/2026-07-17-m6.0-functional-orchestration-plan.md)
+and the [roadmap](roadmap.md).
+
+## Current M6.4 logical routing slice
+
+The additive `routing.ai.ecosystem/v1alpha1` package defines five provider-neutral
+workload roles and makes routing a pure digest-bound decision over role, action,
+data class, zone, retention, context, observed capabilities, trusted price
+snapshot, deadline and cost ceiling. No eligible deployment produces a typed
+denial. Explanations expose only digests and fixed reason codes, never source,
+prompt, endpoint, secret or raw evidence data.
+
+Fallback is a fresh second decision only for explicitly allowed `capacity` or
+`transport-retryable` failures. Policy, privacy, authority, schema, ambiguous,
+identity-drift, deadline and budget failures never switch providers. The old
+candidate is excluded and every current condition is evaluated again. The
+M6.1 local profile remains local-only with a calculated zero-cost reservation.
+
+This pure router does not invoke a model and does not claim current provider prices
+or performance. Durable decision consumption and CLI integration remain parent M6
+work. See [M6.4 logical model routing](../docs/architecture/model-role-routing.md).
+
+## Current M6.5 private context-memory slice
+
+The additive `memory.ai.ecosystem/v1alpha1` package stores facts, claims,
+decisions, constraints, open questions, failed approaches and summaries as sealed
+metadata bound to exact private-CAS artifacts. Its private SQLite index contains no
+raw body, authenticates every record and append-chain entry, rejects forged or
+cross-project/team/run links and treats memory only as context.
+
+Retrieval requires exact namespace, data class, P-level, TTL and a trusted caller-
+owned read policy. Item, byte and deterministic token-estimate budgets are hard;
+ordering is timestamp plus digest, not an unearned semantic score. Refutation and
+conflict components are atomic under truncation. Compaction adds a reversible
+summary with the complete source/artifact/relation graph and cannot hide a
+conflict or delete the source records.
+
+This is an embedded same-host library, not vector/semantic search, distributed
+memory, encryption/KMS, automatic truth promotion, autonomous learning or a new
+authority source. See [M6.5 private context and memory](../docs/architecture/private-context-memory.md).
+
+## Current M6.6 general agent-team slice
+
+The additive `teams.ai.ecosystem/v1alpha1` plane seals an exact M5-bound team
+manifest, tasks, typed handoffs and truthful terminal results. A private embedded
+SQLite coordinator serializes task claims, reserves aggregate budget ceilings,
+propagates cancellation and distinguishes safe pre-effect lease recovery from
+post-start ambiguity. Its full mutable state and append chain are caller-key HMAC
+authenticated in a private external path; a trusted internal clock, not a worker
+timestamp, governs expiry. Children can only narrow their parent's already bounded
+role/action/data/tool/zone/time/budget envelope.
+
+M5 current identity/access and a separate opaque runtime authorization are both
+rechecked at effect start. An M6.4 route is consumed once but grants nothing by
+itself; the full current route/request, trusted policy/price bindings, selected
+deployment and exact `ModelRequest` are revalidated atomically. `model.invoke`
+binds the exact `ModelRequest` runtime subject to its
+deployment identity and input data class instead of applying repository-resource
+equality. This is a single-host API, not a distributed scheduler or provider-
+independence claim. See [M6.6 general agent teams](../docs/architecture/general-agent-teams.md).
+
 ## Sources
 
 - [Detailed architecture](../docs/architecture/README.md)
@@ -95,4 +196,8 @@ Contract behavior is tested on Linux/macOS/Windows; strong private-permission en
 - [Platform backend conformance](../docs/architecture/platform-backend-conformance.md)
 - [M5 team authority](../docs/architecture/team-authority.md)
 - [M5 operations runbook](../docs/operations/team-authority-runbook.md)
+- [M6 functional orchestration](../docs/architecture/functional-orchestration.md)
+- [M6.2 skills and harness synchronization](../docs/architecture/skills-harness-sync.md)
+- [M6.5 private context and memory](../docs/architecture/private-context-memory.md)
+- [M6 threat model](../docs/architecture/m6-functional-orchestration-threat-model.md)
 - [Roadmap](roadmap.md)

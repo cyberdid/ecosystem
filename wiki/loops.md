@@ -1,7 +1,7 @@
 # Loop engineering
 
 **Updated:** 2026-07-16
-**Status:** bounded-loop contract plus fixed M4 `wiki-health-check` L0–L2 profile; autonomous scheduling does not exist
+**Status:** M6.3 generic bounded-loop runtime plus fixed M4 `wiki-health-check` compatibility; autonomous scheduling does not exist
 
 ## TL;DR
 
@@ -71,6 +71,18 @@ flowchart TD
 ```
 
 Policy denial is terminal for the current action. The loop must not switch providers, tools, or routes to bypass the denial.
+
+## Implemented M6.3 boundary
+
+`eco_loops` enforces frozen objective/gate digests, separate actor and gate,
+closed states, exact multi-resource ceilings, retry allowlists, no-progress stops,
+cancellation, kill switch and one terminal winner. Its content-free SQLite journal
+supports single-host crash replay and never repeats an ambiguous started attempt.
+
+`source-review` is a non-executable outline; the fixed M6.1 runner stays
+authoritative. `eco loops validate|run wiki-health-check` delegates once to the
+existing no-model workflow. Scheduling, arbitrary code, authenticated audit
+anchoring and distributed durability remain out of scope.
 
 ## Required LoopDefinition fields
 
