@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai.ecosystem.local/schemas/teams/common.schema.json",
+  "$defs": {
+    "id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:@/-]{0,127}$"},
+    "digest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "timestamp": {"type": "string", "format": "date-time"},
+    "binding": {
+      "type": "object", "additionalProperties": false,
+      "required": ["kind", "id", "digest"],
+      "properties": {
+        "kind": {"type": "string", "minLength": 1, "maxLength": 64},
+        "id": {"$ref": "#/$defs/id"},
+        "digest": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "budget": {
+      "type": "object", "additionalProperties": false,
+      "required": ["maxTokens", "maxCostMicrousd", "maxDurationSeconds"],
+      "properties": {
+        "maxTokens": {"type": "integer", "minimum": 0, "maximum": 1000000000},
+        "maxCostMicrousd": {"type": "integer", "minimum": 0, "maximum": 1000000000000},
+        "maxDurationSeconds": {"type": "integer", "minimum": 1, "maximum": 86400}
+      }
+    }
+  }
+}

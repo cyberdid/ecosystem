@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai.ecosystem.local/schemas/teams/team-handoff.schema.json",
+  "type": "object", "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": {"const": "teams.ai.ecosystem/v1alpha1"},
+    "kind": {"const": "TeamHandoff"},
+    "metadata": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "teamId", "projectId", "runId", "createdAt", "recordDigest"],
+      "properties": {
+        "id": {"$ref": "common.schema.json#/$defs/id"}, "teamId": {"$ref": "common.schema.json#/$defs/id"},
+        "projectId": {"$ref": "common.schema.json#/$defs/id"}, "runId": {"$ref": "common.schema.json#/$defs/id"},
+        "createdAt": {"$ref": "common.schema.json#/$defs/timestamp"}, "recordDigest": {"$ref": "common.schema.json#/$defs/digest"}
+      }
+    },
+    "spec": {
+      "type": "object", "additionalProperties": false,
+      "required": ["fromTaskId", "fromRoleId", "toTaskId", "toRoleId", "artifact", "channel"],
+      "properties": {
+        "fromTaskId": {"$ref": "common.schema.json#/$defs/id"}, "fromRoleId": {"$ref": "common.schema.json#/$defs/id"},
+        "toTaskId": {"$ref": "common.schema.json#/$defs/id"}, "toRoleId": {"$ref": "common.schema.json#/$defs/id"},
+        "artifact": {"$ref": "common.schema.json#/$defs/binding"}, "channel": {"const": "task-input"}
+      }
+    }
+  }
+}

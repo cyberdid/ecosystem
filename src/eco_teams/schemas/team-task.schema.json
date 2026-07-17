@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai.ecosystem.local/schemas/teams/team-task.schema.json",
+  "type": "object", "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": {"const": "teams.ai.ecosystem/v1alpha1"},
+    "kind": {"const": "TeamTask"},
+    "metadata": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "teamId", "projectId", "runId", "createdAt", "recordDigest"],
+      "properties": {
+        "id": {"$ref": "common.schema.json#/$defs/id"},
+        "teamId": {"$ref": "common.schema.json#/$defs/id"},
+        "projectId": {"$ref": "common.schema.json#/$defs/id"},
+        "runId": {"$ref": "common.schema.json#/$defs/id"},
+        "createdAt": {"$ref": "common.schema.json#/$defs/timestamp"},
+        "recordDigest": {"$ref": "common.schema.json#/$defs/digest"}
+      }
+    },
+    "spec": {
+      "type": "object", "additionalProperties": false,
+      "required": ["roleId", "parentTaskId", "action", "dataClass", "toolId", "zone", "environmentId", "resource", "notAfter", "budget", "input", "dependencies", "routeDecision", "safety"],
+      "properties": {
+        "roleId": {"$ref": "common.schema.json#/$defs/id"},
+        "parentTaskId": {"oneOf": [{"type": "null"}, {"$ref": "common.schema.json#/$defs/id"}]},
+        "action": {"type": "string", "minLength": 1, "maxLength": 64},
+        "dataClass": {"enum": ["D0", "D1", "D2", "D3"]},
+        "toolId": {"oneOf": [{"type": "null"}, {"type": "string", "minLength": 1, "maxLength": 128}]},
+        "zone": {"type": "string", "minLength": 1, "maxLength": 64},
+        "environmentId": {"$ref": "common.schema.json#/$defs/id"},
+        "resource": {"$ref": "common.schema.json#/$defs/binding"},
+        "notAfter": {"$ref": "common.schema.json#/$defs/timestamp"},
+        "budget": {"$ref": "common.schema.json#/$defs/budget"},
+        "input": {"$ref": "common.schema.json#/$defs/binding"},
+        "dependencies": {"type": "array", "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/id"}},
+        "routeDecision": {"oneOf": [{"type": "null"}, {"$ref": "common.schema.json#/$defs/binding"}]},
+        "safety": {
+          "type": "object", "additionalProperties": false,
+          "required": ["routerDecisionGrantsAuthority", "delegationExpandsAuthority"],
+          "properties": {
+            "routerDecisionGrantsAuthority": {"const": false},
+            "delegationExpandsAuthority": {"const": false}
+          }
+        }
+      }
+    }
+  }
+}

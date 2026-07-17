@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai.ecosystem.local/schemas/teams/team-run-result.schema.json",
+  "type": "object", "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": {"const": "teams.ai.ecosystem/v1alpha1"},
+    "kind": {"const": "TeamRunResult"},
+    "metadata": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "teamId", "projectId", "runId", "createdAt", "recordDigest"],
+      "properties": {
+        "id": {"$ref": "common.schema.json#/$defs/id"}, "teamId": {"$ref": "common.schema.json#/$defs/id"},
+        "projectId": {"$ref": "common.schema.json#/$defs/id"}, "runId": {"$ref": "common.schema.json#/$defs/id"},
+        "createdAt": {"$ref": "common.schema.json#/$defs/timestamp"}, "recordDigest": {"$ref": "common.schema.json#/$defs/digest"}
+      }
+    },
+    "spec": {
+      "type": "object", "additionalProperties": false,
+      "required": ["status", "cancellationRequested", "tasks", "usage"],
+      "properties": {
+        "status": {"enum": ["succeeded", "failed", "partial-failure", "cancelled", "ambiguous"]},
+        "cancellationRequested": {"type": "boolean"},
+        "tasks": {"type": "array", "minItems": 1, "items": {
+          "type": "object", "additionalProperties": false,
+          "required": ["id", "status", "outcomeDigest", "chargedTokens", "chargedCostMicrousd"],
+          "properties": {
+            "id": {"$ref": "common.schema.json#/$defs/id"},
+            "status": {"enum": ["succeeded", "failed", "cancelled", "ambiguous"]},
+            "outcomeDigest": {"oneOf": [{"type": "null"}, {"$ref": "common.schema.json#/$defs/digest"}]},
+            "chargedTokens": {"type": "integer", "minimum": 0}, "chargedCostMicrousd": {"type": "integer", "minimum": 0}
+          }
+        }},
+        "usage": {"type": "object", "additionalProperties": false, "required": ["tokens", "costMicrousd"],
+          "properties": {"tokens": {"type": "integer", "minimum": 0}, "costMicrousd": {"type": "integer", "minimum": 0}}}
+      }
+    }
+  }
+}
