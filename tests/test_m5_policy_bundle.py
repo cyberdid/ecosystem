@@ -63,7 +63,9 @@ class SignedTeamPolicyTests(unittest.TestCase):
             elif mutation == "issuer":
                 document["issuer"]["teamId"] = "team-attacker"
             else:
-                document["signature"]["value"] = "A" + document["signature"]["value"][1:]
+                original = document["signature"]["value"]
+                flipped = "B" if original.startswith("A") else "A"
+                document["signature"]["value"] = flipped + original[1:]
             raw = canonical_json(document).encode("utf-8")
             with self.subTest(mutation=mutation), self.assertRaises(RuntimePolicyError):
                 self.verify(raw)
