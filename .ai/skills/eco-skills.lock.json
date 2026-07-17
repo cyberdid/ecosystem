@@ -1,0 +1,95 @@
+{
+  "apiVersion": "skills.ai.ecosystem/v1alpha1",
+  "files": [
+    {
+      "contentDigest": "eceeb3bacc004da0924f3bffa1089293f3835abb594c8449c028b646b06f6979",
+      "path": ".agents/skills/bounded-loop-authoring/SKILL.md",
+      "skillId": "bounded-loop-authoring",
+      "surface": "codex"
+    },
+    {
+      "contentDigest": "e1fe493e26f0b8aa2b670ddb41a4b735f081ad62b398665bda4f2e457083d3cd",
+      "path": ".agents/skills/ecosystem-contract-change/SKILL.md",
+      "skillId": "ecosystem-contract-change",
+      "surface": "codex"
+    },
+    {
+      "contentDigest": "0981035f51bfe6af0f8d478f0c96ec409b805e94229719ebe4be9e57d89b5ea2",
+      "path": ".agents/skills/source-review-evidence/SKILL.md",
+      "skillId": "source-review-evidence",
+      "surface": "codex"
+    },
+    {
+      "contentDigest": "126faba8f04add9830fe21f65563985e1bc47df506c3d22dbc9817c81d2d9275",
+      "path": ".ai/skills/projected/bounded-loop-authoring/SKILL.md",
+      "skillId": "bounded-loop-authoring",
+      "surface": "portable"
+    },
+    {
+      "contentDigest": "4a256e5dfd39791337886251be38b6895dfb4abbfaaf7cf7ee1a62a0f67e41d0",
+      "path": ".ai/skills/projected/ecosystem-contract-change/SKILL.md",
+      "skillId": "ecosystem-contract-change",
+      "surface": "portable"
+    },
+    {
+      "contentDigest": "0097bb7dc0bc1c9ed8c66bd1f2ce61a0c909c2f8972d95c6e15a7bdee280966c",
+      "path": ".ai/skills/projected/source-review-evidence/SKILL.md",
+      "skillId": "source-review-evidence",
+      "surface": "portable"
+    },
+    {
+      "contentDigest": "29d19f309dca1b2dd958e9dc2e363c8914a2b4eb2649cf05709147f26ab95bc2",
+      "path": ".claude/skills/bounded-loop-authoring/SKILL.md",
+      "skillId": "bounded-loop-authoring",
+      "surface": "claude"
+    },
+    {
+      "contentDigest": "ca776aef9c039f850e4634b9471ccaba679e90a45656da2e1c372ae8408f97d0",
+      "path": ".claude/skills/ecosystem-contract-change/SKILL.md",
+      "skillId": "ecosystem-contract-change",
+      "surface": "claude"
+    },
+    {
+      "contentDigest": "259c3cb16a3230e41f65ff22e5081cf2c14d5fc7484d2f17d19ef8384ea096b2",
+      "path": ".claude/skills/source-review-evidence/SKILL.md",
+      "skillId": "source-review-evidence",
+      "surface": "claude"
+    },
+    {
+      "contentDigest": "0e220f6e6c7fa8228ab7c276e46a1692274008d92d9c6cd1ca450117e2c28a46",
+      "path": ".cursor/rules/eco-skills.mdc",
+      "skillId": null,
+      "surface": "cursor"
+    },
+    {
+      "contentDigest": "3cb43277e9e56bb1224595402d0745be5a374bcbb00f108e06a9036aa356bd69",
+      "path": ".gemini/skills/bounded-loop-authoring/SKILL.md",
+      "skillId": "bounded-loop-authoring",
+      "surface": "gemini"
+    },
+    {
+      "contentDigest": "a60ec4662792a1a6cc4c57f56e79e90d8212f2c29f52325b74bd5e32a69aa540",
+      "path": ".gemini/skills/ecosystem-contract-change/SKILL.md",
+      "skillId": "ecosystem-contract-change",
+      "surface": "gemini"
+    },
+    {
+      "contentDigest": "a6c94289dd84223844c0ddcc568ac31baa0163f4a7e8bec22babc0277361863c",
+      "path": ".gemini/skills/source-review-evidence/SKILL.md",
+      "skillId": "source-review-evidence",
+      "surface": "gemini"
+    },
+    {
+      "contentDigest": "2f764eeef487f261b4b7fdcd6231706221e6e3edf171ab8a9818a716d32013ac",
+      "path": ".github/instructions/eco-skills.instructions.md",
+      "skillId": null,
+      "surface": "copilot"
+    }
+  ],
+  "kind": "SkillProjectionLock",
+  "metadata": {
+    "owner": "eco-skills",
+    "registryDigest": "97d685e202f6e9f4efb8589187b2c274232ff2c1761f7e9d7195d614b10dc80a",
+    "registryVersion": "1.0.0"
+  }
+}
