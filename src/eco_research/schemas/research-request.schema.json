@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "eco://research/request/v1alpha1",
+  "title": "ResearchRequest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "research.ai.ecosystem/v1alpha1" },
+    "kind": { "const": "ResearchRequest" },
+    "metadata": { "$ref": "eco://research/common/v1alpha1#/$defs/metadata" },
+    "spec": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "action", "policyDigest", "capabilityDigest", "inputDigest", "inputByteLength",
+        "dataClass", "artifactDataClass", "egressZone", "retention", "targetHost",
+        "requestedDomains"
+      ],
+      "properties": {
+        "action": { "enum": ["research.fetch", "research.search"] },
+        "policyDigest": { "$ref": "eco://research/common/v1alpha1#/$defs/sha256" },
+        "capabilityDigest": { "$ref": "eco://research/common/v1alpha1#/$defs/sha256" },
+        "inputDigest": { "$ref": "eco://research/common/v1alpha1#/$defs/sha256" },
+        "inputByteLength": { "type": "integer", "minimum": 1, "maximum": 65536 },
+        "dataClass": { "$ref": "eco://research/common/v1alpha1#/$defs/dataClass" },
+        "artifactDataClass": { "$ref": "eco://research/common/v1alpha1#/$defs/dataClass" },
+        "egressZone": { "$ref": "eco://research/common/v1alpha1#/$defs/zone" },
+        "retention": { "$ref": "eco://research/common/v1alpha1#/$defs/retention" },
+        "targetHost": {
+          "oneOf": [
+            { "type": "string", "minLength": 1, "maxLength": 253 },
+            { "type": "null" }
+          ]
+        },
+        "requestedDomains": {
+          "type": "array", "maxItems": 64, "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1, "maxLength": 253 }
+        }
+      }
+    }
+  }
+}

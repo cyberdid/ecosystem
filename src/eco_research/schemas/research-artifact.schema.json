@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "eco://research/artifact/v1alpha1",
+  "title": "ResearchArtifact",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "research.ai.ecosystem/v1alpha1" },
+    "kind": { "const": "ResearchArtifact" },
+    "metadata": { "$ref": "eco://research/common/v1alpha1#/$defs/metadata" },
+    "spec": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "requestDigest", "policyDigest", "capabilityDigest", "action", "artifact",
+        "mediaType", "encoding", "untrusted", "provenance"
+      ],
+      "properties": {
+        "requestDigest": { "$ref": "eco://research/common/v1alpha1#/$defs/sha256" },
+        "policyDigest": { "$ref": "eco://research/common/v1alpha1#/$defs/sha256" },
+        "capabilityDigest": { "$ref": "eco://research/common/v1alpha1#/$defs/sha256" },
+        "action": { "enum": ["research.fetch", "research.search"] },
+        "artifact": { "$ref": "eco://research/common/v1alpha1#/$defs/artifactBinding" },
+        "mediaType": { "enum": ["application/json", "text/html", "text/markdown", "text/plain"] },
+        "encoding": { "const": "utf-8" },
+        "untrusted": { "const": true },
+        "provenance": {
+          "type": "object", "additionalProperties": false,
+          "required": [
+            "sourceUrlDigest", "finalUrlDigest", "redirectChainDigests", "retrievedAt",
+            "providerIdentityDigest", "provenanceDigest"
+          ],
+          "properties": {
+            "sourceUrlDigest": { "$ref": "eco://research/common/v1alpha1#/$defs/sha256" },
+            "finalUrlDigest": { "$ref": "eco://research/common/v1alpha1#/$defs/sha256" },
+            "redirectChainDigests": {
+              "type": "array", "maxItems": 5,
+              "items": { "$ref": "eco://research/common/v1alpha1#/$defs/sha256" }
+            },
+            "retrievedAt": { "$ref": "eco://research/common/v1alpha1#/$defs/timestamp" },
+            "providerIdentityDigest": { "$ref": "eco://research/common/v1alpha1#/$defs/sha256" },
+            "provenanceDigest": { "$ref": "eco://research/common/v1alpha1#/$defs/sha256" }
+          }
+        }
+      }
+    }
+  }
+}
