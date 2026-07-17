@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ai.ecosystem/memory/v1alpha1/memory-record.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": {"const": "memory.ai.ecosystem/v1alpha1"},
+    "kind": {"const": "MemoryRecord"},
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "createdAt", "recordDigest"],
+      "properties": {
+        "id": {"$ref": "common.schema.json#/$defs/safeId"},
+        "createdAt": {"type": "string", "format": "date-time"},
+        "recordDigest": {"$ref": "common.schema.json#/$defs/digest"}
+      }
+    },
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["namespace", "memoryType", "dataClass", "privacyLevel", "author", "expiresAt", "contentArtifact", "sourceArtifacts", "links", "compaction"],
+      "properties": {
+        "namespace": {"$ref": "common.schema.json#/$defs/namespace"},
+        "memoryType": {"enum": ["fact", "claim", "decision", "constraint", "open-question", "failed-approach", "summary"]},
+        "dataClass": {"enum": ["D0", "D1", "D2", "D3"]},
+        "privacyLevel": {"enum": ["P0", "P1", "P2", "P3"]},
+        "author": {"$ref": "common.schema.json#/$defs/safeId"},
+        "expiresAt": {"oneOf": [{"type": "string", "format": "date-time"}, {"type": "null"}]},
+        "contentArtifact": {"$ref": "common.schema.json#/$defs/artifact"},
+        "sourceArtifacts": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 128,
+          "items": {"$ref": "common.schema.json#/$defs/artifact"}
+        },
+        "links": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["supersedes", "refutes", "conflicts"],
+          "properties": {
+            "supersedes": {"type": "array", "maxItems": 128, "items": {"$ref": "common.schema.json#/$defs/digest"}},
+            "refutes": {"type": "array", "maxItems": 128, "items": {"$ref": "common.schema.json#/$defs/digest"}},
+            "conflicts": {"type": "array", "maxItems": 128, "items": {"$ref": "common.schema.json#/$defs/digest"}}
+          }
+        },
+        "compaction": {
+          "oneOf": [
+            {"type": "null"},
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["sourceRecordDigests", "sourceArtifacts", "preservedRelations"],
+              "properties": {
+                "sourceRecordDigests": {"type": "array", "minItems": 1, "maxItems": 256, "items": {"$ref": "common.schema.json#/$defs/digest"}},
+                "sourceArtifacts": {"type": "array", "minItems": 1, "maxItems": 512, "items": {"$ref": "common.schema.json#/$defs/artifact"}},
+                "preservedRelations": {
+                  "type": "array",
+                  "maxItems": 512,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["from", "relation", "to"],
+                    "properties": {
+                      "from": {"$ref": "common.schema.json#/$defs/digest"},
+                      "relation": {"enum": ["supersedes", "refutes", "conflicts"]},
+                      "to": {"$ref": "common.schema.json#/$defs/digest"}
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

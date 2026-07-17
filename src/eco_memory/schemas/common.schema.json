@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ai.ecosystem/memory/v1alpha1/common.schema.json",
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "safeId": {"type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"},
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["storageRef", "sha256", "byteLength"],
+      "properties": {
+        "storageRef": {"type": "string", "minLength": 1, "maxLength": 4096, "pattern": "^artifact://[A-Za-z0-9][A-Za-z0-9._:/-]*$"},
+        "sha256": {"$ref": "#/$defs/digest"},
+        "byteLength": {"type": "integer", "minimum": 0, "maximum": 16777216}
+      }
+    },
+    "namespace": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["projectId", "teamId", "runId"],
+      "properties": {
+        "projectId": {"$ref": "#/$defs/safeId"},
+        "teamId": {"oneOf": [{"$ref": "#/$defs/safeId"}, {"type": "null"}]},
+        "runId": {"oneOf": [{"$ref": "#/$defs/safeId"}, {"type": "null"}]}
+      }
+    }
+  }
+}
