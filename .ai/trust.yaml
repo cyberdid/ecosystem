@@ -13,6 +13,17 @@ evidence:
         - ecosystem
       allowedDeployments: []
       allowedSuiteDigests: []
+    - id: local-adapter-authority
+      keyId: local-adapter-v1
+      verificationKeyRef: env:ECO_LOCAL_ADAPTER_EVIDENCE_KEY
+      allowedKinds:
+        - AdapterConformanceProfile
+      allowedProjects:
+        - ecosystem
+      allowedDeployments:
+        - local-llamacpp-gemma
+      allowedSuiteDigests:
+        - aa8ed45e3d481a0faf91d442dc2bc4d77f73fdd100d0eb262da64046fa441f5a
 repositorySnapshot:
   issuer:
     id: local-snapshot-authority
@@ -35,5 +46,11 @@ repositorySnapshot:
       trust: P1
       classificationAuthority: policy
 conformance:
-  trustedSuites: []
-  requiredObservations: []
+  trustedSuites:
+    - id: adapter-conformance-v1
+      version: 1.0.0
+      digest: aa8ed45e3d481a0faf91d442dc2bc4d77f73fdd100d0eb262da64046fa441f5a
+  requiredObservations:
+    - deploymentId: local-llamacpp-gemma
+      suiteDigest: aa8ed45e3d481a0faf91d442dc2bc4d77f73fdd100d0eb262da64046fa441f5a
+      envelopeRef: env:ECO_LOCAL_ADAPTER_ENVELOPE_FILE

@@ -1,6 +1,31 @@
 apiVersion: ai.ecosystem/v1alpha1
 kind: DeploymentCatalog
 deployments:
+  - id: local-llamacpp-gemma
+    provider: local
+    adapter: openai-compatible
+    model: gemma-4-26B-A4B-it-UD-Q4_K_XL.gguf
+    endpointRef: env:ECO_LOCAL_OPENAI_ENDPOINT
+    zone: Z1
+    allowedDataClasses:
+      - D0
+      - D1
+    artifactTrust: P1
+    declaredCapabilities:
+      - model.text
+      - model.structured-output
+    observedCapabilitiesRef: evals/observed/local-llamacpp-gemma.json
+    retention: local-runtime-dependent
+    trainingUse: prohibited
+    region: local
+    identity:
+      adapterVersion: openai-compatible-v1
+      modelRevision: hf-snapshot:3bb10d594514ef4edb7f3a65d41a7e4eb8c5767a
+      runtimeEngine: llama.cpp
+      runtimeVersion: "b9652"
+      quantization: UD-Q4_K_XL
+      endpointReferenceDigest: dd20715279e835ee425cf4c110067fb00d5defa3e5ffa3a86f585dc0150a6de5
+    enabled: true
   - id: local-openai-compatible
     provider: local
     adapter: openai-compatible
@@ -71,13 +96,13 @@ logicalRoles:
   review.private:
     requiredCapabilities:
       - model.text
+      - model.structured-output
     allowedDataClasses:
       - D0
       - D1
-      - D2
     allowedZones:
-      - Z0
       - Z1
-    minimumArtifactTrust: P2
-    maximumActionClass: A1
-    candidates: []
+    minimumArtifactTrust: P1
+    maximumActionClass: A0
+    candidates:
+      - local-llamacpp-gemma
