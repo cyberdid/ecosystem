@@ -29,7 +29,7 @@
 | ADR-025 | Signed team declarations authenticate bytes but do not create authority | Implemented for the M5.0–M5.2 diagnostic foundation; activation and anchor provenance remain unavailable |
 | ADR-026 | Team authority is a narrowing same-host authority with generation-based rotation | Implemented for M5; its enterprise/network follow-up is re-sequenced to M7 by ADR-027 |
 | ADR-027 | Prioritize functional orchestration before enterprise backends | Accepted; M6 is functional orchestration and the former M6 backlog becomes M7 |
-| ADR-028 | Add an orchestration plane without reinterpreting runtime authority | Accepted for M6.0; M6.1 implementation evidence remains required |
+| ADR-028 | Add an orchestration plane without reinterpreting runtime authority | Implemented for the bounded M6 profile; `0.8.0` evidence is recorded in the completion report |
 
 ## ADR-001 — Contracts-first
 

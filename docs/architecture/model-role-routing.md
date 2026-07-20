@@ -1,10 +1,9 @@
 # M6.4 Logical Model Roles and Deterministic Routing
 
-**Status:** implemented as an additive, pure routing library in the working tree;
-focused conformance is complete, while integrated M6 release evidence remains an
-M6.8 gate.
+**Status:** implemented and integrated into the authenticated `source-review`
+effect path; hosted M6.8 evidence remains a release gate.
 
-**Updated:** 2026-07-17
+**Updated:** 2026-07-20
 
 ## Purpose
 
@@ -45,7 +44,7 @@ the full observable deployment-identity digest; an alias without an exact identi
 binding is not a price.
 
 The schema bundle digest for this implementation is
-`a98ff4380a066dc67dab7cb4116ec250141c672c5bc6b9820a22e3032967e5b0`.
+`c489fc4da4dc0fc91cf0d7b4d4ebee51a319c7cbfe670c3e6873e658465e0227`.
 It is an additive registry digest, not a change to the existing runtime schema
 bundle.
 
@@ -161,11 +160,16 @@ eligibility outcomes, reason codes and an opaque rank digest. It contains no:
 `ModelRouteDecision` contains the selected deployment ID because the policy/model
 bridge needs that exact binding, but still contains no endpoint or credential.
 
-## Durable consumption and CLI composition
+## Exact authority, durable consumption and aggregate usage
 
 The router stays pure. Two additive surfaces make its decisions usable without
 turning a route into authority:
 
+- Every executable route binds a domain-separated, secret-free
+  `executionPlanDigest` plus a worst-case aggregate call/token/cost budget.
+  An external Ed25519 envelope authenticates the exact decision, request,
+  routing policy, price catalog and execution plan under the public key named
+  by `.ai/trust.yaml`. The runtime holds no route-signing private key.
 - `DurableRouteConsumptionJournal` is a private, HMAC-authenticated SQLite
   chain that binds one `allowed` decision digest to exactly one consumer
   (`kind`, `id`, `digest`). Consumption re-verifies record validity, the
@@ -180,11 +184,18 @@ turning a route into authority:
   observation records. It writes nothing and grants nothing: a computed denial
   is exit 1 with the sealed decision/explain records, invalid trusted inputs
   are a sanitized exit 2.
-- `eco team run source-review --route-decision --route-request` verifies the
-  binding in preflight before any state write, consumes the decision durably
-  beside the run's external journal, and keeps restart replay at zero
-  additional provider calls. A selection that does not match the governed
-  deployment blocks before HTTP or state creation.
+- `DurableRouteUsageJournal` atomically reserves each exact provider effect
+  with `BEGIN IMMEDIATE` before egress. Its authenticated append-only chain and
+  aggregate projection prevent concurrent overspend, reject changed replay and
+  preserve conservative spend after failures. An expired decision cannot be
+  replayed to enable a new egress.
+- `eco team run source-review` requires all five inputs together:
+  `--route-decision`, `--route-request`, `--route-policy`, `--route-prices` and
+  `--route-authority`. Preflight verifies the exact deployment, request shape,
+  source/context digest, policy/catalog digests, execution plan and full run
+  validity window before any state write. The Ed25519 envelope is re-verified
+  immediately before every provider effect; terminal workflow replay makes no
+  provider call and therefore needs no new reservation.
 
 The journal never stores prompts, sources, endpoints or credentials — only
 digests, identifiers and bindings. Consuming a route does not authorize a
@@ -207,9 +218,10 @@ bridge.
 - no fallback for policy/privacy/authority/schema/ambiguous/budget failures;
 - sanitized explain leak canaries.
 
-Focused result on 2026-07-17: 21 tests pass, including all 36 order-pair
-permutations of a three-candidate fixture. Full-repository and release
-conformance remain part of the parent M6 integration gate.
+Focused result on 2026-07-20: 50 routing/authority/consumption/usage tests pass,
+including all 36 order-pair permutations of a three-candidate fixture, restart,
+tamper, expiry and concurrent-overspend cases. Full-repository and hosted
+release conformance remain part of the parent M6 integration gate.
 
 ## Explicit non-claims
 
@@ -219,9 +231,10 @@ M6.4 does **not** claim:
 - measured live provider/model performance, quality or availability;
 - immutable cloud model weights behind a provider alias;
 - endpoint resolution, credential custody or network allowlisting;
-- durable decision issuance/consumption by the pure router itself (the separate
-  `DurableRouteConsumptionJournal` provides single-use consumption; the router
-  stays pure);
+- rollback-resistant global single-use authority after an operator deletes or
+  replaces the complete local state directory; the two journals prove
+  single-use and aggregate spend only within their authenticated same-host
+  state authority;
 - permission to invoke a model, tool, network or workspace write;
 - safe fallback from ambiguous or policy-related failures;
 - semantic equivalence between providers or OpenAI-compatible endpoints;

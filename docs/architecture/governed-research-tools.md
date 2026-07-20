@@ -1,8 +1,7 @@
 # M6.7 governed research tools
 
-**Status:** implemented as an additive API-first working-tree slice; integrated
-M6.8 release evidence is still pending  
-**Updated:** 2026-07-17  
+**Status:** implemented and release-gated as a bounded embedded broker
+**Updated:** 2026-07-20
 **Contract:** `research.ai.ecosystem/v1alpha1`
 
 ## Outcome

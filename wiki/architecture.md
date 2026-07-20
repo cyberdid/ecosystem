@@ -1,7 +1,7 @@
 # Current architecture
 
-**Updated:** 2026-07-17
-**Status:** bounded M1–M5 implemented; M6.0 functional-orchestration architecture is defined, while M6.1 execution remains in progress
+**Updated:** 2026-07-20
+**Status:** bounded M1–M6.7 implemented; M6.8 deterministic `0.8.0` release conformance is in progress
 
 ## TL;DR
 
@@ -36,6 +36,11 @@ The repository implements canonical contracts/compiler plus an embedded default-
 → private authenticated SQLite activation/revocation authority
 → distinct-human approval quorum + single-use action permits
 → emergency recovery + dual-signed successor-generation rotation
+→ governed typed five-role source-review
+→ deterministic skills projections + bounded loop engine
+→ exact Ed25519-authenticated routing + durable aggregate effect usage
+→ private provenance memory + narrowed durable workload-agent teams
+→ governed credential-free public research broker
 ```
 
 ## Explicitly not implemented
@@ -43,7 +48,7 @@ The repository implements canonical contracts/compiler plus an embedded default-
 - endpoint-specific network allowlist backend;
 - Windows/macOS executable broker and isolation backends;
 - Windows/macOS controlled-write backends;
-- autonomous model router;
+- autonomous model-selected routing;
 - durable replay registry for evidence envelopes;
 - asymmetric evidence signatures;
 - cryptographic remote issuer identity;
@@ -55,9 +60,10 @@ The repository implements canonical contracts/compiler plus an embedded default-
 - native Windows/macOS backend runners and runtime consumption of backend observations.
 - PostgreSQL/network authority, HA/consensus and multi-region recovery;
 - A3/A4 action profiles and remote transactional effect adapters.
-- durable governed model-invocation operations and typed role/source messages;
-- executable fixed `source-review` team workflow;
-- durable route-decision consumption and workload-agent team runtime.
+- rollback-resistant external anchoring for deletion/replacement of complete local
+  route/runtime state;
+- model truth, prompt-injection immunity, provider equivalence or a complete live
+  five-role PASS;
 
 The implemented M2–M4 boundary has negative, concurrency, process-crash, artifact, migration, backup, key-rotation, anchor, adapter, isolation, evidence, parity, exact-approval, CAS-recovery, no-model replay, state-integrity, repository-nonmutation, and promotion tests. See the [M2 completion report](../docs/research/2026-07-15-m2-completion-report.md), [M3 completion report](../docs/research/2026-07-15-m3-completion-report.md), and [M4 report](../docs/research/2026-07-16-m4-no-model-wiki-health-completion-report.md).
 
@@ -87,7 +93,7 @@ Externally anchored Ed25519 bundles define exact team identities, memberships, p
 
 Contract behavior is tested on Linux/macOS/Windows; strong private-permission enforcement is POSIX-bounded. Scheduling, autonomous retry, full-wiki lint, publisher provenance, enterprise/network authority, native cross-platform runtime-security backends and every A3/A4 or L3–L5 profile remain separate future gates. See [M5 team authority](../docs/architecture/team-authority.md) and the [completion report](../docs/research/2026-07-16-m5-team-authority-completion-report.md).
 
-## Current M6.0 functional-orchestration design
+## Current M6 functional-orchestration implementation
 
 M6 is re-sequenced from enterprise infrastructure to Universal Functional
 Orchestration. The old PostgreSQL/SSO/KMS/HA/native-backend backlog becomes M7.
@@ -105,29 +111,32 @@ analyst → verifier → synthesizer → reviewer, with one possible revision, a
 seven calls, one explicit deployment pin, P0 outputs and zero source-network,
 tools or workspace writes.
 
-The working-tree production composition is now reachable as
-`eco team run source-review`; `--check` performs zero-write/zero-egress preflight.
+The production composition is reachable as `eco team run source-review`;
+`--check` performs zero-write/zero-egress preflight.
 It accepts only one enabled local OpenAI-compatible deployment, exact signed
 structured-output evidence, a literal loopback endpoint, a strict path-bearing
 manifest and private external SQLite/CAS state. Every role dynamically creates
 an exact child runtime plan and model decision, then crosses durable model
 PREPARE/STARTED/terminal fencing through the typed adapter. Reusing the exact
 run/store/time/state tuple replays terminal outputs from CAS with no duplicate
-provider call. Output is limited to the content-free result graph and report
-artifact binding.
+provider call. An exact five-file M6.4 route is mandatory: Ed25519 authority
+binds the policy, price catalog, request, decision and secret-free execution
+plan; each provider effect re-verifies it and atomically reserves aggregate
+usage before egress. Output is limited to the content-free result graph and
+report artifact binding.
 
 This is a bounded local zero-cost profile, not a claim of general multi-model
 routing, provider pricing, source-network research, tool use, prompt-injection
-immunity, universal factual truth, arbitrary-duration recovery or M6 release
-completion. Integrated regression, installed-wheel and release gates remain
-separate.
+immunity, universal factual truth, arbitrary-duration recovery or live model
+quality. Deterministic installed-wheel and hosted release gates remain separate
+until M6.8 evidence is recorded.
 
 See [functional orchestration](../docs/architecture/functional-orchestration.md),
 the [threat model](../docs/architecture/m6-functional-orchestration-threat-model.md),
 the [M6.0 plan](../docs/research/2026-07-17-m6.0-functional-orchestration-plan.md)
 and the [roadmap](roadmap.md).
 
-## Current M6.4 logical routing slice
+## Current M6.4 logical routing implementation
 
 The additive `routing.ai.ecosystem/v1alpha1` package defines five provider-neutral
 workload roles and makes routing a pure digest-bound decision over role, action,
@@ -142,9 +151,11 @@ identity-drift, deadline and budget failures never switch providers. The old
 candidate is excluded and every current condition is evaluated again. The
 M6.1 local profile remains local-only with a calculated zero-cost reservation.
 
-This pure router does not invoke a model and does not claim current provider prices
-or performance. Durable decision consumption and CLI integration remain parent M6
-work. See [M6.4 logical model routing](../docs/architecture/model-role-routing.md).
+The pure router still does not invoke a model or claim current provider prices or
+performance. Composition adds separate Ed25519 authority, an authenticated
+single-use consumption journal and an atomic per-effect aggregate usage journal;
+none of them replaces the existing runtime model authorization. See
+[M6.4 logical model routing](../docs/architecture/model-role-routing.md).
 
 ## Current M6.5 private context-memory slice
 
@@ -184,6 +195,16 @@ binds the exact `ModelRequest` runtime subject to its
 deployment identity and input data class instead of applying repository-resource
 equality. This is a single-host API, not a distributed scheduler or provider-
 independence claim. See [M6.6 general agent teams](../docs/architecture/general-agent-teams.md).
+
+## Current M6.7 governed research implementation
+
+The separate `research.ai.ecosystem/v1alpha1` plane binds public search/fetch to
+exact policy, capability, request and artifact records. Broker-owned transport
+allows only credential-free public HTTPS under explicit domain, redirect, media,
+wire/decoded size, deadline, data-class, egress and retention limits. Retrieved
+bytes enter private CAS with content-free provenance and remain untrusted input;
+browser sessions, cookies and authenticated arbitrary endpoints are excluded.
+See [M6.7 governed research tools](../docs/architecture/governed-research-tools.md).
 
 ## Sources
 

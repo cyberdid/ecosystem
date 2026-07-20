@@ -124,6 +124,43 @@ See [M4.5.3 portable distribution](docs/architecture/portable-distribution.md), 
 
 See [M5 team authority](docs/architecture/team-authority.md), the [operations runbook](docs/operations/team-authority-runbook.md), and the [M5 completion report](docs/research/2026-07-16-m5-team-authority-completion-report.md).
 
+**M6 universal functional-orchestration profile implemented:**
+
+- a fixed five-role `source-review` workflow whose model calls cross the existing
+  policy, durable PREPARE/STARTED, typed adapter and private-CAS boundary;
+- strict source manifests, bounded JSON structure, complete preflight byte
+  verification and manifest-digest recheck before ingestion;
+- package-owned skills with deterministic Codex, Claude, Gemini, Copilot,
+  Cursor and portable projections, drift detection and safe uninstall;
+- a generic bounded loop engine with deterministic transitions, hard stops,
+  recovery and evaluation separated from execution;
+- five vendor-neutral model roles with deterministic policy/price/evidence
+  routing, explicit fallback and sanitized explain records;
+- mandatory exact `source-review` routing: policy, price catalog, request,
+  decision and Ed25519 authority bind one secret-free execution plan;
+- HMAC-authenticated route-consumption and aggregate-usage journals; each exact
+  provider effect reserves worst-case call/token/cost budget atomically before
+  egress and cannot resume under expired route authority;
+- provenance-preserving private memory with TTL-safe reversible compaction;
+- durable workload-agent teams with narrowed delegation, claims, handoffs,
+  cancellation and truthful partial failure;
+- governed public research search/fetch contracts with credential-free egress,
+  byte/media/deadline bounds and untrusted CAS provenance;
+- hardened loopback provisioning whose conformance probe matches the production
+  typed wire contract and binds project, endpoint reference, normalized URL and
+  exact model.
+
+The deterministic profile does not claim that arbitrary model output is true,
+that one model playing several roles is an independent team, or that prompt
+injection is solved. The existing HMAC adapter-evidence profile is local
+shared-key integrity, not cryptographic signer/verifier separation. Sixteen
+earlier live llama.cpp dogfood attempts proved the enforcement chain and found
+real defects, but no complete live five-role PASS is claimed.
+
+See [M6 architecture](docs/architecture/functional-orchestration.md),
+[exact model routing](docs/architecture/model-role-routing.md), and the
+[M6 completion report](docs/research/2026-07-20-m6-functional-orchestration-completion-report.md).
+
 **Not implemented and not claimed:** durable adoption crash recovery, hostile parent-swap/reparse/case-fold security on every filesystem, publisher-authenticated distribution provenance, immutable verified-byte installer staging, transactional cross-manager rollback, standalone/OS-native packages, Windows/macOS runtime broker/isolation/write backends or native authority ACL enforcement, endpoint-specific network allowlists, descendant-exec/seccomp/cgroup/device containment, PostgreSQL/network team authority, SSO/OIDC/WebAuthn, KMS/HSM/Vault, HA/consensus or multi-region recovery, delete/rename/mkdir/batch/arbitrary-command writes, A3/A4 external actions, scheduled/autonomous loops, full wiki link/staleness lint, or production autonomy.
 
 ## Architecture in one sentence
@@ -218,6 +255,9 @@ eco --repo /path/to/project uninstall --remove-config --yes
 | `eco conformance run` | Run the explicit fixed synthetic Linux/WSL backend suite in an external test root | External synthetic root only |
 | `eco team doctor` | Verify an existing external team-authority store and current signed state | No |
 | `eco team activate --apply` | Activate one exact externally signed policy revision under predecessor/snapshot CAS | External authority store only |
+| `eco route plan` | Compute a pure deterministic model route from exact policy/price/request/evidence inputs | No |
+| `eco skills plan\|sync\|check\|uninstall` | Project the package-owned skill catalog with ownership and drift checks | Projection files only for sync/uninstall |
+| `eco team run source-review` | Run the exact routed five-role workflow; all five route/authority files are mandatory | External authenticated state/CAS only |
 | `eco run wiki-health-check` | Run the fixed signed-snapshot, no-model A1 health profile | No repository write* |
 | `eco eval wiki-health-check` | Run the fixed five-attempt plus replay L0–L2 promotion gate | No repository write* |
 | `eco lock` | Record deterministic input hashes and deployment identities | Yes |

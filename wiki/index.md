@@ -2,16 +2,19 @@
 
 > Curated operational knowledge. Canonical executable truth lives under `.ai/`; generated vendor files are projections.
 
-**Updated:** 2026-07-17
-**Status:** M1–M5 are complete for the bounded reference profile. M6.0 now fixes the Universal Functional Orchestration architecture; M6.1 implementation is in progress and is not yet a completion claim.
+**Updated:** 2026-07-20
+**Status:** M1–M6.7 are implemented for the bounded reference profile. M6.8 is
+at the `0.8.0` deterministic release-candidate gate; a complete live five-role
+model PASS remains explicitly unclaimed.
 
 ## Pages
 
 | Page | Purpose | Updated |
 |---|---|---:|
-| [M6 functional orchestration](../docs/architecture/functional-orchestration.md) | Additive contracts, governed model bridge, fixed source-review and M6.2–M6.8 delivery sequence | 2026-07-17 |
+| [M6 completion report](../docs/research/2026-07-20-m6-functional-orchestration-completion-report.md) | M6.1–M6.8 delivery, exact-route audit corrections, release evidence, schema identities and honest nonclaims | 2026-07-20 |
+| [M6 functional orchestration](../docs/architecture/functional-orchestration.md) | Additive contracts, governed model bridge, fixed source-review and M6.2–M6.8 delivery sequence | 2026-07-20 |
 | [M6.2 skills/harness sync](../docs/architecture/skills-harness-sync.md) | Closed dogfood registry, deterministic client projections, ownership, drift, rollback and uninstall | 2026-07-17 |
-| [M6.4 logical model routing](../docs/architecture/model-role-routing.md) | Five workload roles, evidence/price-bound deterministic routing, sanitized explain and retryable-only fallback | 2026-07-17 |
+| [M6.4 logical model routing](../docs/architecture/model-role-routing.md) | Exact policy/price/plan/Ed25519 routing, durable consumption, per-effect aggregate reservations and explicit fallback | 2026-07-20 |
 | [M6.5 private context memory](../docs/architecture/private-context-memory.md) | CAS-bound content-private records, authenticated journal, bounded retrieval and reversible conflict-preserving compaction | 2026-07-17 |
 | [M6 threat model](../docs/architecture/m6-functional-orchestration-threat-model.md) | Trust boundaries, 18 invariants, source-review acceptance gates, adversarial matrix and CI strategy | 2026-07-17 |
 | [M6.0 research and implementation plan](../docs/research/2026-07-17-m6.0-functional-orchestration-plan.md) | Comparative analysis of OpenResearcher, OpenScience, MOLT and the multi-model article plus exact implementation order | 2026-07-17 |
@@ -26,7 +29,7 @@
 | [openresearcher.md](openresearcher.md) | Downloaded upstream research node, evidence, boundaries, and possible role | 2026-07-15 |
 | [labs-molt.md](labs-molt.md) | NVIDIA agentic-RL training node, architecture, evidence, risks, and gated role | 2026-07-15 |
 | [ai-legal-claude.md](ai-legal-claude.md) | Claude-specific legal prompt corpus, compatibility audit, legal limits, and safe-adoption gate | 2026-07-15 |
-| [roadmap.md](roadmap.md) | Dependency-ordered M0–M8 delivery plan with functional M6 and enterprise M7 | 2026-07-17 |
+| [roadmap.md](roadmap.md) | Dependency-ordered M0–M8 delivery plan with M6 exit evidence and enterprise M7 | 2026-07-20 |
 | [M4.5.1 safe project adoption](../docs/architecture/project-adoption.md) | Preview/apply contract, ownership receipt, reversible projections and exact non-claims | 2026-07-16 |
 | [M4.5.1 completion report](../docs/research/2026-07-16-m4.5.1-adoption-bootstrap-report.md) | Threat model, multi-agent review, adversarial fixtures, verification gate and handoff | 2026-07-16 |
 | [M4.5.2 platform/adapter conformance](../docs/architecture/platform-adapter-conformance.md) | Passive doctor, declared/detected/proven boundary, schemas and exact non-claims | 2026-07-16 |

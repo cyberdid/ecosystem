@@ -7,94 +7,256 @@ on:
 permissions:
   contents: read
 
+env:
+  RELEASE_VERSION: "0.8.0"
+  UV_VERSION: "0.11.21"
+
 jobs:
-  linux-hosted:
+  linux-unittest:
+    name: linux-full-py${{ matrix.python-version }}
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
-          python-version: "3.12"
-          cache: pip
-      - run: python -m pip install --upgrade pip
-      - run: python -m pip install -e ".[test]"
-      - run: python -m unittest discover -s tests -v
-      - run: python -m pytest
-      - run: eco validate
-      - run: eco render --check
-      - run: eco doctor
-      - name: Build and verify the offline distribution
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p .distribution-smoke/bundle .distribution-smoke/manifest
-          python -m pip wheel . --wheel-dir .distribution-smoke/bundle
-          cp uv.lock .distribution-smoke/bundle/uv.lock
-          main_wheel="$(basename "$(find .distribution-smoke/bundle -maxdepth 1 -name 'ai_ecosystem_harness-*.whl' -print -quit)")"
-          python scripts/create_distribution_manifest.py \
-            --bundle-root "$(pwd)/.distribution-smoke/bundle" \
-            --main-wheel "$main_wheel" \
-            --version 0.7.0 \
-            --source-revision "$(git rev-parse HEAD)" \
-            --output "$(pwd)/.distribution-smoke/manifest/distribution-manifest.json"
-          python scripts/verify_distribution.py \
-            --manifest "$(pwd)/.distribution-smoke/manifest/distribution-manifest.json" \
-            --bundle-root "$(pwd)/.distribution-smoke/bundle"
-          python -m venv .distribution-smoke/installed
-          .distribution-smoke/installed/bin/python -m pip install \
-            --no-index --find-links .distribution-smoke/bundle \
-            ai-ecosystem-harness==0.7.0
-          .distribution-smoke/installed/bin/eco --version
-          .distribution-smoke/installed/bin/eco team --help
-          .distribution-smoke/installed/bin/python - <<'PY'
-          from importlib import resources
+          python-version: ${{ matrix.python-version }}
+      - uses: astral-sh/setup-uv@d0d8abe699bfb85fec6de9f7adb5ae17292296ff # v6
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+      - name: Synchronize the frozen test environment
+        run: uv sync --frozen --extra test --python ${{ matrix.python-version }}
+      - name: Run the complete unittest suite
+        run: uv run --frozen --python ${{ matrix.python-version }} python -m unittest discover -s tests -v
 
-          import eco_cli.authority
-          import eco_cli.team
-          import eco_runtime.policy_bundle
-          import eco_runtime.team_access
-          import eco_runtime.team_actor
-          import eco_runtime.team_approval
-          import eco_runtime.team_authority
-          import eco_runtime.team_identity
-          import eco_runtime.team_migration
-          import eco_runtime.team_rotation
-          import eco_runtime.team_runtime
-
-          schemas = (
-              "identity-key.schema.json",
-              "membership-binding.schema.json",
-              "principal-identity.schema.json",
-              "team-access-policy.schema.json",
-              "team-approval.schema.json",
-              "team-identity.schema.json",
-              "team-key-rotation.schema.json",
-              "team-policy-bundle.schema.json",
-          )
-          root = resources.files("eco_runtime").joinpath("schemas")
-          assert all(root.joinpath(name).is_file() for name in schemas)
-          PY
-      - name: Report isolation-conformance scope
-        run: |
-          echo "### Isolation conformance" >> "$GITHUB_STEP_SUMMARY"
-          echo "Hosted CI runs fail-closed unit coverage. Live namespace/Landlock conformance runs only where the host supports that kernel profile; skipped tests are not a security-pass claim." >> "$GITHUB_STEP_SUMMARY"
-
-  adoption-portability:
-    name: portability-${{ matrix.os }}
+  portable-contracts:
+    name: portable-${{ matrix.os }}-py${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
         os: [windows-latest, macos-latest]
+        python-version: ["3.11", "3.12"]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - uses: astral-sh/setup-uv@d0d8abe699bfb85fec6de9f7adb5ae17292296ff # v6
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+      - name: Synchronize the frozen test environment
+        run: uv sync --frozen --extra test --python ${{ matrix.python-version }}
+      - name: Run portable contracts, sync, adoption and distribution coverage
+        run: >-
+          uv run --frozen --python ${{ matrix.python-version }} python -m unittest
+          tests.test_cli
+          tests.test_adoption_fixtures
+          tests.test_adoption_safety
+          tests.test_platform_conformance
+          tests.test_distribution
+          tests.test_backend_conformance
+          tests.test_m5_identity_contracts
+          tests.test_m5_policy_bundle
+          tests.test_m5_authority_cli
+          tests.test_m5_team_access
+          tests.test_m5_team_approval
+          tests.test_m5_team_authority
+          tests.test_m5_team_runtime
+          tests.test_m5_team_rotation
+          tests.test_m5_team_cli_module
+          tests.test_m6_contracts
+          tests.test_m6_schema_digests
+          tests.test_m6_skills_sync
+          tests.test_m6_loop_engine
+          tests.test_m6_routing
+          tests.test_m6_route_consumption
+          tests.test_m6_route_exact_binding
+          tests.test_m6_route_authority
+          tests.test_m6_route_usage
+          -v
+
+  quality:
+    name: quality-ubuntu-py3.12
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.12"
-          cache: pip
-      - run: python -m pip install --upgrade pip
-      - run: python -m pip install -e ".[test]"
-      - run: python -m unittest tests.test_cli tests.test_adoption_fixtures tests.test_adoption_safety tests.test_platform_conformance tests.test_distribution tests.test_backend_conformance tests.test_m5_identity_contracts tests.test_m5_policy_bundle tests.test_m5_authority_cli tests.test_m5_team_access tests.test_m5_team_approval tests.test_m5_team_authority tests.test_m5_team_runtime tests.test_m5_team_rotation tests.test_m5_team_cli_module -v
-      - run: eco validate
-      - run: eco render --check
-      - run: eco doctor
+      - uses: astral-sh/setup-uv@d0d8abe699bfb85fec6de9f7adb5ae17292296ff # v6
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+      - name: Synchronize the frozen quality environment
+        run: uv sync --frozen --extra test --python 3.12
+      - name: Check changed-line whitespace
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --check
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            base_sha="${{ github.event.pull_request.base.sha }}"
+          else
+            base_sha="${{ github.event.before }}"
+          fi
+          if [[ -n "$base_sha" && ! "$base_sha" =~ ^0+$ ]]; then
+            git diff --check "$base_sha" HEAD
+          fi
+      - name: Run pytest
+        run: uv run --frozen --python 3.12 python -m pytest
+      - name: Validate canonical configuration
+        run: uv run --frozen --python 3.12 eco validate
+      - name: Check deterministic projections
+        run: uv run --frozen --python 3.12 eco render --check
+      - name: Run repository doctor
+        run: uv run --frozen --python 3.12 eco doctor
+      - name: Check governed skills and harness projections
+        run: uv run --frozen --python 3.12 eco skills check --json
+      - name: Check M6 journals, CLI leaks and repository identity
+        run: uv run --frozen --python 3.12 python scripts/check_m6_release_conformance.py --repo .
+      - name: Report isolation-conformance scope
+        shell: bash
+        run: |
+          echo "### Isolation conformance" >> "$GITHUB_STEP_SUMMARY"
+          echo "Linux jobs run the complete runtime suite. Windows and macOS run portable contract, sync, adoption, platform and distribution coverage; skipped Linux isolation tests are not a security-pass claim." >> "$GITHUB_STEP_SUMMARY"
+
+  distribution:
+    name: distribution-ubuntu-py3.12
+    needs: [linux-unittest, portable-contracts, quality]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@d0d8abe699bfb85fec6de9f7adb5ae17292296ff # v6
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+      - name: Prove the lock without updating it
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .distribution-smoke
+          sha256sum uv.lock > .distribution-smoke/uv-lock.sha256
+          uv sync --frozen --no-dev --python 3.12
+          sha256sum --check .distribution-smoke/uv-lock.sha256
+      - name: Assert release metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          uv run --frozen --python 3.12 python - <<'PY'
+          import os
+          import pathlib
+          import tomllib
+
+          expected = os.environ["RELEASE_VERSION"]
+          project_version = tomllib.loads(
+              pathlib.Path("pyproject.toml").read_text(encoding="utf-8")
+          )["project"]["version"]
+          lock = tomllib.loads(pathlib.Path("uv.lock").read_text(encoding="utf-8"))
+          lock_versions = [
+              package["version"]
+              for package in lock["package"]
+              if package["name"] == "ai-ecosystem-harness"
+          ]
+          if project_version != expected or lock_versions != [expected]:
+              raise SystemExit(
+                  f"release version mismatch: expected {expected}, "
+                  f"pyproject={project_version}, lock={lock_versions}"
+              )
+          PY
+      - name: Build the project wheel and locked dependency wheelhouse
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .distribution-smoke/bundle .distribution-smoke/manifest
+          uv build --wheel --no-create-gitignore --out-dir .distribution-smoke/bundle
+          uv export --frozen --no-dev --no-emit-project --format requirements.txt \
+            --output-file .distribution-smoke/locked-requirements.txt
+          sha256sum --check .distribution-smoke/uv-lock.sha256
+          python -m pip download --only-binary=:all: --require-hashes \
+            --dest .distribution-smoke/bundle \
+            --requirement .distribution-smoke/locked-requirements.txt
+          cp uv.lock .distribution-smoke/bundle/uv.lock
+          mapfile -t main_wheels < <(
+            find .distribution-smoke/bundle -maxdepth 1 \
+              -name "ai_ecosystem_harness-${RELEASE_VERSION}-*.whl" -print
+          )
+          if [[ "${#main_wheels[@]}" -ne 1 ]]; then
+            echo "expected exactly one ai-ecosystem-harness ${RELEASE_VERSION} wheel" >&2
+            exit 1
+          fi
+          main_wheel="$(basename "${main_wheels[0]}")"
+          uv run --frozen --python 3.12 python scripts/create_distribution_manifest.py \
+            --bundle-root "$(pwd)/.distribution-smoke/bundle" \
+            --main-wheel "$main_wheel" \
+            --version "$RELEASE_VERSION" \
+            --source-revision "$(git rev-parse HEAD)" \
+            --output "$(pwd)/.distribution-smoke/manifest/distribution-manifest.json"
+          uv run --frozen --python 3.12 python scripts/verify_distribution.py \
+            --manifest "$(pwd)/.distribution-smoke/manifest/distribution-manifest.json" \
+            --bundle-root "$(pwd)/.distribution-smoke/bundle"
+      - name: Install the wheel fully offline
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m venv .distribution-smoke/installed
+          .distribution-smoke/installed/bin/python -m pip install \
+            --no-index --find-links .distribution-smoke/bundle \
+            "ai-ecosystem-harness==${RELEASE_VERSION}"
+      - name: Smoke installed CLI, M6 resources and source-review
+        shell: bash
+        run: |
+          set -euo pipefail
+          installed_python=".distribution-smoke/installed/bin/python"
+          installed_eco=".distribution-smoke/installed/bin/eco"
+          test "$("$installed_eco" --version)" = "eco ${RELEASE_VERSION}"
+          "$installed_eco" validate
+          "$installed_eco" team --help >/dev/null
+          "$installed_eco" loops validate wiki-health-check --json >/dev/null
+          "$installed_eco" skills check --json >/dev/null
+          PYTHONPATH= PYTHONNOUSERSITE=1 "$installed_python" - <<'PY'
+          import importlib
+          import json
+          import os
+          from importlib import metadata, resources
+
+          expected_version = os.environ["RELEASE_VERSION"]
+          assert metadata.version("ai-ecosystem-harness") == expected_version
+          packages = (
+              "eco_cli", "eco_runtime", "eco_orchestration", "eco_skills",
+              "eco_loops", "eco_routing", "eco_memory", "eco_teams", "eco_research",
+          )
+          for package in packages:
+              importlib.import_module(package)
+          for package in (item for item in packages if item != "eco_loops"):
+              schema_root = resources.files(package).joinpath("schemas")
+              assert schema_root.is_dir(), package
+              assert any(item.name.endswith(".json") for item in schema_root.iterdir()), package
+          skills_root = resources.files("eco_skills").joinpath("catalog")
+          registry = json.loads(skills_root.joinpath("registry.json").read_text(encoding="utf-8"))
+          assert registry["kind"] == "SkillRegistry" and registry["skills"]
+          for skill in registry["skills"]:
+              assert skills_root.joinpath(skill["resource"]).is_file(), skill["id"]
+          profiles = resources.files("eco_orchestration").joinpath("profiles", "source-review.v1")
+          expected_profiles = {
+              "analyst.json", "planner.json", "reviewer.json", "rubric.json",
+              "synthesizer.json", "verifier.json",
+          }
+          assert expected_profiles == {item.name for item in profiles.iterdir() if item.is_file()}
+          PY
+          PYTHONPATH= PYTHONNOUSERSITE=1 "$installed_python" \
+            scripts/run_installed_source_review_smoke.py

@@ -1,7 +1,7 @@
 # M6.5 private context and memory graph
 
-**Status:** implemented as an embedded, content-private library; integrated M6 release evidence remains pending  
-**Updated:** 2026-07-17
+**Status:** implemented and release-gated as an embedded, content-private library
+**Updated:** 2026-07-20
 
 ## Purpose
 

@@ -1,8 +1,10 @@
 # Architecture
 
-**Status:** M1–M5 are implemented for the bounded reference profile. M6.0 now defines the additive functional-orchestration plane; M6.1 execution is in progress and is not yet a completion claim.
+**Status:** M1–M6.7 are implemented for the bounded reference profile. M6.8
+deterministic release conformance is in progress; a live five-role model PASS is
+an explicit optional-provider nonclaim.
 
-**Updated:** 2026-07-17
+**Updated:** 2026-07-20
 
 ## Logical architecture
 
@@ -165,7 +167,10 @@ revision and no source-network, tools or workspace writes. A durable governed mo
 operation must exist before the workflow may call an adapter. All source and model
 output remains P0; typed handoffs and a deterministic runtime gate own completion.
 
-This section describes M6.0 architecture, not working M6.1 functionality. See
+The fixed workflow, governed model bridge and typed source/evidence graph are now
+implemented. Production execution requires an authenticated exact M6.4 route;
+every provider effect re-verifies Ed25519 route authority and atomically reserves
+aggregate usage before egress. See
 [functional orchestration](functional-orchestration.md), the
 [threat model](m6-functional-orchestration-threat-model.md) and the
 [M6.0 plan](../research/2026-07-17-m6.0-functional-orchestration-plan.md).
@@ -204,14 +209,12 @@ egress and retention before network access. Retrieved UTF-8 bytes enter private
 CAS with digest-only provenance and remain explicitly untrusted. See
 [governed research tools](governed-research-tools.md).
 
-### Remaining after M6.0
+### Remaining after the bounded M6 profile
 
-- durable policy-authorized model operation and typed instruction/source channel;
-- fixed `source-review` runtime, hard gate and installed CLI evidence;
-- canonical skills/harness synchronization;
-- generic bounded loop engine;
-- durable consumption and CLI composition of M6.4 routing decisions;
-- real-provider research observations and integrated M6.8 conformance;
+- hosted M6.8 matrix and offline installed-wheel evidence for the `0.8.0`
+  release candidate;
+- a full live five-role PASS on a sufficiently capable optional local/provider
+  model; prior dogfood proved the enforcement chain but not model quality;
 
 - endpoint-specific network allowlist backend;
 - Windows/macOS isolation and filesystem backends;

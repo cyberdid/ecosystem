@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 API_VERSION = "ai.ecosystem/v1alpha1"
-VERSION = "0.7.0"
+VERSION = "0.8.0"
 
 CONFIG_FILES = {
     "project": "project.yaml",

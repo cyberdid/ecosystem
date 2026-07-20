@@ -1,6 +1,6 @@
 # Roadmap
 
-**Updated:** 2026-07-17
+**Updated:** 2026-07-20
 
 | Milestone | Deliverable | Status |
 |---|---|---|
@@ -21,15 +21,15 @@
 | M5.5 | Revocation, emergency recovery and dual-anchor generation rotation | Complete |
 | M5.6 | Distinct-human quorum, separation of duties and single-use permits | Complete |
 | M5.7 | CLI, backup, portability, documentation and release conformance | Complete for the bounded `0.7.0` profile |
-| M6.0 | Functional-orchestration research, ADRs, contracts, threat model and acceptance gates | In progress; architecture frozen before execution claims |
-| M6.1 | Governed model bridge plus fixed offline `source-review` vertical slice | Implemented and exercised live against a provisioned llama.cpp loopback deployment; three dogfood-found defects fixed with regression tests; the five-role live PASS is pending (model capability, not harness) and live iterations are paused |
-| M6.2 | Canonical skills and harness synchronization | Implemented in working tree; integrated M6 release evidence pending |
-| M6.3 | Generic bounded loop engine | Implemented in working tree; integrated M6 release evidence pending |
-| M6.4 | Logical model roles, policy routing and explicit bounded fallback | Implemented: pure router plus durable single-use consumption journal, `eco route plan` and source-review CLI composition; M6 release evidence pending |
-| M6.5 | Provenance-preserving private context and memory graph | Implemented in working tree with focused integrity/adversarial tests; integrated M6 release evidence pending |
-| M6.6 | General workload-agent team orchestration | Implemented API-first in working tree; integrated M6 release evidence pending |
-| M6.7 | Governed live research tools | Implemented API-first in working tree with adversarial broker/transport tests; real-provider and integrated M6.8 evidence pending |
-| M6.8 | Cross-platform contracts, conformance and `0.8.0` release | Planned release gate |
+| M6.0 | Functional-orchestration research, ADRs, contracts, threat model and acceptance gates | Complete |
+| M6.1 | Governed model bridge plus fixed offline `source-review` vertical slice | Deterministic profile complete; enforcement chain exercised live, while a full live five-role model PASS remains an explicit nonclaim |
+| M6.2 | Canonical skills and harness synchronization | Complete for the closed package-owned registry and six projection surfaces |
+| M6.3 | Generic bounded loop engine | Complete for the embedded deterministic bounded-loop profile |
+| M6.4 | Logical model roles, policy routing and explicit bounded fallback | Complete for exact policy/price/plan/Ed25519 authority, durable consumption and aggregate per-effect usage |
+| M6.5 | Provenance-preserving private context and memory graph | Complete for CAS-bound embedded memory, TTL-safe reversible compaction and exact namespace retrieval |
+| M6.6 | General workload-agent team orchestration | Complete for the embedded narrowed-delegation coordinator |
+| M6.7 | Governed live research tools | Complete for bounded credential-free public search/fetch contracts and broker; provider quality remains unclaimed |
+| M6.8 | Cross-platform contracts, conformance and `0.8.0` release | Release candidate: local deterministic gates pass; hosted matrix and independent follow-up verdict pending |
 | M7 | Enterprise/network authority and native security backends | Re-sequenced from old M6; not dropped or claimed |
 | M8 | Optional training/learning and experimental nodes | Future; MOLT/local GPU are adapters, not dependencies |
 
@@ -235,6 +235,56 @@ See [skills and harness synchronization](../docs/architecture/skills-harness-syn
 External imports, signature/transparency verification, live-client semantic
 conformance and skill execution are not part of M6.2.
 
+## M6.3–M6.7 exit evidence
+
+1. M6.3 provides a closed loop-definition/instance/transition contract,
+   deterministic state machine, explicit retry/hard-stop budgets, crash recovery
+   and separate evaluation; it is not a background scheduler.
+2. M6.4 derives routes only from validated policy, observations, exact deployment
+   identity and price catalog. `source-review` additionally requires a signed
+   execution-plan binding and atomically consumes both the route and each
+   worst-case provider-effect reservation before egress.
+3. M6.5 keeps content in private CAS, authenticates digest-only provenance,
+   applies namespace/class/TTL/query budgets, preserves conflicts and prevents a
+   compacted summary from outliving its earliest transitive source.
+4. M6.6 executes exact task DAGs with narrowed child authority, serialized claims,
+   aggregate budgets, typed handoffs, cancellation and truthful partial failure;
+   scheduling does not authorize effects.
+5. M6.7 permits only policy-bound credential-free public HTTPS search/fetch with
+   exact domain, redirect, media, size, time, data and retention limits. Retrieved
+   content remains untrusted CAS data.
+
+See the corresponding architecture pages for the exact contract and nonclaim of
+each slice.
+
+## M6.8 exit criteria
+
+1. Preserve the complete M1–M6 regression on Python 3.11 and 3.12 under the
+   frozen dependency lock.
+2. Run the full filesystem/runtime suite on Linux and focused pure
+   contract/sync/portability suites on Windows and macOS; no cross-OS runtime
+   security inference is permitted.
+3. Keep canonical `validate`, `render --check`, `doctor`, `skills check`, compile
+   and whitespace gates green.
+4. Preserve the pinned runtime schema digest while publishing exact additive
+   orchestration/routing/memory/team/research digests.
+5. Build a locked wheelhouse, verify its distribution manifest, install it with
+   `--no-index`, import every M6 package/resource and run a deterministic
+   five-role literal-loopback smoke from the installed environment.
+6. Verify repository bytes and mtimes remain unchanged after the smoke and scan
+   public/control-plane/journal surfaces for unique private sentinels.
+7. Require independent review and close all P0 exact-route findings before the
+   `0.8.0` claim.
+8. Separate deterministic scripted evidence from live-provider observations.
+
+The adapter observation envelope remains a local HMAC shared-key integrity
+profile: it does not cryptographically separate signer and verifier. Route
+authority does use external Ed25519 verification. Local journals are not a
+rollback-resistant external transparency service if an operator deletes the
+entire state authority. Native Windows/macOS enforcement, arbitrary providers,
+model truth, prompt-injection immunity and a full live five-role PASS remain
+explicit nonclaims.
+
 ## Loop rollout
 
 | Phase | Allowed loop behavior | Dependency |
@@ -243,8 +293,14 @@ conformance and skill execution are not part of M6.2.
 | M2 | L2 observe/report-only loop prototype | Read-only PEP, sanitized events, negative bypass tests |
 | M3 | L3 proposals and narrowly approved L4 writes | Implemented primitive: exact approval, idempotency, CAS rollback and restart recovery |
 | M4 | Fixed no-model L0–L2 promotion | Implemented five-attempt quality/safety/stability gate plus recovery replay; L3–L5 denied |
+| M6.1 | Manual exact-routed five-role source review | Implemented; deterministic gate owns success and all effects cross durable authority |
+| M6.3 | Reusable embedded bounded loops | Implemented library; no daemon, autonomous scheduler or implicit promotion |
 
-The first reference loop is now `wiki-health-check` in manual L2 observe-only mode. `ml-autoresearch` follows only after experiment isolation, immutable evaluation, reproducibility, and approved local-compute resource limits are enforced. A DGX is one optional local profile, not a dependency. See [Loop engineering](loops.md).
+The first reference loop remains `wiki-health-check` in manual L2 observe-only
+mode; `source-review` is the first governed model-backed team workflow.
+`ml-autoresearch` follows only after experiment isolation, immutable evaluation,
+reproducibility and approved local-compute resource limits are enforced. A DGX is
+one optional local profile, not a dependency. See [Loop engineering](loops.md).
 
 ## Sources
 

@@ -4,6 +4,31 @@ Append-only хронологічний лог операцій. Формат: `#
 
 ---
 
+## [2026-07-20] implementation | M6 exact routing and 0.8.0 release candidate
+
+- Closed M6.1–M6.8 for the bounded embedded profile: governed model execution,
+  skills/harness sync, reusable bounded loops, logical routing, private memory,
+  agent teams, governed research tools and reproducible distribution.
+- Made source-review depend on an exact five-document route set and an external
+  Ed25519 authority. The runner validates the full-run window, consumes the
+  route once, reserves aggregate usage per role and reverifies authority before
+  every provider egress.
+- Fixed three independent-audit blockers: expired-route idempotent replay,
+  route-less legacy execution and startup-only route-authority verification.
+- Hardened local provisioning, adapter grammar projection, endpoint identity,
+  response bounds, observation binding, source-bundle identity, structural JSON
+  limits and TTL-safe memory compaction.
+- Bumped the release to `0.8.0`; the local gate passes all 756 cases on both
+  Python 3.11 and 3.12 plus 756 pytest cases, canonical
+  validation/render/doctor/skills checks, release
+  conformance, a locked offline wheel install and an installed five-role exact
+  route smoke.
+- Kept the boundaries explicit: observation HMAC is shared-key local integrity,
+  local journals do not resist whole-authority rollback, non-Linux jobs do not
+  prove native sandbox security and no live five-role model-quality PASS is
+  inferred from the deterministic loopback smoke.
+- Full evidence: `docs/research/2026-07-20-m6-functional-orchestration-completion-report.md`.
+
 ## [2026-07-20] implementation | Live source-review dogfood: three fixes, ceremony script, honest status
 
 - Scripted the operator evidence ceremony

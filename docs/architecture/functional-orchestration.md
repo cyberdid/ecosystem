@@ -1,7 +1,7 @@
 # M6 universal functional orchestration
 
-**Status:** M6.0 architecture; implementation evidence is required per slice  
-**Updated:** 2026-07-17  
+**Status:** M6.0–M6.7 implemented; M6.8 `0.8.0` deterministic conformance in progress
+**Updated:** 2026-07-20
 **Target release:** `0.8.0`
 
 ## Outcome
@@ -284,7 +284,7 @@ cloud/provider equivalence.
 | M6.1b | Fixed offline `source-review` vertical slice | Installed CLI produces report/evidence/handoffs with zero tools/source-network/writes |
 | M6.2 | Canonical skills and harness sync | Lock, provenance, deterministic projections, drift/rollback/uninstall tests |
 | M6.3 | Generic bounded loop engine | Closed state machine, retries, hard stops, recovery and evaluation separation |
-| M6.4 | Model roles and policy router | Deterministic eligibility/explain, fresh decisions, explicit bounded fallback |
+| M6.4 | Model roles and policy router | Deterministic eligibility/explain, exact Ed25519 execution-plan authority, durable consumption/aggregate usage and explicit bounded fallback |
 | M6.5 | [Private context and memory graph](private-context-memory.md) | Namespaced CAS-bound provenance, TTL/supersession/conflict, reversible compaction, no trust promotion |
 | M6.6 | General agent-team orchestration | Exact DAG, narrowed delegation, parallel budget/task claims, truthful partial failure |
 | M6.7 | Governed live research tools | Allowlisted brokered search/fetch with provenance, injection isolation and egress policy |
@@ -320,11 +320,14 @@ new write authority, authenticated audit anchor or distributed durability.
 
 ## Evidence required for completion
 
-M6.1 requires deterministic scripted-adapter CI, adversarial source/injection tests,
+M6.1 deterministic completion requires scripted-adapter CI, adversarial source/injection tests,
 budget and crash fault injection, repository byte/mtime identity, leak-sentinel scans,
 installed-wheel import/smoke, old schema-digest pinning, full M1–M5 regression and
 canonical validation/render/doctor gates. Optional live local NIM/OpenAI-compatible
 evidence is additive and must use externally provisioned current observation data.
+The local adapter observation profile uses an operator-run HMAC ceremony and is
+claimed only as shared-key integrity/process separation, not asymmetric
+signer/verifier independence. Exact route authority is separately Ed25519-bound.
 
 Passing fixtures proves only the bounded offline profile. It does not prove arbitrary
 model truth, prompt-injection immunity, provider equivalence, safe third-party code
