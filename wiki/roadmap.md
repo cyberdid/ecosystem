@@ -22,7 +22,7 @@
 | M5.6 | Distinct-human quorum, separation of duties and single-use permits | Complete |
 | M5.7 | CLI, backup, portability, documentation and release conformance | Complete for the bounded `0.7.0` profile |
 | M6.0 | Functional-orchestration research, ADRs, contracts, threat model and acceptance gates | In progress; architecture frozen before execution claims |
-| M6.1 | Governed model bridge plus fixed offline `source-review` vertical slice | In progress; model bridge precedes team runner |
+| M6.1 | Governed model bridge plus fixed offline `source-review` vertical slice | Implemented and exercised live against a provisioned llama.cpp loopback deployment; three dogfood-found defects fixed with regression tests; the five-role live PASS is pending (model capability, not harness) and live iterations are paused |
 | M6.2 | Canonical skills and harness synchronization | Implemented in working tree; integrated M6 release evidence pending |
 | M6.3 | Generic bounded loop engine | Implemented in working tree; integrated M6 release evidence pending |
 | M6.4 | Logical model roles, policy routing and explicit bounded fallback | Implemented: pure router plus durable single-use consumption journal, `eco route plan` and source-review CLI composition; M6 release evidence pending |

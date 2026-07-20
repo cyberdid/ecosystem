@@ -4,6 +4,42 @@ Append-only хронологічний лог операцій. Формат: `#
 
 ---
 
+## [2026-07-20] implementation | Live source-review dogfood: three fixes, ceremony script, honest status
+
+- Scripted the operator evidence ceremony
+  (`scripts/provision_local_source_review.py`): probes a loopback
+  OpenAI-compatible endpoint with text and strict JSON-schema structured
+  output, writes the observed `AdapterConformanceProfile` into
+  `.ai/evals/observed/` and signs the envelope into a private external path.
+  The runtime still never signs its own evidence.
+- Declared and provisioned one real enabled local deployment
+  (`local-llamacpp-gemma`, llama.cpp b9652 loopback) in canonical
+  `.ai/deployments.yaml`/`trust.yaml`, plus a dogfood source bundle under
+  `loops/source-review-dogfood/` reviewing the preserved multi-model-team
+  article.
+- Live dogfooding found and fixed three genuine defects, each with regression
+  tests: (1) llama.cpp silently degrades to unconstrained generation when the
+  wire schema contains `minLength`/`maxLength` — the adapter now sends a
+  documented grammar-safe projection while eco keeps validating the full
+  schema; (2) `EndpointBinding` record ids collided across runs against one
+  durable store (`ECO_STORE_ID_CONFLICT`) — ids are now content-addressed over
+  the full sealed content; (3) the 120 s per-call transport ceiling was too
+  tight for CPU backends — the source-review profile now allows 300 s while
+  every call stays fenced by deadline and durable budgets.
+- Issuer-key resolution became per-consumer: `verify_trust_bootstrap` resolves
+  only the snapshot issuer and source-review only eligible conformance
+  issuers, so adding an adapter issuer no longer blocks the M4 loop
+  environment. The full doctor still resolves every declared issuer.
+- Sixteen live attempts proved the chain end-to-end (validation → signed
+  evidence → `eco route plan` → durable single-use route consumption with an
+  observed `ECO_ROUTE_ALREADY_CONSUMED` denial → policy → durable PREPARE →
+  real HTTP → CAS → truthful terminal results). The five-role PASS is still
+  pending: residual failures are small-model capability against the
+  deterministic gates (unique ids, byte-exact quotes, exact coverage,
+  verified-requires-evidence), amplified by GPU contention on the host. Live
+  model iterations are paused by owner instruction; see the
+  [handoff](../docs/research/2026-07-20-m6-live-dogfood-handoff-claude.md).
+
 ## [2026-07-17] implementation | M6.4 durable route consumption and CLI composition
 
 - Added `DurableRouteConsumptionJournal`: a private HMAC-authenticated SQLite
