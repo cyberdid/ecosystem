@@ -23,6 +23,7 @@ from eco_runtime.adapters import (
     LoopbackOpenAITypedHTTPInvoker,
     OpenAITypedChatInvocation,
     TypedOpenAICompatibleAdapter,
+    grammar_safe_response_schema,
 )
 from eco_runtime.digests import semantic_digest
 from eco_runtime.errors import RuntimeAdapterError, RuntimeStoreError
@@ -210,8 +211,10 @@ class TypedAdapterTests(unittest.TestCase):
         self.assertEqual(body["tool_choice"], "none")
         self.assertTrue(body["response_format"]["json_schema"]["strict"])
         self.assertEqual(
-            body["response_format"]["json_schema"]["schema"], OUTPUT_SCHEMA
+            body["response_format"]["json_schema"]["schema"],
+            grammar_safe_response_schema(OUTPUT_SCHEMA),
         )
+        self.assertNotIn("$schema", body["response_format"]["json_schema"]["schema"])
         self.assertEqual(
             [message["role"] for message in body["messages"]],
             ["system", "user", "user", "user"],
@@ -598,6 +601,38 @@ class WorkflowRestartRecoveryTests(unittest.TestCase):
             self.assertEqual(persisted, first_bytes)
         finally:
             fixture.tearDown()
+
+
+class GrammarSafeSchemaTests(unittest.TestCase):
+    def test_projection_strips_only_grammar_unexpressible_keywords(self) -> None:
+        schema = {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "type": "object",
+            "additionalProperties": False,
+            "required": ["items", "label"],
+            "properties": {
+                "label": {"type": "string", "minLength": 1, "maxLength": 4000},
+                "items": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 8,
+                    "uniqueItems": True,
+                    "items": {"type": "string", "minLength": 1},
+                },
+                "level": {"enum": ["low", "high"]},
+            },
+        }
+        original = json.loads(json.dumps(schema))
+        projected = grammar_safe_response_schema(schema)
+        self.assertEqual(schema, original)
+        surface = json.dumps(projected)
+        for keyword in ("$schema", "minLength", "maxLength", "uniqueItems"):
+            self.assertNotIn(keyword, surface)
+        self.assertEqual(projected["properties"]["items"]["minItems"], 1)
+        self.assertEqual(projected["properties"]["items"]["maxItems"], 8)
+        self.assertEqual(projected["properties"]["level"]["enum"], ["low", "high"])
+        self.assertFalse(projected["additionalProperties"])
+        self.assertEqual(projected["required"], ["items", "label"])
 
 
 if __name__ == "__main__":

@@ -60,6 +60,10 @@ from eco_routing.errors import RoutingError
 
 _ENV_NAME = re.compile(r"^ECO_[A-Z0-9_]{1,120}$")
 _ROUTE_FILE_LIMIT_BYTES = 262_144
+# Per-call transport ceiling for the governed local deployment. A slow local
+# CPU backend is a legitimate deployment; each call remains fenced by the run
+# deadline, durable budgets and the started/no-retry accounting.
+_MODEL_TRANSPORT_TIMEOUT_MS = 300_000
 _IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
 _ORCHESTRATION_IDENTIFIER = re.compile(
     r"^[a-z0-9](?:[a-z0-9._:-]{0,126}[a-z0-9])?$"
@@ -319,7 +323,20 @@ def _verify_deployment(
     trust = bundle.get("trust")
     if not isinstance(trust, dict):
         raise _fail("ECO_SOURCE_REVIEW_EVIDENCE_CONFIG_INVALID", "Evidence configuration is invalid")
-    policies = _issuer_policies(trust)
+    eligible_issuers = frozenset(
+        issuer["id"]
+        for issuer in trust.get("evidence", {}).get("issuers", [])
+        if isinstance(issuer, dict)
+        and isinstance(issuer.get("id"), str)
+        and "AdapterConformanceProfile" in issuer.get("allowedKinds", [])
+        and deployment["id"] in issuer.get("allowedDeployments", [])
+    )
+    if not eligible_issuers:
+        raise _fail("ECO_SOURCE_REVIEW_EVIDENCE_CONFIG_INVALID", "Evidence configuration is invalid")
+    try:
+        policies = _issuer_policies(trust, required_issuer_ids=eligible_issuers)
+    except RuntimePolicyError as exc:
+        raise _fail(exc.code, "Evidence configuration is invalid") from exc
     conformance = trust.get("conformance", {})
     observations = [
         item
@@ -449,6 +466,7 @@ def _build_orchestration_inputs(
         transport_profile="local-loopback-http",
         resolved_at=context.created_at,
         valid_until=context.route_valid_until,
+        maximum_timeout_ms=_MODEL_TRANSPORT_TIMEOUT_MS,
     )
     routes: list[dict[str, Any]] = []
     for role_id, attempt in EXECUTION_SLOTS:
@@ -632,6 +650,7 @@ class _DynamicGovernedExecutor:
             transport_profile="local-loopback-http",
             resolved_at=self._context.created_at,
             valid_until=self._context.route_valid_until,
+            maximum_timeout_ms=_MODEL_TRANSPORT_TIMEOUT_MS,
         )
         endpoint = target.endpoint_binding()
         model_request = {
@@ -659,7 +678,10 @@ class _DynamicGovernedExecutor:
                     "maxOutputBytes": _MAX_OUTPUT_BYTES,
                     "temperatureMillis": 0,
                 },
-                "timeoutMs": min(runtime_budget["maxDurationSeconds"] * 1000, 120_000),
+                "timeoutMs": min(
+                    runtime_budget["maxDurationSeconds"] * 1000,
+                    _MODEL_TRANSPORT_TIMEOUT_MS,
+                ),
                 "fallbackPolicy": "none",
             },
         }

@@ -163,10 +163,34 @@ def _expected_entries(trust: dict[str, Any]) -> dict[str, tuple[str, str, str]]:
     return expected
 
 
-def _issuer_policies(trust: dict[str, Any]) -> tuple[EvidenceIssuerPolicy, ...]:
+def _issuer_policies(
+    trust: dict[str, Any],
+    *,
+    required_issuer_ids: frozenset[str] | None = None,
+) -> tuple[EvidenceIssuerPolicy, ...]:
+    """Build verification policies, resolving keys only where needed.
+
+    A workflow that consumes one class of evidence must not become unavailable
+    because an unrelated issuer's key is absent from its environment. When
+    ``required_issuer_ids`` is given, only those issuers are materialized (and
+    each requested id must exist); the full-diagnostic doctor keeps the default
+    of resolving every declared issuer.
+    """
+
     issuer_specs = trust.get("evidence", {}).get("issuers")
     if not isinstance(issuer_specs, list) or not issuer_specs:
         raise RuntimePolicyError("ECO_RUNTIME_TRUST_CONFIG_INVALID", "Trust configuration is invalid")
+    if required_issuer_ids is not None:
+        by_id = {
+            issuer.get("id"): issuer
+            for issuer in issuer_specs
+            if isinstance(issuer, dict) and isinstance(issuer.get("id"), str)
+        }
+        if not required_issuer_ids or required_issuer_ids - set(by_id):
+            raise RuntimePolicyError(
+                "ECO_RUNTIME_TRUST_CONFIG_INVALID", "Trust configuration is invalid"
+            )
+        issuer_specs = [by_id[item] for item in sorted(required_issuer_ids)]
     try:
         policies = tuple(
             EvidenceIssuerPolicy(
@@ -225,10 +249,15 @@ def verified_trust_bootstrap(
     if not isinstance(project_id, str):
         raise RuntimePolicyError("ECO_RUNTIME_TRUST_CONFIG_INVALID", "Trust configuration is invalid")
     expected = _expected_entries(trust)
-    policies = _issuer_policies(trust)
     snapshot_spec = trust.get("repositorySnapshot")
     if not isinstance(snapshot_spec, dict):
         raise RuntimePolicyError("ECO_RUNTIME_TRUST_CONFIG_INVALID", "Trust configuration is invalid")
+    snapshot_issuer = snapshot_spec.get("issuer")
+    if not isinstance(snapshot_issuer, dict) or not isinstance(snapshot_issuer.get("id"), str):
+        raise RuntimePolicyError("ECO_RUNTIME_TRUST_CONFIG_INVALID", "Trust configuration is invalid")
+    policies = _issuer_policies(
+        trust, required_issuer_ids=frozenset({snapshot_issuer["id"]})
+    )
     maximum_file_bytes = snapshot_spec.get("maximumFileBytes")
     if not isinstance(maximum_file_bytes, int) or maximum_file_bytes < 1:
         raise RuntimePolicyError("ECO_RUNTIME_TRUST_CONFIG_INVALID", "Trust configuration is invalid")

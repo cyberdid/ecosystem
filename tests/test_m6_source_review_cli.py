@@ -399,6 +399,37 @@ class SourceReviewCLIProductionTests(unittest.TestCase):
                 )
                 self.assertEqual(self._repo_snapshot(), repository_before)
 
+    def test_second_run_with_new_run_id_shares_the_durable_store(self) -> None:
+        manifest = self._write_sources()
+        with _Provider() as provider:
+            self._write_bundle(provider.endpoint)
+            environment = {
+                "ECO_LOCAL_OPENAI_ENDPOINT": provider.endpoint,
+                "ECO_LOCAL_ADAPTER_EVIDENCE_KEY": EVIDENCE_KEY,
+                "ECO_LOCAL_ADAPTER_ENVELOPE_FILE": str(
+                    self.external / "observation-envelope.json"
+                ),
+                "ECO_SOURCE_REVIEW_HMAC_KEY": HMAC_KEY,
+                "ECO_SOURCE_REVIEW_PROOF_KEY": PROOF_KEY,
+            }
+            with mock.patch.dict(os.environ, environment, clear=False):
+                first_stdout = io.StringIO()
+                with contextlib.redirect_stdout(first_stdout):
+                    first = main(self._arguments(manifest))
+                self.assertEqual(first, 0, first_stdout.getvalue())
+                self.assertEqual(len(provider.calls), 5)
+
+                arguments = self._arguments(manifest)
+                arguments[arguments.index("run-1")] = "run-2"
+                second_stdout = io.StringIO()
+                with contextlib.redirect_stdout(second_stdout):
+                    second = main(arguments)
+                self.assertEqual(second, 0, second_stdout.getvalue())
+                second_result = json.loads(second_stdout.getvalue())
+                self.assertEqual(second_result["status"], "succeeded")
+                self.assertFalse(second_result["replayed"])
+                self.assertEqual(len(provider.calls), 10)
+
     def test_evidence_expiring_before_deadline_blocks_before_http_or_state_write(self) -> None:
         manifest = self._write_sources()
         with _Provider() as provider:

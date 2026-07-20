@@ -194,6 +194,35 @@ class _NoRedirects(urllib_request.HTTPRedirectHandler):
         return None
 
 
+_GRAMMAR_UNSUPPORTED_KEYWORDS = ("$schema", "minLength", "maxLength", "uniqueItems")
+
+
+def grammar_safe_response_schema(schema: Mapping[str, Any]) -> dict[str, Any]:
+    """Project a response schema onto the subset provider grammars can express.
+
+    ``minLength``/``maxLength``/``uniqueItems`` are not expressible in the
+    grammar engines behind OpenAI-compatible structured output (llama.cpp
+    silently degrades to unconstrained generation when they are present, and
+    the OpenAI structured-output subset excludes them). The wire schema is
+    only a generation constraint hint: the caller keeps validating the
+    response against the complete original schema, so removing these keywords
+    here narrows nothing at the authoritative boundary.
+    """
+
+    def _walk(node: Any) -> Any:
+        if isinstance(node, Mapping):
+            return {
+                key: _walk(value)
+                for key, value in node.items()
+                if key not in _GRAMMAR_UNSUPPORTED_KEYWORDS
+            }
+        if isinstance(node, list):
+            return [_walk(item) for item in node]
+        return node
+
+    return _walk(dict(schema))
+
+
 class LoopbackOpenAITypedHTTPInvoker:
     """Bounded credential-free HTTP transport for a pinned loopback endpoint."""
 
@@ -230,7 +259,7 @@ class LoopbackOpenAITypedHTTPInvoker:
                 "response_format": {
                     "json_schema": {
                         "name": "eco_structured_output",
-                        "schema": dict(request.response_schema),
+                        "schema": grammar_safe_response_schema(request.response_schema),
                         "strict": True,
                     },
                     "type": "json_schema",
@@ -480,7 +509,18 @@ class PinnedOpenAICompatibleDeployment:
         if valid_until.astimezone(timezone.utc) <= resolved_at.astimezone(timezone.utc):
             raise RuntimeAdapterError("ECO_ENDPOINT_BINDING_INVALID", "Endpoint binding lifetime is invalid")
         credential_mode = "none" if transport_profile == "local-loopback-http" else "transport-owned"
-        binding_id = f"endpoint-{semantic_digest({'deploymentId': candidate['id'], 'endpoint': normalized_endpoint})}"
+        # The id must be content-addressed over every field that reaches the
+        # sealed record: the durable store binds one immutable digest per record
+        # id, and a later resolution with the same deployment/endpoint but a new
+        # resolvedAt/validUntil window must coexist as history, not collide.
+        binding_id = "endpoint-" + semantic_digest(
+            {
+                "deploymentId": candidate["id"],
+                "endpoint": normalized_endpoint,
+                "resolvedAt": resolved_at_text,
+                "validUntil": valid_until_text,
+            }
+        )
         binding = {
             "apiVersion": API_VERSION,
             "kind": "EndpointBinding",
