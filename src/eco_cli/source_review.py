@@ -32,6 +32,7 @@ from eco_orchestration.source_bundle import (
     SourceBundleLimits,
     ingest_source_bundle_manifest_file,
     load_source_bundle_manifest,
+    verify_source_bundle_files,
 )
 from eco_orchestration.source_review import (
     EXECUTION_SLOTS,
@@ -43,19 +44,31 @@ from eco_runtime.adapters import (
     LoopbackOpenAITypedHTTPInvoker,
     PinnedOpenAICompatibleDeployment,
     TypedOpenAICompatibleAdapter,
+    normalized_endpoint,
 )
 from eco_runtime.artifact_store import ContentAddressedArtifactStore
 from eco_runtime.contracts import API_VERSION
 from eco_runtime.digests import deployment_identity_digest, semantic_digest
-from eco_runtime.evidence import EvidenceTrustStore, TrustedEvidenceIngestor
-from eco_runtime.errors import RuntimePolicyError, RuntimeStoreError
+from eco_runtime.evidence import (
+    EvidenceTrustStore,
+    ObservationBindingExpectation,
+    TrustedEvidenceIngestor,
+)
+from eco_runtime.errors import RuntimeAdapterError, RuntimePolicyError, RuntimeStoreError
 from eco_runtime.model_orchestrator import GovernedModelOrchestrator
 from eco_runtime.orchestrator import RuntimeCapabilities
 from eco_runtime.policy import PolicyEngine
 from eco_runtime.store import SQLiteRuntimeStore
 from eco_runtime.trust_diagnostics import _external_evidence, _issuer_policies
-from eco_routing.consumption import DurableRouteConsumptionJournal, verify_route_binding
+from eco_routing.authority import Ed25519RouteAuthorityVerifier
+from eco_routing.binding import route_execution_plan_digest
+from eco_routing.consumption import (
+    DurableRouteConsumptionJournal,
+    verify_exact_route_binding,
+)
+from eco_routing.contracts import validate_routing_record
 from eco_routing.errors import RoutingError
+from eco_routing.usage import DurableRouteUsageJournal
 
 
 _ENV_NAME = re.compile(r"^ECO_[A-Z0-9_]{1,120}$")
@@ -75,9 +88,12 @@ _SOURCE_LIMITS = SourceBundleLimits(
     maximum_manifest_bytes=262_144,
 )
 _MAX_OUTPUT_BYTES = 262_144
-_MAX_OUTPUT_TOKENS = 32_768
-_MAX_RUNTIME_INPUT_BYTES = 9_500_000
-_MAX_RUNTIME_TOTAL_TOKENS = 10_000_000
+# The fixed source-review profile is intentionally routable on a 32K-context
+# local model. Input bytes are charged conservatively as tokens, so the bridge
+# can never spend more than the authenticated routing reservation.
+_MAX_OUTPUT_TOKENS = 8_192
+_MAX_RUNTIME_INPUT_BYTES = 24_000
+_MAX_RUNTIME_TOTAL_TOKENS = _MAX_RUNTIME_INPUT_BYTES + _MAX_OUTPUT_TOKENS
 _LOGICAL_ROLE = "review.private"
 
 
@@ -131,42 +147,75 @@ def _secret(name: str) -> bytes:
     return encoded
 
 
-def _load_route_records(
-    route_decision_path: Path | None, route_request_path: Path | None
-) -> tuple[dict[str, Any], dict[str, Any]] | None:
-    if route_decision_path is None and route_request_path is None:
-        return None
-    if route_decision_path is None or route_request_path is None:
+@dataclass(frozen=True)
+class ExactRouteEvidence:
+    decision: dict[str, Any]
+    request: dict[str, Any]
+    policy: dict[str, Any]
+    prices: dict[str, Any]
+    authority_envelope: bytes
+
+
+def _read_bounded_route_file(path: Path, *, json_object: bool) -> dict[str, Any] | bytes:
+    try:
+        resolved = Path(path)
+        if (
+            not resolved.is_file()
+            or resolved.is_symlink()
+            or resolved.stat().st_size > _ROUTE_FILE_LIMIT_BYTES
+        ):
+            raise _fail(
+                "ECO_SOURCE_REVIEW_ROUTE_INVALID",
+                "Route evidence file is missing or exceeds the input limit",
+            )
+        encoded = resolved.read_bytes()
+        if not json_object:
+            return encoded
+        payload = json.loads(encoded.decode("utf-8", errors="strict"))
+    except SourceReviewCLIError:
+        raise
+    except (OSError, UnicodeDecodeError, ValueError, RecursionError) as exc:
         raise _fail(
             "ECO_SOURCE_REVIEW_ROUTE_INVALID",
-            "Route decision and request files are required together",
+            "Route evidence file is not bounded UTF-8 JSON",
+        ) from exc
+    if not isinstance(payload, dict):
+        raise _fail(
+            "ECO_SOURCE_REVIEW_ROUTE_INVALID",
+            "Route evidence file must contain one JSON object",
         )
-    records: list[dict[str, Any]] = []
-    for path in (route_decision_path, route_request_path):
-        try:
-            resolved = Path(path)
-            if (
-                not resolved.is_file()
-                or resolved.is_symlink()
-                or resolved.stat().st_size > _ROUTE_FILE_LIMIT_BYTES
-            ):
-                raise _fail(
-                    "ECO_SOURCE_REVIEW_ROUTE_INVALID",
-                    "Route evidence file is missing or exceeds the input limit",
-                )
-            payload = json.loads(resolved.read_text(encoding="utf-8"))
-        except SourceReviewCLIError:
-            raise
-        except (OSError, UnicodeDecodeError, ValueError) as exc:
-            raise _fail(
-                "ECO_SOURCE_REVIEW_ROUTE_INVALID", "Route evidence file is not bounded UTF-8 JSON"
-            ) from exc
-        if not isinstance(payload, dict):
-            raise _fail(
-                "ECO_SOURCE_REVIEW_ROUTE_INVALID", "Route evidence file must contain one JSON object"
-            )
-        records.append(payload)
-    return records[0], records[1]
+    return payload
+
+
+def _load_route_records(
+    route_decision_path: Path | None,
+    route_request_path: Path | None,
+    route_policy_path: Path | None,
+    route_price_catalog_path: Path | None,
+    route_authority_path: Path | None,
+) -> ExactRouteEvidence | None:
+    paths = (
+        route_decision_path,
+        route_request_path,
+        route_policy_path,
+        route_price_catalog_path,
+        route_authority_path,
+    )
+    if all(path is None for path in paths):
+        return None
+    if any(path is None for path in paths):
+        raise _fail(
+            "ECO_SOURCE_REVIEW_ROUTE_INVALID",
+            "Decision, request, policy, prices and authority files are required together",
+        )
+    assert all(path is not None for path in paths)
+    return ExactRouteEvidence(
+        decision=_read_bounded_route_file(route_decision_path, json_object=True),
+        request=_read_bounded_route_file(route_request_path, json_object=True),
+        policy=_read_bounded_route_file(route_policy_path, json_object=True),
+        prices=_read_bounded_route_file(route_price_catalog_path, json_object=True),
+        authority_envelope=_read_bounded_route_file(route_authority_path, json_object=False),
+    )
 
 
 def _outside_repository(path: Path, repository: Path, *, directory: bool) -> Path:
@@ -256,6 +305,18 @@ class CompositionContext:
     capabilities: RuntimeCapabilities
     runtime_store: SQLiteRuntimeStore
     artifact_store: ContentAddressedArtifactStore
+    route_decision: dict[str, Any] | None = None
+    route_request: dict[str, Any] | None = None
+    route_effect_digest: str | None = None
+    route_usage_path: Path | None = None
+    route_usage_hmac_key: bytes | None = None
+    route_authority_verifier: Ed25519RouteAuthorityVerifier | None = None
+    route_policy_digest: str | None = None
+    route_price_catalog_digest: str | None = None
+    route_execution_plan_digest: str | None = None
+    route_issuer_id: str | None = None
+    route_key_id: str | None = None
+    route_authority_valid_until: datetime | None = None
 
     @property
     def created_at_text(self) -> str:
@@ -267,7 +328,222 @@ class CompositionContext:
 
     @property
     def route_valid_until(self) -> datetime:
-        return min(self.deadline_at, self.verified.authority_valid_until)
+        values = [self.deadline_at, self.verified.authority_valid_until]
+        if self.route_authority_valid_until is not None:
+            values.append(self.route_authority_valid_until)
+        return min(values)
+
+
+def source_review_route_contract(
+    *,
+    project_id: str,
+    team_id: str,
+    run_id: str,
+    store_id: str,
+    created_at: str,
+    deadline_at: str,
+    manifest: Any,
+    source_verification: Mapping[str, Any],
+    deployment: Mapping[str, Any],
+    policy_digest: str,
+) -> dict[str, Any]:
+    """Build the exact secret-free plan an external route authority signs."""
+
+    aggregate_budget = {
+        "maximumCalls": len(EXECUTION_SLOTS),
+        "inputTokenCeiling": len(EXECUTION_SLOTS) * _MAX_RUNTIME_INPUT_BYTES,
+        "outputTokenCeiling": len(EXECUTION_SLOTS) * _MAX_OUTPUT_TOKENS,
+        "maximumCostMicrousd": 0,
+    }
+    context_digest = semantic_digest(
+        {
+            "domain": "eco-source-review-route-context-v1",
+            "manifestDigest": source_verification["manifestDigest"],
+            "ingestionPolicyDigest": source_verification["ingestionPolicyDigest"],
+            "entries": [
+                {
+                    "id": entry.id,
+                    "sha256": entry.sha256,
+                    "byteLength": entry.byte_length,
+                    "dataClass": entry.data_class,
+                    "mediaType": entry.media_type,
+                }
+                for entry in manifest.entries
+            ],
+        }
+    )
+    execution_plan = {
+        "protocol": "eco-source-review-execution-plan-v1",
+        "projectId": project_id,
+        "teamId": team_id,
+        "runId": run_id,
+        "storeId": store_id,
+        "createdAt": created_at,
+        "deadlineAt": deadline_at,
+        "workflow": "source-review",
+        "dataClass": manifest.data_class,
+        "manifestDigest": source_verification["manifestDigest"],
+        "ingestionPolicyDigest": source_verification["ingestionPolicyDigest"],
+        "contextDigest": context_digest,
+        "deploymentId": deployment["id"],
+        "deploymentIdentityDigest": deployment_identity_digest(deployment),
+        "roleSlots": [
+            {"roleId": role_id, "attempt": attempt}
+            for role_id, attempt in EXECUTION_SLOTS
+        ],
+        "constraints": {
+            "actionClass": "A0",
+            "allowCloud": False,
+            "fallbackPolicy": "none",
+            "network": "literal-loopback-model-only",
+            "tools": "denied",
+            "workspaceWrites": "denied",
+        },
+        "aggregateBudget": aggregate_budget,
+    }
+    execution_plan_digest = route_execution_plan_digest(execution_plan)
+    request_spec = {
+        "role": "eco-researcher",
+        "actionClass": "A0",
+        "dataClass": manifest.data_class,
+        "workloadClass": "research",
+        "requiredCapabilities": ["model.structured-output", "model.text"],
+        "requiredContextTokens": _MAX_RUNTIME_TOTAL_TOKENS,
+        "inputTokenCeiling": _MAX_RUNTIME_INPUT_BYTES,
+        "outputTokenCeiling": _MAX_OUTPUT_TOKENS,
+        "allowedZones": [deployment["zone"]],
+        "allowedRetentions": ["no-retention"],
+        "allowCloud": False,
+        "maximumCostMicrousd": 0,
+        "deadlineAt": deadline_at,
+        "executionProfile": "m6.1-local-zero-cost",
+        "policyDigest": policy_digest,
+        "contextDigest": context_digest,
+        "executionPlanDigest": execution_plan_digest,
+        "aggregateBudget": aggregate_budget,
+    }
+    effect_digest = semantic_digest(
+        {
+            "domain": "eco-source-review-route-effect-v1",
+            "executionPlanDigest": execution_plan_digest,
+            "contextDigest": context_digest,
+            "deploymentIdentityDigest": deployment_identity_digest(deployment),
+        }
+    )
+    return {
+        "executionPlan": execution_plan,
+        "executionPlanDigest": execution_plan_digest,
+        "contextDigest": context_digest,
+        "effectDigest": effect_digest,
+        "requestSpec": request_spec,
+        "aggregateBudget": aggregate_budget,
+    }
+
+
+def _verify_exact_source_review_route(
+    evidence: ExactRouteEvidence,
+    *,
+    bundle: Mapping[str, Any],
+    manifest: Any,
+    source_verification: Mapping[str, Any],
+    verified: VerifiedDeployment,
+    team_id: str,
+    run_id: str,
+    store_id: str,
+    created_at: str,
+    deadline_at: str,
+    now: datetime,
+) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], Ed25519RouteAuthorityVerifier]:
+    try:
+        policy = validate_routing_record(evidence.policy)
+        prices = validate_routing_record(evidence.prices)
+    except Exception as exc:
+        raise _fail("ECO_SOURCE_REVIEW_ROUTE_INVALID", "Trusted routing input is invalid") from exc
+    if policy["kind"] != "ModelRoutingPolicy" or prices["kind"] != "TrustedPriceCatalog":
+        raise _fail("ECO_SOURCE_REVIEW_ROUTE_INVALID", "Trusted routing input kind is invalid")
+    contract = source_review_route_contract(
+        project_id=bundle["project"]["metadata"]["name"],
+        team_id=team_id,
+        run_id=run_id,
+        store_id=store_id,
+        created_at=created_at,
+        deadline_at=deadline_at,
+        manifest=manifest,
+        source_verification=source_verification,
+        deployment=verified.deployment,
+        policy_digest=policy["metadata"]["recordDigest"],
+    )
+    authority = bundle.get("trust", {}).get("routeAuthority")
+    if not isinstance(authority, dict) or authority.get("algorithm") != "ed25519":
+        raise _fail("ECO_ROUTE_AUTHORITY_REQUIRED", "Trusted route authority is not configured")
+    key_ref = authority.get("publicKeyRef")
+    if not isinstance(key_ref, str) or not key_ref.startswith("env:"):
+        raise _fail("ECO_ROUTE_AUTHORITY_REQUIRED", "Trusted route authority is not configured")
+    try:
+        verifier = Ed25519RouteAuthorityVerifier(
+            evidence.authority_envelope,
+            _secret(key_ref[4:]),
+        )
+        decision, request = verify_exact_route_binding(
+            evidence.decision,
+            evidence.request,
+            expected_deployment_id=verified.deployment["id"],
+            expected_deployment_identity_digest=deployment_identity_digest(
+                verified.deployment
+            ),
+            expected_policy_digest=policy["metadata"]["recordDigest"],
+            expected_price_catalog_digest=prices["metadata"]["recordDigest"],
+            expected_execution_plan_digest=contract["executionPlanDigest"],
+            authority_verifier=verifier,
+            expected_route_issuer_id=authority["issuerId"],
+            expected_route_key_id=authority["keyId"],
+            expected_route_algorithm="ed25519",
+            cost_reservation_microusd=0,
+            now=now,
+        )
+    except RoutingError as exc:
+        raise _fail(exc.code, "Route evidence is not acceptable") from exc
+    if request["spec"] != contract["requestSpec"]:
+        raise _fail(
+            "ECO_ROUTE_EXECUTION_PLAN_MISMATCH",
+            "Route request does not match the source-review execution plan",
+        )
+    try:
+        route_authority = verifier.verify_route_authority(
+            decision=decision,
+            request=request,
+            now=now,
+        )
+        authority_valid_until = datetime.fromisoformat(
+            route_authority.valid_until.replace("Z", "+00:00")
+        ).astimezone(timezone.utc)
+    except (RoutingError, TypeError, ValueError) as exc:
+        code = exc.code if isinstance(exc, RoutingError) else "ECO_ROUTE_AUTHORITY_INVALID"
+        raise _fail(code, "Route authority lifetime is invalid") from exc
+    run_deadline = _parse_time(deadline_at, field="deadline-at")
+    try:
+        decision_valid_until = _parse_time(
+            decision["spec"]["validUntil"], field="route valid-until"
+        )
+    except (KeyError, TypeError) as exc:
+        raise _fail("ECO_SOURCE_REVIEW_ROUTE_INVALID", "Route lifetime is invalid") from exc
+    if decision_valid_until < run_deadline:
+        raise _fail(
+            "ECO_ROUTE_AUTHORITY_WINDOW",
+            "Run deadline exceeds route decision authority",
+        )
+    if authority_valid_until < run_deadline:
+        raise _fail(
+            "ECO_ROUTE_AUTHORITY_WINDOW",
+            "Run deadline exceeds signed route authority",
+        )
+    contract = {
+        **contract,
+        "routeAuthorityValidUntil": authority_valid_until,
+        "policyDigest": policy["metadata"]["recordDigest"],
+        "priceCatalogDigest": prices["metadata"]["recordDigest"],
+    }
+    return decision, request, contract, verifier
 
 
 def _verify_deployment(
@@ -318,23 +594,30 @@ def _verify_deployment(
     endpoint_name = endpoint_ref[4:]
     if _ENV_NAME.fullmatch(endpoint_name) is None or not os.environ.get(endpoint_name):
         raise _fail("ECO_SOURCE_REVIEW_ENDPOINT_UNAVAILABLE", "Local endpoint is unavailable")
-    endpoint_url = os.environ[endpoint_name]
+    try:
+        endpoint_url = normalized_endpoint(
+            os.environ[endpoint_name],
+            "local-loopback-http",
+        )
+    except RuntimeAdapterError as exc:
+        raise _fail("ECO_SOURCE_REVIEW_ENDPOINT_INVALID", "Local endpoint is invalid") from exc
 
     trust = bundle.get("trust")
     if not isinstance(trust, dict):
         raise _fail("ECO_SOURCE_REVIEW_EVIDENCE_CONFIG_INVALID", "Evidence configuration is invalid")
-    eligible_issuers = frozenset(
-        issuer["id"]
+    eligible_issuer_keys = frozenset(
+        (issuer["id"], issuer["keyId"])
         for issuer in trust.get("evidence", {}).get("issuers", [])
         if isinstance(issuer, dict)
         and isinstance(issuer.get("id"), str)
+        and isinstance(issuer.get("keyId"), str)
         and "AdapterConformanceProfile" in issuer.get("allowedKinds", [])
         and deployment["id"] in issuer.get("allowedDeployments", [])
     )
-    if not eligible_issuers:
+    if not eligible_issuer_keys:
         raise _fail("ECO_SOURCE_REVIEW_EVIDENCE_CONFIG_INVALID", "Evidence configuration is invalid")
     try:
-        policies = _issuer_policies(trust, required_issuer_ids=eligible_issuers)
+        policies = _issuer_policies(trust, required_issuer_keys=eligible_issuer_keys)
     except RuntimePolicyError as exc:
         raise _fail(exc.code, "Evidence configuration is invalid") from exc
     conformance = trust.get("conformance", {})
@@ -361,6 +644,15 @@ def _verify_deployment(
         expected_deployment_identity_digest=deployment_identity_digest(deployment),
         trusted_suite_digests={suite_digest},
         now=now,
+        expected_project_id=bundle["project"]["metadata"]["name"],
+        expected_endpoint_ref=endpoint_ref,
+        expected_endpoint_reference_digest=deployment["identity"][
+            "endpointReferenceDigest"
+        ],
+        expected_resolved_endpoint_digest=semantic_digest(
+            {"endpointUrl": endpoint_url}
+        ),
+        expected_model=deployment["model"],
     )
     observation = verified.as_dict()
     try:
@@ -413,9 +705,9 @@ def _aggregate_budget(context: CompositionContext) -> dict[str, int]:
         "maxDurationSeconds": duration,
         "maxAttempts": 7,
         "maxModelRequests": 7,
-        "maxInputBytes": 70_000_000,
-        "maxOutputBytes": 7 * _MAX_OUTPUT_BYTES,
-        "maxTotalTokens": 70_000_000,
+        "maxInputBytes": len(EXECUTION_SLOTS) * _MAX_RUNTIME_INPUT_BYTES,
+        "maxOutputBytes": len(EXECUTION_SLOTS) * _MAX_OUTPUT_BYTES,
+        "maxTotalTokens": len(EXECUTION_SLOTS) * _MAX_RUNTIME_TOTAL_TOKENS,
         "maxCostMicrousd": 0,
     }
 
@@ -592,6 +884,19 @@ class _DynamicGovernedExecutor:
             evidence_policies=self._context.verified.evidence_policies,
             evidence_now=self._context.created_at,
             trusted_suite_digests=set(self._context.verified.trusted_suite_digests),
+            observation_expectations={
+                self._context.verified.deployment["id"]: ObservationBindingExpectation(
+                    project_id=self._context.project_id,
+                    endpoint_ref=self._context.verified.deployment["endpointRef"],
+                    endpoint_reference_digest=self._context.verified.deployment[
+                        "identity"
+                    ]["endpointReferenceDigest"],
+                    resolved_endpoint_digest=semantic_digest(
+                        {"endpointUrl": self._context.verified.endpoint_url}
+                    ),
+                    model=self._context.verified.deployment["model"],
+                )
+            },
             decision_ttl_seconds=3_600,
         )
         runtime_budget = {
@@ -695,6 +1000,75 @@ class _DynamicGovernedExecutor:
         )
         if model_decision["spec"]["effect"] != "allow":
             raise _fail(model_decision["spec"]["reasonCodes"][0], "Model call was denied")
+        route_parts = (
+            self._context.route_decision,
+            self._context.route_request,
+            self._context.route_effect_digest,
+            self._context.route_usage_path,
+            self._context.route_usage_hmac_key,
+            self._context.route_authority_verifier,
+            self._context.route_policy_digest,
+            self._context.route_price_catalog_digest,
+            self._context.route_execution_plan_digest,
+            self._context.route_issuer_id,
+            self._context.route_key_id,
+        )
+        if any(value is not None for value in route_parts):
+            if any(value is None for value in route_parts):
+                raise _fail(
+                    "ECO_ROUTE_EXACT_BINDING_REQUIRED",
+                    "Exact route usage state is incomplete",
+                )
+            role_effect_digest = semantic_digest(
+                {
+                    "domain": "eco-source-review-role-effect-v1",
+                    "workflowEffectDigest": self._context.route_effect_digest,
+                    "roleId": invocation.role_id,
+                    "attempt": invocation.attempt,
+                    "typedEnvelopeDigest": envelope_digest,
+                    "modelRequestDigest": semantic_digest(model_request),
+                    "modelDecisionDigest": semantic_digest(model_decision),
+                }
+            )
+            try:
+                current = datetime.now(timezone.utc)
+                verify_exact_route_binding(
+                    self._context.route_decision,
+                    self._context.route_request,
+                    expected_deployment_id=self._context.verified.deployment["id"],
+                    expected_deployment_identity_digest=deployment_identity_digest(
+                        self._context.verified.deployment
+                    ),
+                    expected_policy_digest=self._context.route_policy_digest,
+                    expected_price_catalog_digest=self._context.route_price_catalog_digest,
+                    expected_execution_plan_digest=self._context.route_execution_plan_digest,
+                    authority_verifier=self._context.route_authority_verifier,
+                    expected_route_issuer_id=self._context.route_issuer_id,
+                    expected_route_key_id=self._context.route_key_id,
+                    expected_route_algorithm="ed25519",
+                    cost_reservation_microusd=0,
+                    now=current,
+                )
+                with DurableRouteUsageJournal(
+                    self._context.route_usage_path,
+                    hmac_key=self._context.route_usage_hmac_key,
+                    key_id="source-review-route-usage-v1",
+                ) as route_usage:
+                    route_usage.reserve(
+                        self._context.route_decision,
+                        self._context.route_request,
+                        consumer_kind="source-review",
+                        consumer_id=self._context.run_id,
+                        workflow_effect_digest=self._context.route_effect_digest,
+                        effect_id=f"{invocation.role_id}:{invocation.attempt}",
+                        effect_digest=role_effect_digest,
+                        input_tokens=len(envelope_bytes),
+                        output_tokens=_MAX_OUTPUT_TOKENS,
+                        cost_microusd=0,
+                        now=current,
+                    )
+            except RoutingError as exc:
+                raise _fail(exc.code, "Route aggregate budget is unavailable") from exc
         self._initialize_store(plan, planned.decision)
         orchestrator = GovernedModelOrchestrator(
             self._context.runtime_store,
@@ -811,27 +1185,30 @@ def preflight_source_review(
     proof_env: str,
     team_id: str,
     run_id: str,
+    store_id: str,
     created_at: str,
     deadline_at: str,
     route_decision_path: Path | None = None,
     route_request_path: Path | None = None,
+    route_policy_path: Path | None = None,
+    route_price_catalog_path: Path | None = None,
+    route_authority_path: Path | None = None,
 ) -> dict[str, Any]:
     repository = repository.resolve(strict=True)
     _identifier(team_id, orchestration=True)
     _identifier(run_id, orchestration=True)
+    _identifier(store_id)
     if len(run_id) > 96:
         raise _fail("ECO_SOURCE_REVIEW_IDENTIFIER_INVALID", "Run identity is too long")
     created = _parse_time(created_at, field="created-at")
     deadline = _parse_time(deadline_at, field="deadline-at")
     now = datetime.now(timezone.utc).replace(microsecond=0)
     duration = int((deadline - created).total_seconds())
-    created_age = (now - created).total_seconds()
     if (
         duration < 1
         or duration > 3_600
         or deadline <= now
-        or created_age < -300
-        or created_age > 300
+        or created > now
     ):
         raise _fail("ECO_SOURCE_REVIEW_TIME_INVALID", "Run time window is invalid")
     database = _outside_repository(database_path, repository, directory=False)
@@ -847,6 +1224,11 @@ def preflight_source_review(
     if not isinstance(manifest_path, str) or Path(manifest_path).is_absolute():
         raise _fail("ECO_SOURCE_MANIFEST_INVALID", "Manifest path must be repository-relative")
     manifest = load_source_bundle_manifest(repository, manifest_path, limits=_SOURCE_LIMITS)
+    source_verification = verify_source_bundle_files(
+        repository,
+        manifest,
+        limits=_SOURCE_LIMITS,
+    )
     verified = _verify_deployment(repository, bundle, now=now)
     if deadline > verified.authority_valid_until:
         raise _fail(
@@ -862,22 +1244,37 @@ def preflight_source_review(
     for role_id in SOURCE_REVIEW_ROLES:
         load_packaged_role_profile(role_id)
     load_source_review_rubric()
-    route_records = _load_route_records(route_decision_path, route_request_path)
+    route_records = _load_route_records(
+        route_decision_path,
+        route_request_path,
+        route_policy_path,
+        route_price_catalog_path,
+        route_authority_path,
+    )
     route_decision_digest = None
-    if route_records is not None:
-        try:
-            verified_decision, _verified_request = verify_route_binding(
-                route_records[0],
-                route_records[1],
-                expected_deployment_id=verified.deployment["id"],
-                expected_deployment_identity_digest=deployment_identity_digest(
-                    verified.deployment
-                ),
-                now=now,
-            )
-        except RoutingError as exc:
-            raise _fail(exc.code, "Route evidence is not acceptable") from exc
-        route_decision_digest = verified_decision["metadata"]["recordDigest"]
+    route_execution_digest = None
+    if route_records is None:
+        raise _fail(
+            "ECO_ROUTE_AUTHORITY_REQUIRED",
+            "An authenticated exact route is required for source review",
+        )
+    verified_decision, _verified_request, route_contract, _verifier = (
+        _verify_exact_source_review_route(
+            route_records,
+            bundle=bundle,
+            manifest=manifest,
+            source_verification=source_verification,
+            verified=verified,
+            team_id=team_id,
+            run_id=run_id,
+            store_id=store_id,
+            created_at=_utc(created),
+            deadline_at=_utc(deadline),
+            now=now,
+        )
+    )
+    route_decision_digest = verified_decision["metadata"]["recordDigest"]
+    route_execution_digest = route_contract["executionPlanDigest"]
     return {
         "available": True,
         "operation": "team-run-source-review-check",
@@ -888,7 +1285,11 @@ def preflight_source_review(
         "runId": run_id,
         "deploymentId": verified.deployment["id"],
         "routeDecisionDigest": route_decision_digest,
+        "routeExecutionPlanDigest": route_execution_digest,
+        "manifestDigest": source_verification["manifestDigest"],
+        "ingestionPolicyDigest": source_verification["ingestionPolicyDigest"],
         "sourceCount": len(manifest.sources),
+        "totalSourceBytes": source_verification["totalByteLength"],
         "safety": {
             "credentials": "none",
             "network": "literal-loopback-model-only",
@@ -918,9 +1319,12 @@ def run_source_review(
     store_id: str,
     route_decision_path: Path | None = None,
     route_request_path: Path | None = None,
+    route_policy_path: Path | None = None,
+    route_price_catalog_path: Path | None = None,
+    route_authority_path: Path | None = None,
 ) -> dict[str, Any]:
     _identifier(store_id)
-    preflight_source_review(
+    preflight = preflight_source_review(
         repository,
         bundle,
         manifest_path=manifest_path,
@@ -930,10 +1334,14 @@ def run_source_review(
         proof_env=proof_env,
         team_id=team_id,
         run_id=run_id,
+        store_id=store_id,
         created_at=created_at,
         deadline_at=deadline_at,
         route_decision_path=route_decision_path,
         route_request_path=route_request_path,
+        route_policy_path=route_policy_path,
+        route_price_catalog_path=route_price_catalog_path,
+        route_authority_path=route_authority_path,
     )
     created = _parse_time(created_at, field="created-at")
     deadline = _parse_time(deadline_at, field="deadline-at")
@@ -945,34 +1353,67 @@ def run_source_review(
     capabilities = RuntimeCapabilities(object(), object(), object(), object())
     proof_key = _secret(proof_env)
     hmac_key = _secret(hmac_env)
-    route_records = _load_route_records(route_decision_path, route_request_path)
+    route_records = _load_route_records(
+        route_decision_path,
+        route_request_path,
+        route_policy_path,
+        route_price_catalog_path,
+        route_authority_path,
+    )
     route_receipt: dict[str, Any] | None = None
+    route_decision: dict[str, Any] | None = None
+    route_request: dict[str, Any] | None = None
+    route_contract: dict[str, Any] | None = None
+    route_usage_path: Path | None = None
     if route_records is not None:
-        route_journal_path = database.parent / (database.name + ".routes")
-        consumer_digest = semantic_digest(
-            {
-                "domain": "eco-source-review-route-consumer-v1",
-                "storeId": store_id,
-                "teamId": team_id,
-                "runId": run_id,
-            }
+        manifest = load_source_bundle_manifest(repository, manifest_path, limits=_SOURCE_LIMITS)
+        source_verification = verify_source_bundle_files(
+            repository,
+            manifest,
+            limits=_SOURCE_LIMITS,
         )
+        route_decision, route_request, route_contract, route_verifier = (
+            _verify_exact_source_review_route(
+                route_records,
+                bundle=bundle,
+                manifest=manifest,
+                source_verification=source_verification,
+                verified=verified,
+                team_id=team_id,
+                run_id=run_id,
+                store_id=store_id,
+                created_at=_utc(created),
+                deadline_at=_utc(deadline),
+                now=datetime.now(timezone.utc),
+            )
+        )
+        authority = bundle["trust"]["routeAuthority"]
+        route_journal_path = database.parent / (database.name + ".routes")
+        route_usage_path = database.parent / (database.name + ".route-usage")
         try:
             with DurableRouteConsumptionJournal(
                 route_journal_path,
                 hmac_key=hmac_key,
                 key_id="source-review-route-v1",
             ) as route_journal:
-                route_receipt = route_journal.consume(
-                    route_records[0],
-                    route_records[1],
+                route_receipt = route_journal.consume_exact(
+                    route_decision,
+                    route_request,
                     expected_deployment_id=verified.deployment["id"],
                     expected_deployment_identity_digest=deployment_identity_digest(
                         verified.deployment
                     ),
+                    expected_policy_digest=route_records.policy["metadata"]["recordDigest"],
+                    expected_price_catalog_digest=route_records.prices["metadata"]["recordDigest"],
+                    expected_execution_plan_digest=route_contract["executionPlanDigest"],
+                    authority_verifier=route_verifier,
+                    expected_route_issuer_id=authority["issuerId"],
+                    expected_route_key_id=authority["keyId"],
+                    expected_route_algorithm="ed25519",
                     consumer_kind="source-review",
                     consumer_id=run_id,
-                    consumer_digest=consumer_digest,
+                    effect_digest=route_contract["effectDigest"],
+                    cost_reservation_microusd=0,
                     now=datetime.now(timezone.utc),
                 )
         except RoutingError as exc:
@@ -1010,6 +1451,7 @@ def run_source_review(
                 run_id=run_id,
                 created_at=_utc(created),
                 limits=_SOURCE_LIMITS,
+                expected_manifest_digest=preflight["manifestDigest"],
             )
             context = CompositionContext(
                 repository=repository,
@@ -1025,6 +1467,40 @@ def run_source_review(
                 capabilities=capabilities,
                 runtime_store=runtime_store,
                 artifact_store=artifacts,
+                route_decision=route_decision,
+                route_request=route_request,
+                route_effect_digest=(
+                    route_contract["effectDigest"] if route_contract is not None else None
+                ),
+                route_usage_path=route_usage_path,
+                route_usage_hmac_key=hmac_key if route_usage_path is not None else None,
+                route_authority_verifier=(
+                    route_verifier if route_contract is not None else None
+                ),
+                route_policy_digest=(
+                    route_contract["policyDigest"] if route_contract is not None else None
+                ),
+                route_price_catalog_digest=(
+                    route_contract["priceCatalogDigest"]
+                    if route_contract is not None
+                    else None
+                ),
+                route_execution_plan_digest=(
+                    route_contract["executionPlanDigest"]
+                    if route_contract is not None
+                    else None
+                ),
+                route_issuer_id=(
+                    authority["issuerId"] if route_contract is not None else None
+                ),
+                route_key_id=(
+                    authority["keyId"] if route_contract is not None else None
+                ),
+                route_authority_valid_until=(
+                    route_contract["routeAuthorityValidUntil"]
+                    if route_contract is not None
+                    else None
+                ),
             )
             inputs = _build_orchestration_inputs(context, source_bundle)
             execution = SourceReviewWorkflow(
@@ -1032,6 +1508,17 @@ def run_source_review(
                 _DynamicGovernedExecutor(context),
             ).run(inputs)
             runtime_store.verify()
+    route_usage_summary = None
+    if route_usage_path is not None and route_usage_path.exists():
+        try:
+            with DurableRouteUsageJournal(
+                route_usage_path,
+                hmac_key=hmac_key,
+                key_id="source-review-route-usage-v1",
+            ) as route_usage:
+                route_usage_summary = route_usage.verify()
+        except RoutingError as exc:
+            raise _fail(exc.code, "Route aggregate usage is not verifiable") from exc
     result = execution.result
     return {
         "available": result["spec"]["status"] == "succeeded",
@@ -1043,6 +1530,7 @@ def run_source_review(
         "reportArtifact": result["spec"]["finalReport"],
         "replayed": execution.replayed,
         "routeConsumption": route_receipt,
+        "routeUsage": route_usage_summary,
         "safety": {
             "contentEmitted": False,
             "providerCalls": "durably-fenced",
@@ -1057,4 +1545,5 @@ __all__ = [
     "SourceReviewCLIError",
     "preflight_source_review",
     "run_source_review",
+    "source_review_route_contract",
 ]

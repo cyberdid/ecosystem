@@ -32,14 +32,25 @@
                 "observedEvidenceDigest": {"$ref": "common.schema.json#/$defs/digest"},
                 "candidateDigest": {"$ref": "common.schema.json#/$defs/digest"},
                 "reservedCostMicrousd": {"type": "integer", "minimum": 0},
-                "estimatedLatencyP95Millis": {"type": "integer", "minimum": 1}
+                "estimatedLatencyP95Millis": {"type": "integer", "minimum": 1},
+                "aggregateReservation": {
+                  "type": "object", "additionalProperties": false,
+                  "required": ["maximumCalls", "inputTokenCeiling", "outputTokenCeiling", "reservedCostMicrousd"],
+                  "properties": {
+                    "maximumCalls": {"type": "integer", "minimum": 1, "maximum": 10000},
+                    "inputTokenCeiling": {"type": "integer", "minimum": 0},
+                    "outputTokenCeiling": {"type": "integer", "minimum": 1},
+                    "reservedCostMicrousd": {"type": "integer", "minimum": 0}
+                  }
+                }
               }
             }
           ]
         },
         "validUntil": {"$ref": "common.schema.json#/$defs/timestamp"},
         "fallbackFromDigest": {"oneOf": [{"type": "null"}, {"$ref": "common.schema.json#/$defs/digest"}]},
-        "explainDigest": {"$ref": "common.schema.json#/$defs/digest"}
+        "explainDigest": {"$ref": "common.schema.json#/$defs/digest"},
+        "executionPlanDigest": {"$ref": "common.schema.json#/$defs/digest"}
       }
     }
   }

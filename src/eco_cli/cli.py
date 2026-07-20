@@ -298,11 +298,23 @@ def _parser() -> argparse.ArgumentParser:
     )
     source_review.add_argument(
         "--route-decision", type=Path, default=None,
-        help="Optional ModelRouteDecision JSON to consume durably for this run",
+        help="Required exact ModelRouteDecision JSON to consume durably for this run",
     )
     source_review.add_argument(
         "--route-request", type=Path, default=None,
         help="ModelRouteRequest JSON bound to --route-decision",
+    )
+    source_review.add_argument(
+        "--route-policy", type=Path, default=None,
+        help="Exact ModelRoutingPolicy JSON authenticated by the route authority",
+    )
+    source_review.add_argument(
+        "--route-prices", type=Path, default=None,
+        help="Exact TrustedPriceCatalog JSON authenticated by the route authority",
+    )
+    source_review.add_argument(
+        "--route-authority", type=Path, default=None,
+        help="Ed25519 route-authority envelope for the exact execution plan",
     )
     source_review.add_argument("--json", action="store_true", dest="json_output")
 
@@ -1125,18 +1137,19 @@ def command_team(args: argparse.Namespace) -> int:
                 "proof_env": args.proof_env,
                 "team_id": args.team_id,
                 "run_id": args.run_id,
+                "store_id": args.store_id,
                 "created_at": args.created_at,
                 "deadline_at": args.deadline_at,
                 "route_decision_path": args.route_decision,
                 "route_request_path": args.route_request,
+                "route_policy_path": args.route_policy,
+                "route_price_catalog_path": args.route_prices,
+                "route_authority_path": args.route_authority,
             }
             result = (
                 preflight_source_review(**common)
                 if args.check
-                else run_source_review(
-                    **common,
-                    store_id=args.store_id,
-                )
+                else run_source_review(**common)
             )
         else:
             common = {

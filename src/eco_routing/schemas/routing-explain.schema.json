@@ -17,6 +17,7 @@
         "decision": {"enum": ["allowed", "denied"]},
         "reasonCode": {"type": "string", "pattern": "^[a-z][a-z0-9-]{1,63}$"},
         "selectedCandidateDigest": {"oneOf": [{"type": "null"}, {"$ref": "common.schema.json#/$defs/digest"}]},
+        "executionPlanDigest": {"$ref": "common.schema.json#/$defs/digest"},
         "candidates": {
           "type": "array",
           "items": {

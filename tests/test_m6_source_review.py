@@ -21,7 +21,10 @@ from eco_orchestration.contracts import (
     orchestration_route_digest,
     validate_orchestration_record_set,
 )
-from eco_orchestration.profiles import install_source_review_definitions
+from eco_orchestration.profiles import (
+    install_source_review_definitions,
+    load_packaged_role_profile,
+)
 from eco_orchestration.source_review import (
     EXECUTION_SLOTS,
     SourceReviewError,
@@ -192,6 +195,18 @@ def happy_outputs() -> dict[tuple[str, int], dict | bytes]:
 
 
 class SourceReviewWorkflowTests(unittest.TestCase):
+    def test_behavioral_evidence_rules_are_governed_role_instructions(self) -> None:
+        analyst = load_packaged_role_profile("analyst").instruction
+        verifier = load_packaged_role_profile("verifier").instruction
+        synthesizer = load_packaged_role_profile("synthesizer").instruction
+        reviewer = load_packaged_role_profile("reviewer").instruction
+        self.assertIn("character-for-character quote", analyst)
+        self.assertIn("unique identifier", analyst)
+        self.assertIn("Cover exactly the supplied claim identifiers", verifier)
+        self.assertIn("only when evidenceIds cites", verifier)
+        self.assertIn("Cover exactly the supplied claim identifiers", synthesizer)
+        self.assertIn("Cover exactly the supplied claim identifiers", reviewer)
+
     def setUp(self) -> None:
         self.temp = tempfile.TemporaryDirectory()
         self.root = Path(self.temp.name)

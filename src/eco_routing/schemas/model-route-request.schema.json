@@ -26,7 +26,18 @@
         "deadlineAt": {"$ref": "common.schema.json#/$defs/timestamp"},
         "executionProfile": {"enum": ["m6.1-local-zero-cost", "standard"]},
         "policyDigest": {"$ref": "common.schema.json#/$defs/digest"},
-        "contextDigest": {"$ref": "common.schema.json#/$defs/digest"}
+        "contextDigest": {"$ref": "common.schema.json#/$defs/digest"},
+        "executionPlanDigest": {"$ref": "common.schema.json#/$defs/digest"},
+        "aggregateBudget": {
+          "type": "object", "additionalProperties": false,
+          "required": ["maximumCalls", "inputTokenCeiling", "outputTokenCeiling", "maximumCostMicrousd"],
+          "properties": {
+            "maximumCalls": {"type": "integer", "minimum": 1, "maximum": 10000},
+            "inputTokenCeiling": {"type": "integer", "minimum": 0},
+            "outputTokenCeiling": {"type": "integer", "minimum": 1},
+            "maximumCostMicrousd": {"type": "integer", "minimum": 0}
+          }
+        }
       }
     }
   }

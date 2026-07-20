@@ -236,11 +236,24 @@ class DeterministicModelRouter:
     @staticmethod
     def _reservation(price: Mapping[str, Any], request: Mapping[str, Any]) -> int:
         spec = request["spec"]
-        variable = (
-            spec["inputTokenCeiling"] * price["inputMicrousdPerMillionTokens"]
-            + spec["outputTokenCeiling"] * price["outputMicrousdPerMillionTokens"]
+        aggregate = spec.get("aggregateBudget")
+        maximum_calls = aggregate["maximumCalls"] if aggregate is not None else 1
+        input_ceiling = (
+            aggregate["inputTokenCeiling"] if aggregate is not None else spec["inputTokenCeiling"]
         )
-        return price["fixedRequestMicrousd"] + (variable + 999_999) // 1_000_000
+        output_ceiling = (
+            aggregate["outputTokenCeiling"]
+            if aggregate is not None
+            else spec["outputTokenCeiling"]
+        )
+        variable = (
+            input_ceiling * price["inputMicrousdPerMillionTokens"]
+            + output_ceiling * price["outputMicrousdPerMillionTokens"]
+        )
+        return (
+            maximum_calls * price["fixedRequestMicrousd"]
+            + (variable + 999_999) // 1_000_000
+        )
 
     def _candidate_evaluation(
         self,
@@ -358,20 +371,24 @@ class DeterministicModelRouter:
                 }
             )
         request_digest = request["metadata"]["recordDigest"]
+        explain_spec = {
+            "requestDigest": request_digest,
+            "policyDigest": self._policy_digest,
+            "priceCatalogDigest": self._price_digest,
+            "decision": decision_effect,
+            "reasonCode": reason,
+            "selectedCandidateDigest": selected.candidate.candidate_digest if selected else None,
+            "candidates": explain_candidates,
+        }
+        execution_plan_digest = request["spec"].get("executionPlanDigest")
+        if execution_plan_digest is not None:
+            explain_spec["executionPlanDigest"] = execution_plan_digest
         explain = seal_routing_record(
             {
                 "apiVersion": ROUTING_API_VERSION,
                 "kind": "RoutingExplain",
                 "metadata": {"id": explain_id, "createdAt": _timestamp(now)},
-                "spec": {
-                    "requestDigest": request_digest,
-                    "policyDigest": self._policy_digest,
-                    "priceCatalogDigest": self._price_digest,
-                    "decision": decision_effect,
-                    "reasonCode": reason,
-                    "selectedCandidateDigest": selected.candidate.candidate_digest if selected else None,
-                    "candidates": explain_candidates,
-                },
+                "spec": explain_spec,
             }
         )
         validate_routing_record(explain)
@@ -389,23 +406,34 @@ class DeterministicModelRouter:
                 "reservedCostMicrousd": selected.cost,
                 "estimatedLatencyP95Millis": selected.latency,
             }
+            aggregate = request["spec"].get("aggregateBudget")
+            if aggregate is not None:
+                selected_record["aggregateReservation"] = {
+                    "maximumCalls": aggregate["maximumCalls"],
+                    "inputTokenCeiling": aggregate["inputTokenCeiling"],
+                    "outputTokenCeiling": aggregate["outputTokenCeiling"],
+                    "reservedCostMicrousd": selected.cost,
+                }
+        decision_spec = {
+            "requestDigest": request_digest,
+            "policyDigest": self._policy_digest,
+            "priceCatalogDigest": self._price_digest,
+            "decision": decision_effect,
+            "reasonCode": reason,
+            "routeAttempt": route_attempt,
+            "selected": selected_record,
+            "validUntil": _timestamp(safe_until),
+            "fallbackFromDigest": fallback_from,
+            "explainDigest": explain["metadata"]["recordDigest"],
+        }
+        if execution_plan_digest is not None:
+            decision_spec["executionPlanDigest"] = execution_plan_digest
         decision = seal_routing_record(
             {
                 "apiVersion": ROUTING_API_VERSION,
                 "kind": "ModelRouteDecision",
                 "metadata": {"id": decision_id, "createdAt": _timestamp(now)},
-                "spec": {
-                    "requestDigest": request_digest,
-                    "policyDigest": self._policy_digest,
-                    "priceCatalogDigest": self._price_digest,
-                    "decision": decision_effect,
-                    "reasonCode": reason,
-                    "routeAttempt": route_attempt,
-                    "selected": selected_record,
-                    "validUntil": _timestamp(safe_until),
-                    "fallbackFromDigest": fallback_from,
-                    "explainDigest": explain["metadata"]["recordDigest"],
-                },
+                "spec": decision_spec,
             }
         )
         validate_routing_record(decision)
@@ -529,6 +557,10 @@ class DeterministicModelRouter:
         if (
             previous["spec"]["decision"] != "allowed"
             or previous["spec"]["requestDigest"] != request_record["metadata"]["recordDigest"]
+            or previous["spec"]["policyDigest"] != self._policy_digest
+            or previous["spec"]["priceCatalogDigest"] != self._price_digest
+            or previous["spec"].get("executionPlanDigest")
+            != request_record["spec"].get("executionPlanDigest")
             or selected is None
             or current_time >= _parse_time(previous["spec"]["validUntil"])
         ):

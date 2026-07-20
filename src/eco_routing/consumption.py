@@ -27,6 +27,11 @@ from typing import Any, Iterator, Mapping
 
 from eco_runtime.digests import canonical_json
 
+from .binding import (
+    RouteAuthorityVerifier,
+    route_consumer_digest,
+    verify_authenticated_route_authority,
+)
 from .contracts import validate_routing_record
 from .errors import RoutingError
 
@@ -59,6 +64,13 @@ def verify_route_binding(
     expected_deployment_identity_digest: str,
     now: datetime,
     cost_reservation_microusd: int | None = None,
+    expected_policy_digest: str | None = None,
+    expected_price_catalog_digest: str | None = None,
+    expected_execution_plan_digest: str | None = None,
+    authority_verifier: RouteAuthorityVerifier | None = None,
+    expected_route_issuer_id: str | None = None,
+    expected_route_key_id: str | None = None,
+    expected_route_algorithm: str | None = None,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     """Verify one allowed decision against its request and an exact deployment.
 
@@ -87,6 +99,32 @@ def verify_route_binding(
         or decision_spec["policyDigest"] != request_spec["policyDigest"]
     ):
         raise RoutingError("ECO_ROUTE_BINDING_MISMATCH", "Route evidence binding is inconsistent")
+    if expected_policy_digest is not None and (
+        decision_spec["policyDigest"] != expected_policy_digest
+        or request_spec["policyDigest"] != expected_policy_digest
+    ):
+        raise RoutingError(
+            "ECO_ROUTE_TRUSTED_INPUT_MISMATCH",
+            "Route policy does not match the trusted routing policy",
+        )
+    if (
+        expected_price_catalog_digest is not None
+        and decision_spec["priceCatalogDigest"] != expected_price_catalog_digest
+    ):
+        raise RoutingError(
+            "ECO_ROUTE_TRUSTED_INPUT_MISMATCH",
+            "Route price catalog does not match the trusted price catalog",
+        )
+    request_execution_plan = request_spec.get("executionPlanDigest")
+    decision_execution_plan = decision_spec.get("executionPlanDigest")
+    if expected_execution_plan_digest is not None and (
+        request_execution_plan != expected_execution_plan_digest
+        or decision_execution_plan != expected_execution_plan_digest
+    ):
+        raise RoutingError(
+            "ECO_ROUTE_EXECUTION_PLAN_MISMATCH",
+            "Route does not match the expected execution plan",
+        )
     if current >= _parse_time(decision_spec["validUntil"]) or current >= _parse_time(
         request_spec["deadlineAt"]
     ):
@@ -100,6 +138,28 @@ def verify_route_binding(
         )
     if selected["reservedCostMicrousd"] > request_spec["maximumCostMicrousd"]:
         raise RoutingError("ECO_ROUTE_BINDING_MISMATCH", "Route reservation exceeds its request")
+    aggregate_budget = request_spec.get("aggregateBudget")
+    aggregate_reservation = selected.get("aggregateReservation")
+    if expected_execution_plan_digest is not None:
+        if aggregate_budget is None or aggregate_reservation is None:
+            raise RoutingError(
+                "ECO_ROUTE_EXACT_BINDING_REQUIRED",
+                "Exact route binding requires an aggregate reservation",
+            )
+        if (
+            aggregate_reservation["maximumCalls"] != aggregate_budget["maximumCalls"]
+            or aggregate_reservation["inputTokenCeiling"]
+            != aggregate_budget["inputTokenCeiling"]
+            or aggregate_reservation["outputTokenCeiling"]
+            != aggregate_budget["outputTokenCeiling"]
+            or aggregate_reservation["reservedCostMicrousd"]
+            != selected["reservedCostMicrousd"]
+            or selected["reservedCostMicrousd"] > aggregate_budget["maximumCostMicrousd"]
+        ):
+            raise RoutingError(
+                "ECO_ROUTE_BUDGET_MISMATCH",
+                "Route aggregate reservation is inconsistent",
+            )
     if (
         cost_reservation_microusd is not None
         and selected["reservedCostMicrousd"] != cost_reservation_microusd
@@ -107,7 +167,74 @@ def verify_route_binding(
         raise RoutingError(
             "ECO_ROUTE_BINDING_MISMATCH", "Route reservation does not match the prepared cost"
         )
+    authority_arguments = (
+        authority_verifier,
+        expected_route_issuer_id,
+        expected_route_key_id,
+        expected_route_algorithm,
+    )
+    if any(value is not None for value in authority_arguments):
+        if (
+            authority_verifier is None
+            or expected_route_issuer_id is None
+            or expected_route_key_id is None
+            or expected_route_algorithm is None
+            or expected_policy_digest is None
+            or expected_price_catalog_digest is None
+            or expected_execution_plan_digest is None
+        ):
+            raise RoutingError(
+                "ECO_ROUTE_AUTHORITY_REQUIRED",
+                "Authenticated route verification requires every trusted binding",
+            )
+        verify_authenticated_route_authority(
+            authority_verifier,
+            decision_record,
+            request_record,
+            expected_issuer_id=expected_route_issuer_id,
+            expected_key_id=expected_route_key_id,
+            expected_algorithm=expected_route_algorithm,
+            expected_policy_digest=expected_policy_digest,
+            expected_price_catalog_digest=expected_price_catalog_digest,
+            expected_execution_plan_digest=expected_execution_plan_digest,
+            now=now,
+        )
     return decision_record, request_record
+
+
+def verify_exact_route_binding(
+    decision: Mapping[str, Any],
+    request: Mapping[str, Any],
+    *,
+    expected_deployment_id: str,
+    expected_deployment_identity_digest: str,
+    expected_policy_digest: str,
+    expected_price_catalog_digest: str,
+    expected_execution_plan_digest: str,
+    authority_verifier: RouteAuthorityVerifier,
+    expected_route_issuer_id: str,
+    expected_route_key_id: str,
+    expected_route_algorithm: str,
+    now: datetime,
+    cost_reservation_microusd: int | None = None,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Preflight an authenticated workflow-scoped route with no journal write."""
+
+    return verify_route_binding(
+        decision,
+        request,
+        expected_deployment_id=expected_deployment_id,
+        expected_deployment_identity_digest=expected_deployment_identity_digest,
+        now=now,
+        cost_reservation_microusd=cost_reservation_microusd,
+        expected_policy_digest=expected_policy_digest,
+        expected_price_catalog_digest=expected_price_catalog_digest,
+        expected_execution_plan_digest=expected_execution_plan_digest,
+        authority_verifier=authority_verifier,
+        expected_route_issuer_id=expected_route_issuer_id,
+        expected_route_key_id=expected_route_key_id,
+        expected_route_algorithm=expected_route_algorithm,
+    )
 
 
 class DurableRouteConsumptionJournal:
@@ -393,6 +520,13 @@ class DurableRouteConsumptionJournal:
         consumer_digest: str,
         now: datetime,
         cost_reservation_microusd: int | None = None,
+        expected_policy_digest: str | None = None,
+        expected_price_catalog_digest: str | None = None,
+        expected_execution_plan_digest: str | None = None,
+        authority_verifier: RouteAuthorityVerifier | None = None,
+        expected_route_issuer_id: str | None = None,
+        expected_route_key_id: str | None = None,
+        expected_route_algorithm: str | None = None,
     ) -> dict[str, Any]:
         """Bind one allowed decision to one consumer exactly once.
 
@@ -418,6 +552,13 @@ class DurableRouteConsumptionJournal:
             expected_deployment_identity_digest=expected_deployment_identity_digest,
             now=now,
             cost_reservation_microusd=cost_reservation_microusd,
+            expected_policy_digest=expected_policy_digest,
+            expected_price_catalog_digest=expected_price_catalog_digest,
+            expected_execution_plan_digest=expected_execution_plan_digest,
+            authority_verifier=authority_verifier,
+            expected_route_issuer_id=expected_route_issuer_id,
+            expected_route_key_id=expected_route_key_id,
+            expected_route_algorithm=expected_route_algorithm,
         )
         decision_spec = decision_record["spec"]
         selected = decision_spec["selected"]
@@ -443,13 +584,34 @@ class DurableRouteConsumptionJournal:
                 )
             if decision_spec["routeAttempt"] == 2:
                 predecessor = connection.execute(
-                    "SELECT 1 FROM consumed_routes WHERE route_digest = ?",
+                    "SELECT * FROM consumed_routes WHERE route_digest = ?",
                     (decision_spec["fallbackFromDigest"],),
                 ).fetchone()
                 if predecessor is None:
                     raise RoutingError(
                         "ECO_ROUTE_FALLBACK_PREDECESSOR_MISSING",
                         "Fallback route requires its consumed predecessor",
+                    )
+                if (
+                    predecessor["route_attempt"] != 1
+                    or predecessor["fallback_from_digest"] is not None
+                    or predecessor["request_digest"]
+                    != request_record["metadata"]["recordDigest"]
+                    or predecessor["policy_digest"] != decision_spec["policyDigest"]
+                    or predecessor["price_catalog_digest"]
+                    != decision_spec["priceCatalogDigest"]
+                    or predecessor["consumer_kind"] != consumer_kind
+                    or predecessor["consumer_id"] != consumer_id
+                    or predecessor["consumer_digest"] != consumer_digest
+                    or (
+                        predecessor["deployment_id"] == selected["deploymentId"]
+                        and predecessor["deployment_identity_digest"]
+                        == selected["deploymentIdentityDigest"]
+                    )
+                ):
+                    raise RoutingError(
+                        "ECO_ROUTE_FALLBACK_PREDECESSOR_MISMATCH",
+                        "Fallback route does not continue the exact consumed workflow",
                     )
             sequence = state["entries"] + 1
             row = {
@@ -496,3 +658,56 @@ class DurableRouteConsumptionJournal:
                 (sequence, entry_hash, self._sign(meta_payload)),
             )
         return {"routeDigest": route_digest, "replayed": False, "consumedAt": current}
+
+    def consume_exact(
+        self,
+        decision: Mapping[str, Any],
+        request: Mapping[str, Any],
+        *,
+        expected_deployment_id: str,
+        expected_deployment_identity_digest: str,
+        expected_policy_digest: str,
+        expected_price_catalog_digest: str,
+        expected_execution_plan_digest: str,
+        authority_verifier: RouteAuthorityVerifier,
+        expected_route_issuer_id: str,
+        expected_route_key_id: str,
+        expected_route_algorithm: str,
+        consumer_kind: str,
+        consumer_id: str,
+        effect_digest: str,
+        now: datetime,
+        cost_reservation_microusd: int | None = None,
+    ) -> dict[str, Any]:
+        """Authenticate and consume one exact workflow-scoped route.
+
+        Unlike :meth:`consume`, this hardened API does not accept a caller-made
+        consumer digest.  It derives the digest from the sealed route request,
+        exact execution plan/effect and aggregate reservation.
+        """
+
+        consumer_digest = route_consumer_digest(
+            decision,
+            request,
+            consumer_kind=consumer_kind,
+            consumer_id=consumer_id,
+            effect_digest=effect_digest,
+        )
+        return self.consume(
+            decision,
+            request,
+            expected_deployment_id=expected_deployment_id,
+            expected_deployment_identity_digest=expected_deployment_identity_digest,
+            consumer_kind=consumer_kind,
+            consumer_id=consumer_id,
+            consumer_digest=consumer_digest,
+            now=now,
+            cost_reservation_microusd=cost_reservation_microusd,
+            expected_policy_digest=expected_policy_digest,
+            expected_price_catalog_digest=expected_price_catalog_digest,
+            expected_execution_plan_digest=expected_execution_plan_digest,
+            authority_verifier=authority_verifier,
+            expected_route_issuer_id=expected_route_issuer_id,
+            expected_route_key_id=expected_route_key_id,
+            expected_route_algorithm=expected_route_algorithm,
+        )

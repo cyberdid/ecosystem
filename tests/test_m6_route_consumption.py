@@ -176,6 +176,12 @@ class RouteConsumptionJournalTests(unittest.TestCase):
                         "fallbackFromDigest": self.decision["metadata"]["recordDigest"],
                     }
                 ),
+                value["spec"]["selected"].update(
+                    {
+                        "deploymentId": "local-b",
+                        "deploymentIdentityDigest": "b" * 64,
+                    }
+                ),
             ),
         )
         with self._journal() as journal:
@@ -183,10 +189,8 @@ class RouteConsumptionJournalTests(unittest.TestCase):
                 journal.consume(
                     second,
                     self.request,
-                    expected_deployment_id=self.selected["deploymentId"],
-                    expected_deployment_identity_digest=self.selected[
-                        "deploymentIdentityDigest"
-                    ],
+                    expected_deployment_id="local-b",
+                    expected_deployment_identity_digest="b" * 64,
                     now=NOW,
                     **CONSUMER,
                 )
@@ -197,14 +201,12 @@ class RouteConsumptionJournalTests(unittest.TestCase):
             receipt = journal.consume(
                 second,
                 self.request,
-                expected_deployment_id=self.selected["deploymentId"],
-                expected_deployment_identity_digest=self.selected[
-                    "deploymentIdentityDigest"
-                ],
+                expected_deployment_id="local-b",
+                expected_deployment_identity_digest="b" * 64,
                 now=NOW,
                 consumer_kind="source-review",
-                consumer_id="run-2",
-                consumer_digest="d" * 64,
+                consumer_id=CONSUMER["consumer_id"],
+                consumer_digest=CONSUMER["consumer_digest"],
             )
             self.assertFalse(receipt["replayed"])
             self.assertEqual(journal.verify()["entries"], 2)

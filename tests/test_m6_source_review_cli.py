@@ -14,10 +14,19 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from unittest import mock
 
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+
 from eco_cli.cli import main
 from eco_cli.config import dump_yaml
 from eco_cli.constants import CONFIG_FILES
+from eco_cli.source_review import _SOURCE_LIMITS, source_review_route_contract
 from eco_cli.templates import starter_bundle
+from eco_orchestration.source_bundle import (
+    load_source_bundle_manifest,
+    verify_source_bundle_files,
+)
+from eco_routing import Ed25519RouteAuthoritySigner
 from eco_runtime.adapters import ADAPTER_VERSION
 from eco_runtime.contracts import API_VERSION
 from eco_runtime.digests import canonical_json, deployment_identity_digest, semantic_digest
@@ -28,6 +37,8 @@ EVIDENCE_KEY = "e" * 32
 HMAC_KEY = "h" * 32
 PROOF_KEY = "p" * 32
 SUITE_DIGEST = "a" * 64
+ROUTE_PRIVATE_KEY = b"r" * 32
+ROUTE_PUBLIC_KEY_ENV = "ECO_TEST_ROUTE_PUBLIC_KEY"
 
 
 def _utc(value: datetime) -> str:
@@ -289,6 +300,18 @@ class SourceReviewCLIProductionTests(unittest.TestCase):
             envelope_id="local-source-review-envelope",
             issued_at=self.created - timedelta(minutes=1),
             expires_at=authority_deadline,
+            attestation={
+                "projectId": "sample",
+                "endpointRef": endpoint_ref,
+                "endpointReferenceDigest": semantic_digest(
+                    {"endpointRef": endpoint_ref}
+                ),
+                "resolvedEndpointDigest": semantic_digest(
+                    {"endpointUrl": endpoint}
+                ),
+                "requestedModel": deployment["model"],
+                "reportedModels": [deployment["model"]],
+            },
         )
         config = self.repo / ".ai"
         config.mkdir()
@@ -365,7 +388,9 @@ class SourceReviewCLIProductionTests(unittest.TestCase):
     def test_production_composition_and_restart_have_exactly_five_http_calls(self) -> None:
         manifest = self._write_sources()
         with _Provider() as provider:
-            self._write_bundle(provider.endpoint)
+            bundle, _envelope = self._write_bundle(provider.endpoint)
+            records = self._route_records(bundle, manifest)
+            route_arguments = self._write_route_files(records)
             environment = {
                 "ECO_LOCAL_OPENAI_ENDPOINT": provider.endpoint,
                 "ECO_LOCAL_ADAPTER_EVIDENCE_KEY": EVIDENCE_KEY,
@@ -374,12 +399,13 @@ class SourceReviewCLIProductionTests(unittest.TestCase):
                 ),
                 "ECO_SOURCE_REVIEW_HMAC_KEY": HMAC_KEY,
                 "ECO_SOURCE_REVIEW_PROOF_KEY": PROOF_KEY,
+                ROUTE_PUBLIC_KEY_ENV: records["publicKey"],
             }
             with mock.patch.dict(os.environ, environment, clear=False):
                 repository_before = self._repo_snapshot()
                 first_stdout = io.StringIO()
                 with contextlib.redirect_stdout(first_stdout):
-                    first = main(self._arguments(manifest))
+                    first = main([*self._arguments(manifest), *route_arguments])
                 self.assertEqual(first, 0, first_stdout.getvalue())
                 first_result = json.loads(first_stdout.getvalue())
                 self.assertEqual(first_result["status"], "succeeded")
@@ -390,7 +416,7 @@ class SourceReviewCLIProductionTests(unittest.TestCase):
 
                 second_stdout = io.StringIO()
                 with contextlib.redirect_stdout(second_stdout):
-                    second = main(self._arguments(manifest))
+                    second = main([*self._arguments(manifest), *route_arguments])
                 self.assertEqual(second, 0, second_stdout.getvalue())
                 self.assertEqual(len(provider.calls), 5)
                 self.assertEqual(
@@ -402,7 +428,9 @@ class SourceReviewCLIProductionTests(unittest.TestCase):
     def test_second_run_with_new_run_id_shares_the_durable_store(self) -> None:
         manifest = self._write_sources()
         with _Provider() as provider:
-            self._write_bundle(provider.endpoint)
+            bundle, _envelope = self._write_bundle(provider.endpoint)
+            first_records = self._route_records(bundle, manifest)
+            first_route_arguments = self._write_route_files(first_records)
             environment = {
                 "ECO_LOCAL_OPENAI_ENDPOINT": provider.endpoint,
                 "ECO_LOCAL_ADAPTER_EVIDENCE_KEY": EVIDENCE_KEY,
@@ -411,19 +439,26 @@ class SourceReviewCLIProductionTests(unittest.TestCase):
                 ),
                 "ECO_SOURCE_REVIEW_HMAC_KEY": HMAC_KEY,
                 "ECO_SOURCE_REVIEW_PROOF_KEY": PROOF_KEY,
+                ROUTE_PUBLIC_KEY_ENV: first_records["publicKey"],
             }
             with mock.patch.dict(os.environ, environment, clear=False):
                 first_stdout = io.StringIO()
                 with contextlib.redirect_stdout(first_stdout):
-                    first = main(self._arguments(manifest))
+                    first = main(
+                        [*self._arguments(manifest), *first_route_arguments]
+                    )
                 self.assertEqual(first, 0, first_stdout.getvalue())
                 self.assertEqual(len(provider.calls), 5)
 
                 arguments = self._arguments(manifest)
                 arguments[arguments.index("run-1")] = "run-2"
+                second_records = self._route_records(
+                    bundle, manifest, run_id="run-2"
+                )
+                second_route_arguments = self._write_route_files(second_records)
                 second_stdout = io.StringIO()
                 with contextlib.redirect_stdout(second_stdout):
-                    second = main(arguments)
+                    second = main([*arguments, *second_route_arguments])
                 self.assertEqual(second, 0, second_stdout.getvalue())
                 second_result = json.loads(second_stdout.getvalue())
                 self.assertEqual(second_result["status"], "succeeded")
@@ -456,8 +491,36 @@ class SourceReviewCLIProductionTests(unittest.TestCase):
             self.assertFalse((self.external / "runtime.sqlite3").exists())
             self.assertFalse((self.external / "artifacts").exists())
 
-    def test_stale_created_at_blocks_before_http_or_state_write(self) -> None:
+    def test_restart_with_old_created_at_remains_valid_until_deadline(self) -> None:
         self.created -= timedelta(minutes=10)
+        manifest = self._write_sources()
+        with _Provider() as provider:
+            bundle, _envelope = self._write_bundle(provider.endpoint)
+            records = self._route_records(bundle, manifest)
+            route_arguments = self._write_route_files(records)
+            environment = {
+                "ECO_LOCAL_OPENAI_ENDPOINT": provider.endpoint,
+                "ECO_LOCAL_ADAPTER_EVIDENCE_KEY": EVIDENCE_KEY,
+                "ECO_LOCAL_ADAPTER_ENVELOPE_FILE": str(
+                    self.external / "observation-envelope.json"
+                ),
+                "ECO_SOURCE_REVIEW_HMAC_KEY": HMAC_KEY,
+                "ECO_SOURCE_REVIEW_PROOF_KEY": PROOF_KEY,
+                ROUTE_PUBLIC_KEY_ENV: records["publicKey"],
+            }
+            with mock.patch.dict(os.environ, environment, clear=False):
+                output = io.StringIO()
+                with contextlib.redirect_stdout(output):
+                    code = main(
+                        [*self._arguments(manifest), *route_arguments, "--check"]
+                    )
+            self.assertEqual(code, 0, output.getvalue())
+            self.assertEqual(json.loads(output.getvalue())["code"], "ECO_SOURCE_REVIEW_READY")
+            self.assertEqual(provider.calls, [])
+            self.assertFalse((self.external / "runtime.sqlite3").exists())
+            self.assertFalse((self.external / "artifacts").exists())
+
+    def test_future_created_at_and_changed_source_fail_during_preflight(self) -> None:
         manifest = self._write_sources()
         with _Provider() as provider:
             self._write_bundle(provider.endpoint)
@@ -471,11 +534,25 @@ class SourceReviewCLIProductionTests(unittest.TestCase):
                 "ECO_SOURCE_REVIEW_PROOF_KEY": PROOF_KEY,
             }
             with mock.patch.dict(os.environ, environment, clear=False):
-                output = io.StringIO()
-                with contextlib.redirect_stdout(output):
-                    code = main(self._arguments(manifest))
-            self.assertEqual(code, 1)
-            self.assertEqual(json.loads(output.getvalue())["code"], "ECO_SOURCE_REVIEW_TIME_INVALID")
+                self.created += timedelta(minutes=10)
+                future_output = io.StringIO()
+                with contextlib.redirect_stdout(future_output):
+                    future_code = main([*self._arguments(manifest), "--check"])
+                self.assertEqual(future_code, 1)
+                self.assertEqual(
+                    json.loads(future_output.getvalue())["code"],
+                    "ECO_SOURCE_REVIEW_TIME_INVALID",
+                )
+                self.created -= timedelta(minutes=10)
+                (self.repo / "sources" / "source.txt").write_bytes(b"bravo")
+                changed_output = io.StringIO()
+                with contextlib.redirect_stdout(changed_output):
+                    changed_code = main([*self._arguments(manifest), "--check"])
+                self.assertEqual(changed_code, 1)
+                self.assertEqual(
+                    json.loads(changed_output.getvalue())["code"],
+                    "ECO_SOURCE_DIGEST_MISMATCH",
+                )
             self.assertEqual(provider.calls, [])
             self.assertFalse((self.external / "runtime.sqlite3").exists())
             self.assertFalse((self.external / "artifacts").exists())
@@ -504,7 +581,40 @@ class SourceReviewCLIProductionTests(unittest.TestCase):
         self.assertFalse((self.external / "runtime.sqlite3").exists())
         self.assertFalse((self.external / "artifacts").exists())
 
-    def _route_records(self, bundle: dict) -> dict:
+    def test_live_run_without_authenticated_exact_route_fails_before_effects(self) -> None:
+        manifest = self._write_sources()
+        with _Provider() as provider:
+            self._write_bundle(provider.endpoint)
+            environment = {
+                "ECO_LOCAL_OPENAI_ENDPOINT": provider.endpoint,
+                "ECO_LOCAL_ADAPTER_EVIDENCE_KEY": EVIDENCE_KEY,
+                "ECO_LOCAL_ADAPTER_ENVELOPE_FILE": str(
+                    self.external / "observation-envelope.json"
+                ),
+                "ECO_SOURCE_REVIEW_HMAC_KEY": HMAC_KEY,
+                "ECO_SOURCE_REVIEW_PROOF_KEY": PROOF_KEY,
+            }
+            with mock.patch.dict(os.environ, environment, clear=False):
+                output = io.StringIO()
+                with contextlib.redirect_stdout(output):
+                    code = main(self._arguments(manifest))
+        self.assertEqual(code, 1)
+        self.assertEqual(
+            json.loads(output.getvalue())["code"], "ECO_ROUTE_AUTHORITY_REQUIRED"
+        )
+        self.assertEqual(provider.calls, [])
+        self.assertFalse((self.external / "runtime.sqlite3").exists())
+        self.assertFalse((self.external / "runtime.sqlite3.routes").exists())
+        self.assertFalse((self.external / "runtime.sqlite3.route-usage").exists())
+
+    def _route_records(
+        self,
+        bundle: dict,
+        manifest_path: str,
+        *,
+        run_id: str = "run-1",
+        authority_deadline: datetime | None = None,
+    ) -> dict:
         from eco_routing import DeterministicModelRouter
         from eco_routing.contracts import (
             CANONICAL_MODEL_ROLES,
@@ -514,6 +624,21 @@ class SourceReviewCLIProductionTests(unittest.TestCase):
         from eco_routing.router import DeploymentCandidate
 
         now = datetime.now(timezone.utc).replace(microsecond=0)
+        public_key = Ed25519PrivateKey.from_private_bytes(
+            ROUTE_PRIVATE_KEY
+        ).public_key().public_bytes(
+            serialization.Encoding.Raw,
+            serialization.PublicFormat.Raw,
+        )
+        bundle["trust"]["routeAuthority"] = {
+            "issuerId": "source-review-route-authority",
+            "keyId": "source-review-route-v1",
+            "algorithm": "ed25519",
+            "publicKeyRef": f"env:{ROUTE_PUBLIC_KEY_ENV}",
+        }
+        (self.repo / ".ai" / CONFIG_FILES["trust"]).write_text(
+            dump_yaml(bundle["trust"]), encoding="utf-8"
+        )
         projected = copy.deepcopy(bundle["deployments"]["deployments"][0])
         projected["retention"] = "no-retention"
         route_candidate = DeploymentCandidate.from_canonical_deployment(projected)
@@ -539,7 +664,7 @@ class SourceReviewCLIProductionTests(unittest.TestCase):
                 },
                 "spec": {
                     "defaultDecision": "deny",
-                    "decisionTtlSeconds": 300,
+                    "decisionTtlSeconds": 3600,
                     "roles": [
                         {
                             "role": role,
@@ -606,27 +731,28 @@ class SourceReviewCLIProductionTests(unittest.TestCase):
                 "suiteDigest": SUITE_DIGEST,
             },
         )
+        manifest = load_source_bundle_manifest(
+            self.repo, manifest_path, limits=_SOURCE_LIMITS
+        )
+        source_verification = verify_source_bundle_files(
+            self.repo, manifest, limits=_SOURCE_LIMITS
+        )
+        contract = source_review_route_contract(
+            project_id="sample",
+            team_id="research-team",
+            run_id=run_id,
+            store_id="store-1",
+            created_at=_utc(self.created),
+            deadline_at=_utc(self.deadline),
+            manifest=manifest,
+            source_verification=source_verification,
+            deployment=bundle["deployments"]["deployments"][0],
+            policy_digest=routing_policy["metadata"]["recordDigest"],
+        )
         request = sealed(
             "ModelRouteRequest",
             "route-request-1",
-            {
-                "role": "eco-researcher",
-                "actionClass": "A0",
-                "dataClass": "D1",
-                "workloadClass": "research",
-                "requiredCapabilities": ["model.structured-output"],
-                "requiredContextTokens": 8192,
-                "inputTokenCeiling": 1000,
-                "outputTokenCeiling": 1000,
-                "allowedZones": ["Z1"],
-                "allowedRetentions": ["no-retention"],
-                "allowCloud": False,
-                "maximumCostMicrousd": 0,
-                "deadlineAt": _utc(now + timedelta(minutes=15)),
-                "executionProfile": "m6.1-local-zero-cost",
-                "policyDigest": routing_policy["metadata"]["recordDigest"],
-                "contextDigest": semantic_digest({"trustedContext": "route"}),
-            },
+            contract["requestSpec"],
         )
         outcome = DeterministicModelRouter(routing_policy, prices).route(
             request,
@@ -638,31 +764,53 @@ class SourceReviewCLIProductionTests(unittest.TestCase):
         )
         decision = outcome.decision
         assert decision["spec"]["decision"] == "allowed", decision["spec"]["reasonCode"]
+        authority = Ed25519RouteAuthoritySigner(
+            "source-review-route-authority",
+            "source-review-route-v1",
+            ROUTE_PRIVATE_KEY,
+        ).sign(
+            decision,
+            request,
+            envelope_id="source-review-route-envelope-1",
+            issued_at=now,
+            expires_at=authority_deadline or self.deadline,
+        )
         return {
             "policy": routing_policy,
             "prices": prices,
             "observation": capability_observation,
             "request": request,
             "decision": decision,
+            "authority": authority,
+            "publicKey": public_key.hex(),
         }
 
-    def _write_route_files(self, decision: dict, request: dict) -> list[str]:
+    def _write_route_files(self, records: dict) -> list[str]:
         decision_path = self.root / "route-decision.json"
         request_path = self.root / "route-request.json"
-        decision_path.write_text(canonical_json(decision), encoding="utf-8")
-        request_path.write_text(canonical_json(request), encoding="utf-8")
+        policy_path = self.root / "route-policy.json"
+        prices_path = self.root / "route-prices.json"
+        authority_path = self.root / "route-authority.json"
+        decision_path.write_text(canonical_json(records["decision"]), encoding="utf-8")
+        request_path.write_text(canonical_json(records["request"]), encoding="utf-8")
+        policy_path.write_text(canonical_json(records["policy"]), encoding="utf-8")
+        prices_path.write_text(canonical_json(records["prices"]), encoding="utf-8")
+        authority_path.write_bytes(records["authority"])
         return [
             "--route-decision", str(decision_path),
             "--route-request", str(request_path),
+            "--route-policy", str(policy_path),
+            "--route-prices", str(prices_path),
+            "--route-authority", str(authority_path),
         ]
 
     def test_route_decision_is_consumed_durably_and_replay_safe(self) -> None:
         manifest = self._write_sources()
         with _Provider() as provider:
             bundle, _envelope = self._write_bundle(provider.endpoint)
-            records = self._route_records(bundle)
+            records = self._route_records(bundle, manifest)
             decision, request = records["decision"], records["request"]
-            route_arguments = self._write_route_files(decision, request)
+            route_arguments = self._write_route_files(records)
             environment = {
                 "ECO_LOCAL_OPENAI_ENDPOINT": provider.endpoint,
                 "ECO_LOCAL_ADAPTER_EVIDENCE_KEY": EVIDENCE_KEY,
@@ -671,6 +819,7 @@ class SourceReviewCLIProductionTests(unittest.TestCase):
                 ),
                 "ECO_SOURCE_REVIEW_HMAC_KEY": HMAC_KEY,
                 "ECO_SOURCE_REVIEW_PROOF_KEY": PROOF_KEY,
+                ROUTE_PUBLIC_KEY_ENV: records["publicKey"],
             }
             with mock.patch.dict(os.environ, environment, clear=False):
                 first_stdout = io.StringIO()
@@ -687,6 +836,9 @@ class SourceReviewCLIProductionTests(unittest.TestCase):
                 self.assertEqual(len(provider.calls), 5)
                 journal_path = self.external / "runtime.sqlite3.routes"
                 self.assertTrue(journal_path.exists())
+                usage_path = self.external / "runtime.sqlite3.route-usage"
+                self.assertTrue(usage_path.exists())
+                self.assertEqual(first_result["routeUsage"]["entries"], 5)
 
                 second_stdout = io.StringIO()
                 with contextlib.redirect_stdout(second_stdout):
@@ -694,13 +846,14 @@ class SourceReviewCLIProductionTests(unittest.TestCase):
                 self.assertEqual(second, 0, second_stdout.getvalue())
                 second_result = json.loads(second_stdout.getvalue())
                 self.assertTrue(second_result["routeConsumption"]["replayed"])
+                self.assertEqual(second_result["routeUsage"]["entries"], 5)
                 self.assertEqual(len(provider.calls), 5)
 
     def test_mismatched_route_blocks_before_http_or_state_write(self) -> None:
         manifest = self._write_sources()
         with _Provider() as provider:
             bundle, _envelope = self._write_bundle(provider.endpoint)
-            records = self._route_records(bundle)
+            records = self._route_records(bundle, manifest)
             decision, request = records["decision"], records["request"]
             tampered = copy.deepcopy(decision)
             del tampered["metadata"]["recordDigest"]
@@ -708,7 +861,9 @@ class SourceReviewCLIProductionTests(unittest.TestCase):
             from eco_routing.contracts import seal_routing_record
 
             tampered = seal_routing_record(tampered)
-            route_arguments = self._write_route_files(tampered, request)
+            tampered_records = copy.deepcopy(records)
+            tampered_records["decision"] = tampered
+            route_arguments = self._write_route_files(tampered_records)
             environment = {
                 "ECO_LOCAL_OPENAI_ENDPOINT": provider.endpoint,
                 "ECO_LOCAL_ADAPTER_EVIDENCE_KEY": EVIDENCE_KEY,
@@ -717,6 +872,7 @@ class SourceReviewCLIProductionTests(unittest.TestCase):
                 ),
                 "ECO_SOURCE_REVIEW_HMAC_KEY": HMAC_KEY,
                 "ECO_SOURCE_REVIEW_PROOF_KEY": PROOF_KEY,
+                ROUTE_PUBLIC_KEY_ENV: records["publicKey"],
             }
             with mock.patch.dict(os.environ, environment, clear=False):
                 output = io.StringIO()
@@ -730,14 +886,47 @@ class SourceReviewCLIProductionTests(unittest.TestCase):
             self.assertFalse((self.external / "runtime.sqlite3").exists())
             self.assertFalse((self.external / "runtime.sqlite3.routes").exists())
 
+    def test_route_authority_must_cover_the_complete_run_window(self) -> None:
+        manifest = self._write_sources()
+        with _Provider() as provider:
+            bundle, _envelope = self._write_bundle(provider.endpoint)
+            records = self._route_records(
+                bundle,
+                manifest,
+                authority_deadline=self.created + timedelta(minutes=5),
+            )
+            route_arguments = self._write_route_files(records)
+            environment = {
+                "ECO_LOCAL_OPENAI_ENDPOINT": provider.endpoint,
+                "ECO_LOCAL_ADAPTER_EVIDENCE_KEY": EVIDENCE_KEY,
+                "ECO_LOCAL_ADAPTER_ENVELOPE_FILE": str(
+                    self.external / "observation-envelope.json"
+                ),
+                "ECO_SOURCE_REVIEW_HMAC_KEY": HMAC_KEY,
+                "ECO_SOURCE_REVIEW_PROOF_KEY": PROOF_KEY,
+                ROUTE_PUBLIC_KEY_ENV: records["publicKey"],
+            }
+            with mock.patch.dict(os.environ, environment, clear=False):
+                output = io.StringIO()
+                with contextlib.redirect_stdout(output):
+                    code = main([*self._arguments(manifest), *route_arguments])
+        self.assertEqual(code, 1)
+        self.assertEqual(
+            json.loads(output.getvalue())["code"], "ECO_ROUTE_AUTHORITY_WINDOW"
+        )
+        self.assertEqual(provider.calls, [])
+        self.assertFalse((self.external / "runtime.sqlite3").exists())
+        self.assertFalse((self.external / "runtime.sqlite3.routes").exists())
+
     def test_route_plan_cli_selects_the_governed_deployment(self) -> None:
+        manifest = self._write_sources()
         with _Provider() as provider:
             bundle, _envelope = self._write_bundle(provider.endpoint)
             deployments_path = self.repo / ".ai" / CONFIG_FILES["deployments"]
             normalized = copy.deepcopy(bundle["deployments"])
             normalized["deployments"][0]["retention"] = "no-retention"
             deployments_path.write_text(dump_yaml(normalized), encoding="utf-8")
-            records = self._route_records(bundle)
+            records = self._route_records(bundle, manifest)
             paths = {}
             for name in ("policy", "prices", "request", "observation"):
                 paths[name] = self.root / f"plan-{name}.json"

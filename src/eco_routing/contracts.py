@@ -161,6 +161,17 @@ def _semantic_errors(kind: str, document: dict[str, Any]) -> list[str]:
                 errors.append(f"{kind}$.spec.{field}: failed validation")
         if _parse_time(spec["deadlineAt"]) <= _parse_time(metadata["createdAt"]):
             errors.append(f"{kind}$.spec.deadlineAt: failed validation")
+        execution_plan_digest = spec.get("executionPlanDigest")
+        aggregate_budget = spec.get("aggregateBudget")
+        if (execution_plan_digest is None) != (aggregate_budget is None):
+            errors.append(f"{kind}$.spec.aggregateBudget: failed validation")
+        if aggregate_budget is not None:
+            if (
+                aggregate_budget["inputTokenCeiling"] < spec["inputTokenCeiling"]
+                or aggregate_budget["outputTokenCeiling"] < spec["outputTokenCeiling"]
+                or aggregate_budget["maximumCostMicrousd"] != spec["maximumCostMicrousd"]
+            ):
+                errors.append(f"{kind}$.spec.aggregateBudget: failed validation")
 
     elif kind == "ModelRouteDecision":
         allowed = spec["decision"] == "allowed"
@@ -172,6 +183,17 @@ def _semantic_errors(kind: str, document: dict[str, Any]) -> list[str]:
             errors.append(f"{kind}$.spec.validUntil: failed validation")
         if (spec["routeAttempt"] == 1) != (spec["fallbackFromDigest"] is None):
             errors.append(f"{kind}$.spec.fallbackFromDigest: failed validation")
+        selected = spec["selected"]
+        reservation = selected.get("aggregateReservation") if selected is not None else None
+        if spec.get("executionPlanDigest") is None:
+            if reservation is not None:
+                errors.append(f"{kind}$.spec.selected.aggregateReservation: failed validation")
+        elif allowed and reservation is None:
+            errors.append(f"{kind}$.spec.selected.aggregateReservation: failed validation")
+        if reservation is not None and reservation["reservedCostMicrousd"] != selected[
+            "reservedCostMicrousd"
+        ]:
+            errors.append(f"{kind}$.spec.selected.aggregateReservation: failed validation")
 
     elif kind == "RoutingExplain":
         candidates = spec["candidates"]
