@@ -366,6 +366,18 @@ class SourceReviewWorkflowTests(unittest.TestCase):
     def workflow(self, executor: ScriptedExecutor) -> SourceReviewWorkflow:
         return SourceReviewWorkflow(self.store, executor, clock=lambda: NOW)
 
+    @unittest.skip(
+        "Model-role separation is not implemented; see "
+        "docs/architecture/model-role-separation.md. This is the fourth "
+        "self-correcting-loop stress test (same-model blind spot): the verifier "
+        "and reviewer roles must resolve to a different governed deployment than "
+        "the analyst and synthesizer. When implemented, this test drives two "
+        "distinct local providers and asserts Builder roles hit one endpoint and "
+        "Judge roles the other."
+    )
+    def test_same_model_blind_spot_requires_model_role_separation(self) -> None:
+        raise AssertionError("pending model-role separation")
+
     def test_happy_path_is_exact_five_call_verified_graph(self) -> None:
         executor = ScriptedExecutor(happy_outputs())
         execution = self.workflow(executor).run(self.inputs())

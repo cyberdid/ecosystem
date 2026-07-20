@@ -4,6 +4,28 @@ Append-only хронологічний лог операцій. Формат: `#
 
 ---
 
+## [2026-07-20] research | Self-correcting loop and harness source review
+
+- Preserved five owner-supplied promotional articles byte-for-byte under
+  `docs/research/sources/` with SHA-256 provenance and reviewed them as untrusted
+  data: a self-correcting loop (Builder/Judge/Manager), a Claude Code harness
+  rebuild, an agent-team playbook, a LangChain agent factory and a 42-skill
+  org-chart tweet.
+- Recorded the convergent finding: five independent authors restate this project's
+  thesis ("the bottleneck was never the model, it was the structure around it") and
+  every reusable primitive maps to an already-implemented component.
+- Mapped the article's four self-correcting-loop stress tests to the deterministic
+  suite: unsolvable, confidently-wrong and cost-runaway are already enforced by
+  exact tests; the same-model blind-spot test is the one real gap, marked by a
+  skipped `test_same_model_blind_spot_requires_model_role_separation`.
+- Wrote an implementation-ready design spec for model-role separation
+  (`docs/architecture/model-role-separation.md`) against the current hardened code,
+  with a route-authority single-deployment guard and the ADR-006 live-evaluation
+  requirement. Implementation is deferred by owner decision (safe-now-plus-spec);
+  `source_review.py` is unchanged.
+- Rejected framework-vendoring, policy-in-prompts, memory-as-authority and
+  third-party-workspace patterns as conflicting with project invariants.
+
 ## [2026-07-20] implementation | M6 exact routing and 0.8.0 release candidate
 
 - Closed M6.1–M6.8 for the bounded embedded profile: governed model execution,
