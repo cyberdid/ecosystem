@@ -4,9 +4,10 @@
 
 **Release:** `0.8.0`
 
-**Status:** local deterministic completion gate and independent follow-up audit
-passed for the bounded embedded reference profile; hosted cross-platform
-evidence is recorded after the release branch run completes.
+**Status:** implementation, local deterministic completion gate and independent
+follow-up audit passed for the bounded embedded reference profile. GitHub hosted
+execution is externally blocked before job creation and therefore remains an
+unpassed release gate.
 
 ## Executive result
 
@@ -117,6 +118,7 @@ Local gate at the release candidate tree:
 | `uv lock --check` and `git diff --check` | passed |
 | Offline wheel installation | `0.8.0`, 11-artifact verified bundle, all nine packages/resources imported |
 | Installed source-review smoke | five loopback calls, one route consumption, five usage reservations, no source sentinel in control-plane surfaces |
+| GitHub hosted matrix | blocked before job creation: push run `29736149178` and PR run `29736302224` both report `startup_failure` with zero jobs |
 
 The cross-version pass also covers managed-Python isolation. Landlock grants
 only strict-resolved standard-library/runtime paths, exact `libpython` files and
@@ -174,10 +176,14 @@ inside the M6 completion claim.
 
 ## Exit decision
 
-M6 may be released as `0.8.0` when the pinned hosted matrix passes the exact
-candidate commit and the independent follow-up review reports no remaining P0 or
-P1 blocker. No live-provider PASS is required for this deterministic release,
-and no such PASS may be inferred from the installed loopback smoke.
+The exact candidate is commit `31803b085990776119aa70cf0223b6896e0269e4`
+in draft PR [#3](https://github.com/Pylypko1021/ecosystem/pull/3). It may be
+released as `0.8.0` when GitHub can allocate hosted jobs and the pinned matrix
+passes. Re-running an older previously job-producing workflow also failed at
+startup before a job was created, which separates the current blocker from the
+M6 test code; the GitHub API does not expose the underlying account/runner
+reason. No live-provider PASS is required for this deterministic release, and
+no such PASS may be inferred from the installed loopback smoke.
 
 ## References
 

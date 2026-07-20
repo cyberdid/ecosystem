@@ -1,6 +1,6 @@
 # M6 universal functional orchestration
 
-**Status:** M6.0–M6.7 implemented; M6.8 `0.8.0` deterministic conformance in progress
+**Status:** M6.0–M6.8 implemented; local `0.8.0` conformance complete, hosted jobs externally blocked before creation
 **Updated:** 2026-07-20
 **Target release:** `0.8.0`
 

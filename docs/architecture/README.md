@@ -1,8 +1,9 @@
 # Architecture
 
-**Status:** M1–M6.7 are implemented for the bounded reference profile. M6.8
-deterministic release conformance is in progress; a live five-role model PASS is
-an explicit optional-provider nonclaim.
+**Status:** M1–M6.8 implementation and local deterministic conformance are
+complete for the bounded reference profile. GitHub hosted jobs are blocked
+before creation; a live five-role model PASS is an explicit optional-provider
+nonclaim.
 
 **Updated:** 2026-07-20
 

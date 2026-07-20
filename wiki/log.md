@@ -28,6 +28,10 @@ Append-only хронологічний лог операцій. Формат: `#
   prove native sandbox security and no live five-role model-quality PASS is
   inferred from the deterministic loopback smoke.
 - Full evidence: `docs/research/2026-07-20-m6-functional-orchestration-completion-report.md`.
+- Published candidate `31803b0` in draft PR #3. GitHub push and PR runs both
+  terminate as `startup_failure` with zero jobs; retrying an older workflow does
+  the same. Hosted evidence remains unpassed until the external runner/account
+  restriction is cleared.
 
 ## [2026-07-20] implementation | Live source-review dogfood: three fixes, ceremony script, honest status
 

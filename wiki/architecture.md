@@ -1,7 +1,7 @@
 # Current architecture
 
 **Updated:** 2026-07-20
-**Status:** bounded M1–M6.7 implemented; M6.8 deterministic `0.8.0` release conformance is in progress
+**Status:** bounded M1–M6.8 implemented and locally gated; hosted `0.8.0` jobs are externally blocked before creation
 
 ## TL;DR
 

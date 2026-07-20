@@ -3,9 +3,10 @@
 > Curated operational knowledge. Canonical executable truth lives under `.ai/`; generated vendor files are projections.
 
 **Updated:** 2026-07-20
-**Status:** M1–M6.7 are implemented for the bounded reference profile. M6.8 is
-at the `0.8.0` deterministic release-candidate gate; a complete live five-role
-model PASS remains explicitly unclaimed.
+**Status:** M1–M6.8 implementation and local/independent gates are complete for
+the bounded reference profile. The `0.8.0` hosted matrix is blocked before job
+creation by GitHub runner/account state; a complete live five-role model PASS
+remains explicitly unclaimed.
 
 ## Pages
 

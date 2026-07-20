@@ -29,7 +29,7 @@
 | M6.5 | Provenance-preserving private context and memory graph | Complete for CAS-bound embedded memory, TTL-safe reversible compaction and exact namespace retrieval |
 | M6.6 | General workload-agent team orchestration | Complete for the embedded narrowed-delegation coordinator |
 | M6.7 | Governed live research tools | Complete for bounded credential-free public search/fetch contracts and broker; provider quality remains unclaimed |
-| M6.8 | Cross-platform contracts, conformance and `0.8.0` release | Release candidate: local deterministic gates pass; hosted matrix and independent follow-up verdict pending |
+| M6.8 | Cross-platform contracts, conformance and `0.8.0` release | Implementation, local gates and independent audit complete; GitHub hosted matrix is externally blocked before job creation |
 | M7 | Enterprise/network authority and native security backends | Re-sequenced from old M6; not dropped or claimed |
 | M8 | Optional training/learning and experimental nodes | Future; MOLT/local GPU are adapters, not dependencies |
 
