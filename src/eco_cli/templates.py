@@ -200,5 +200,6 @@ def starter_bundle(
                 "entries": [],
             },
             "conformance": {"trustedSuites": [], "requiredObservations": []},
+            "routeAuthority": None,
         },
     }

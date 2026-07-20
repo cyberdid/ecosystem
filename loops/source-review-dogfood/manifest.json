@@ -2,12 +2,12 @@
   "bundleId": "source-review-dogfood-1",
   "dataClass": "D1",
   "question": {
-    "byteLength": 1269,
+    "byteLength": 275,
     "dataClass": "D1",
     "id": "question",
     "mediaType": "text/plain",
     "path": "loops/source-review-dogfood/question.txt",
-    "sha256": "60cc8a0456df3eed45724663adbf9747ce54ac7dd363b89fc999337c4a7f486a"
+    "sha256": "3657e0d03c3dfb31a7f33dfe7d504f5b2493e89d6867b1886113225ab390fab9"
   },
   "sources": [
     {

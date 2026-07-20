@@ -15,6 +15,8 @@ from urllib.parse import urlsplit, urlunsplit
 from urllib import error as urllib_error
 from urllib import request as urllib_request
 
+from jsonschema import Draft202012Validator
+
 from .contracts import API_VERSION, validate_record
 from .digests import canonical_json, deployment_identity_digest, semantic_digest
 from .errors import ContractValidationError, RuntimeAdapterError, RuntimePolicyError
@@ -99,6 +101,12 @@ def _normalized_endpoint(endpoint_url: str, profile: str) -> str:
     display_host = f"[{host}]" if ":" in host else host
     authority = display_host if port is None else f"{display_host}:{port}"
     return urlunsplit((parsed.scheme, authority, parsed.path, "", ""))
+
+
+def normalized_endpoint(endpoint_url: str, profile: str) -> str:
+    """Return the canonical endpoint used by binding and transport checks."""
+
+    return _normalized_endpoint(endpoint_url, profile)
 
 
 @dataclass(frozen=True)
@@ -195,6 +203,32 @@ class _NoRedirects(urllib_request.HTTPRedirectHandler):
 
 
 _GRAMMAR_UNSUPPORTED_KEYWORDS = ("$schema", "minLength", "maxLength", "uniqueItems")
+_SCHEMA_MAP_KEYWORDS = frozenset(
+    {
+        "$defs",
+        "definitions",
+        "dependentSchemas",
+        "patternProperties",
+        "properties",
+    }
+)
+_SCHEMA_SINGLE_KEYWORDS = frozenset(
+    {
+        "additionalItems",
+        "additionalProperties",
+        "contains",
+        "contentSchema",
+        "else",
+        "if",
+        "items",
+        "not",
+        "propertyNames",
+        "then",
+        "unevaluatedItems",
+        "unevaluatedProperties",
+    }
+)
+_SCHEMA_ARRAY_KEYWORDS = frozenset({"allOf", "anyOf", "oneOf", "prefixItems"})
 
 
 def grammar_safe_response_schema(schema: Mapping[str, Any]) -> dict[str, Any]:
@@ -209,18 +243,68 @@ def grammar_safe_response_schema(schema: Mapping[str, Any]) -> dict[str, Any]:
     here narrows nothing at the authoritative boundary.
     """
 
-    def _walk(node: Any) -> Any:
-        if isinstance(node, Mapping):
-            return {
-                key: _walk(value)
-                for key, value in node.items()
-                if key not in _GRAMMAR_UNSUPPORTED_KEYWORDS
-            }
-        if isinstance(node, list):
-            return [_walk(item) for item in node]
-        return node
+    def _walk_schema(node: Any) -> Any:
+        if not isinstance(node, Mapping):
+            return copy.deepcopy(node)
+        projected: dict[str, Any] = {}
+        for key, value in node.items():
+            if key in _GRAMMAR_UNSUPPORTED_KEYWORDS:
+                continue
+            if key in _SCHEMA_MAP_KEYWORDS and isinstance(value, Mapping):
+                # Keys in these maps are property/definition names, not JSON
+                # Schema keywords. Preserve them verbatim and project only the
+                # schema value beneath each name.
+                projected[key] = {
+                    name: _walk_schema(child) for name, child in value.items()
+                }
+            elif key == "dependencies" and isinstance(value, Mapping):
+                # Draft-07 compatibility: a dependency may be either a schema
+                # or a list of property names.
+                projected[key] = {
+                    name: _walk_schema(child)
+                    if isinstance(child, Mapping) or isinstance(child, bool)
+                    else copy.deepcopy(child)
+                    for name, child in value.items()
+                }
+            elif key in _SCHEMA_SINGLE_KEYWORDS:
+                projected[key] = (
+                    _walk_schema(value)
+                    if isinstance(value, Mapping) or isinstance(value, bool)
+                    else copy.deepcopy(value)
+                )
+            elif key in _SCHEMA_ARRAY_KEYWORDS and isinstance(value, list):
+                projected[key] = [_walk_schema(child) for child in value]
+            else:
+                # Values of const/enum/default/examples and extension keywords
+                # are literal data. Recursing into them would corrupt payloads
+                # whose ordinary object keys happen to match schema keywords.
+                projected[key] = copy.deepcopy(value)
+        return projected
 
-    return _walk(dict(schema))
+    projected = _walk_schema(dict(schema))
+    Draft202012Validator.check_schema(projected)
+    return projected
+
+
+def _effective_transport_timeout_ms(
+    requested_timeout_ms: int,
+    *,
+    valid_until: datetime,
+    now: datetime,
+) -> int:
+    """Fence one transport attempt to the absolute endpoint authority window."""
+
+    remaining = valid_until - now
+    remaining_ms = (
+        (remaining.days * 86_400 + remaining.seconds) * 1_000
+        + remaining.microseconds // 1_000
+    )
+    if remaining_ms < 1:
+        raise RuntimeAdapterError(
+            "ECO_ENDPOINT_BINDING_EXPIRED",
+            "Endpoint binding has no usable transport lifetime",
+        )
+    return min(requested_timeout_ms, remaining_ms)
 
 
 class LoopbackOpenAITypedHTTPInvoker:
@@ -509,23 +593,10 @@ class PinnedOpenAICompatibleDeployment:
         if valid_until.astimezone(timezone.utc) <= resolved_at.astimezone(timezone.utc):
             raise RuntimeAdapterError("ECO_ENDPOINT_BINDING_INVALID", "Endpoint binding lifetime is invalid")
         credential_mode = "none" if transport_profile == "local-loopback-http" else "transport-owned"
-        # The id must be content-addressed over every field that reaches the
-        # sealed record: the durable store binds one immutable digest per record
-        # id, and a later resolution with the same deployment/endpoint but a new
-        # resolvedAt/validUntil window must coexist as history, not collide.
-        binding_id = "endpoint-" + semantic_digest(
-            {
-                "deploymentId": candidate["id"],
-                "endpoint": normalized_endpoint,
-                "resolvedAt": resolved_at_text,
-                "validUntil": valid_until_text,
-            }
-        )
-        binding = {
+        binding_payload = {
             "apiVersion": API_VERSION,
             "kind": "EndpointBinding",
             "metadata": {
-                "id": binding_id,
                 "deploymentId": candidate["id"],
                 "resolvedAt": resolved_at_text,
                 "validUntil": valid_until_text,
@@ -541,6 +612,13 @@ class PinnedOpenAICompatibleDeployment:
                 "credentialMode": credential_mode,
             },
         }
+        # The identifier covers every immutable semantic field in the sealed
+        # record except the identifier itself. Thus any model, adapter,
+        # transport, credential, endpoint, identity, or lifetime change gets a
+        # distinct durable identity rather than a conflicting record body.
+        binding_id = "endpoint-" + semantic_digest(binding_payload)
+        binding = copy.deepcopy(binding_payload)
+        binding["metadata"]["id"] = binding_id
         try:
             validate_record(binding)
         except ContractValidationError as exc:
@@ -610,6 +688,11 @@ class OpenAICompatibleAdapter:
             or spec["timeoutMs"] > self._deployment._maximum_timeout_ms
         ):
             raise RuntimeAdapterError("ECO_MODEL_ROUTE_MISMATCH", "Model request route is not pinned")
+        effective_timeout_ms = _effective_transport_timeout_ms(
+            spec["timeoutMs"],
+            valid_until=_parse_time(binding["metadata"]["validUntil"]),
+            now=now_utc,
+        )
         try:
             encoded_input = input_text.encode("utf-8")
         except UnicodeEncodeError:
@@ -628,7 +711,9 @@ class OpenAICompatibleAdapter:
             temperature_millis=spec["parameters"]["temperatureMillis"],
         )
         try:
-            response = self._invoker.invoke(invocation, timeout_ms=spec["timeoutMs"])
+            response = self._invoker.invoke(
+                invocation, timeout_ms=effective_timeout_ms
+            )
         except TimeoutError:
             raise RuntimeAdapterError("ECO_ADAPTER_TIMEOUT", "Model invocation timed out") from None
         except Exception:
@@ -785,6 +870,11 @@ class TypedOpenAICompatibleAdapter:
             raise RuntimeAdapterError(
                 "ECO_MODEL_ROUTE_MISMATCH", "Model request route is not pinned"
             )
+        effective_timeout_ms = _effective_transport_timeout_ms(
+            spec["timeoutMs"],
+            valid_until=_parse_time(binding["metadata"]["validUntil"]),
+            now=now_utc,
+        )
         try:
             encoded_input = input_text.encode("utf-8")
         except UnicodeEncodeError:
@@ -813,7 +903,9 @@ class TypedOpenAICompatibleAdapter:
             tool_choice="none",
         )
         try:
-            response = self._invoker.invoke(invocation, timeout_ms=spec["timeoutMs"])
+            response = self._invoker.invoke(
+                invocation, timeout_ms=effective_timeout_ms
+            )
         except TimeoutError:
             raise RuntimeAdapterError(
                 "ECO_ADAPTER_TIMEOUT", "Model invocation timed out"

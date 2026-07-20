@@ -4,6 +4,7 @@ import ctypes
 import json
 import os
 import sys
+import sysconfig
 from pathlib import Path
 
 
@@ -84,7 +85,83 @@ def _handled_fs(abi: int) -> int:
     return access
 
 
-def _restrict(working_directory: Path, *, writable: bool) -> None:
+def _runtime_read_paths() -> tuple[Path, ...]:
+    """Return narrow interpreter paths needed after Landlock is active.
+
+    Distribution-provided Python normally lives below ``/usr``, which is part
+    of the static runtime allowlist.  Managed interpreters (for example uv and
+    actions/setup-python) use dedicated prefixes below a user or tool-cache
+    directory.  The requested Python process cannot restart there unless its
+    standard library and private shared library are explicitly readable.
+
+    Whole prefixes are deliberately never returned: a valid Python prefix may
+    itself be ``$HOME`` or ``/opt``, and recursively allowing it would expose
+    unrelated host data.  Invalid or non-contained runtime metadata fails
+    closed instead of widening the filesystem grant.
+    """
+
+    base_executable = Path(getattr(sys, "_base_executable", sys.executable)).resolve(strict=True)
+    prefixes: list[Path] = []
+    for raw in (sys.base_prefix, sys.base_exec_prefix):
+        prefix = Path(raw).resolve(strict=True)
+        if prefix == Path(prefix.anchor):
+            raise OSError("Python runtime prefix is unsafe")
+        if prefix not in prefixes:
+            prefixes.append(prefix)
+    if not any(base_executable.is_relative_to(prefix) for prefix in prefixes):
+        raise OSError("Python runtime executable is outside its prefixes")
+
+    variables = dict(sysconfig.get_config_vars())
+    variables.update(
+        {
+            "base": str(prefixes[0]),
+            "installed_base": str(prefixes[0]),
+            "platbase": str(prefixes[-1]),
+            "installed_platbase": str(prefixes[-1]),
+        }
+    )
+    paths: list[Path] = []
+
+    def add_directory(raw: str | None) -> None:
+        if not raw:
+            raise OSError("Python runtime directory is unavailable")
+        path = Path(raw).resolve(strict=True)
+        if (
+            not path.is_dir()
+            or path in prefixes
+            or not any(path.is_relative_to(prefix) for prefix in prefixes)
+        ):
+            raise OSError("Python runtime directory is unsafe")
+        if path not in paths:
+            paths.append(path)
+
+    add_directory(sysconfig.get_path("stdlib", vars=variables))
+    add_directory(sysconfig.get_path("platstdlib", vars=variables))
+
+    shared = sysconfig.get_config_var("DESTSHARED")
+    if shared:
+        add_directory(str(shared))
+
+    library_directory = sysconfig.get_config_var("LIBDIR")
+    if library_directory:
+        libdir = Path(str(library_directory)).resolve(strict=True)
+        if libdir.is_dir() and any(libdir.is_relative_to(prefix) for prefix in prefixes):
+            for variable in ("LDLIBRARY", "INSTSONAME"):
+                name = sysconfig.get_config_var(variable)
+                if not isinstance(name, str) or not name or Path(name).name != name:
+                    continue
+                unresolved = libdir / name
+                if not unresolved.is_file():
+                    continue
+                candidate = unresolved.resolve(strict=True)
+                if not any(candidate.is_relative_to(prefix) for prefix in prefixes):
+                    raise OSError("Python runtime library is unsafe")
+                if candidate not in paths:
+                    paths.append(candidate)
+    return tuple(paths)
+
+
+def _restrict(working_directory: Path, *, writable: bool, executable: Path) -> None:
     abi = _abi()
     if abi < 4:
         raise OSError("Landlock ABI 4 or newer is required")
@@ -126,11 +203,19 @@ def _restrict(working_directory: Path, *, writable: bool) -> None:
 
     try:
         allowed: set[Path] = set()
-        for raw in ("/usr", "/bin", "/sbin", "/lib", "/lib64"):
-            path = Path(raw).resolve(strict=False)
+        static_roots = tuple(
+            Path(raw).resolve(strict=False)
+            for raw in ("/usr", "/bin", "/sbin", "/lib", "/lib64")
+        )
+        for path in static_roots:
             if path not in allowed:
                 allow(path, read_access)
                 allowed.add(path)
+        for path in _runtime_read_paths():
+            if path not in allowed:
+                allow(path, read_access if path.is_dir() else _FS_READ_FILE)
+                allowed.add(path)
+        allow(executable, _FS_EXECUTE | _FS_READ_FILE)
         for raw in (
             "/etc/ld.so.cache",
             "/etc/ld.so.conf",
@@ -179,8 +264,16 @@ def main() -> None:
         ):
             _fail()
         workdir = Path(config["workingDirectory"]).resolve(strict=True)
+        executable = Path(config["command"][0]).resolve(strict=True)
+        if not executable.is_file() or not os.access(executable, os.X_OK):
+            _fail()
+        config["command"][0] = str(executable)
         os.chdir(workdir)
-        _restrict(workdir, writable=config["workingDirectoryAccess"] == "read-write")
+        _restrict(
+            workdir,
+            writable=config["workingDirectoryAccess"] == "read-write",
+            executable=executable,
+        )
         os.execve(config["command"][0], config["command"], dict(os.environ))
     except SystemExit:
         raise

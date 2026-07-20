@@ -5,7 +5,7 @@ import json
 import threading
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-from typing import Any
+from typing import Any, Mapping
 from importlib import resources
 
 from jsonschema import Draft202012Validator
@@ -23,6 +23,7 @@ from .digests import DIGEST_PROFILE, deployment_identity_digest, semantic_digest
 from .errors import ContractValidationError, RuntimePolicyError
 from .evidence import (
     EvidenceIssuerPolicy,
+    ObservationBindingExpectation,
     EvidenceProvenance,
     EvidenceTrustStore,
     TrustedEvidenceIngestor,
@@ -90,6 +91,9 @@ class PolicyEngine:
         evidence_now: datetime | None = None,
         repository_root_identity_digest: str | None = None,
         trusted_suite_digests: set[str] | None = None,
+        observation_expectations: Mapping[
+            str, ObservationBindingExpectation
+        ] | None = None,
         decision_ttl_seconds: int = 300,
         maximum_snapshot_age_seconds: int = 3600,
         maximum_observation_age_seconds: int = 2_764_800,
@@ -117,6 +121,45 @@ class PolicyEngine:
         self._repository_snapshot: dict[str, Any] | None = None
         self._repository_snapshot_provenance: EvidenceProvenance | None = None
         self._encoded_observations = copy.deepcopy(observations)
+        configured_requirements = (
+            bundle.get("trust", {})
+            .get("conformance", {})
+            .get("requiredObservations", [])
+        )
+        if not isinstance(configured_requirements, list):
+            raise RuntimePolicyError(
+                "ECO_EVIDENCE_UNTRUSTED",
+                "Configured observation expectations are invalid",
+            )
+        required_observations = {
+            item.get("deploymentId")
+            for item in configured_requirements
+            if isinstance(item, dict) and isinstance(item.get("deploymentId"), str)
+        }
+        if len(required_observations) != len(configured_requirements):
+            raise RuntimePolicyError(
+                "ECO_EVIDENCE_UNTRUSTED",
+                "Configured observation expectations are invalid",
+            )
+        if observation_expectations is None:
+            observation_expectations = {}
+        if (
+            not isinstance(observation_expectations, Mapping)
+            or any(
+                not isinstance(deployment_id, str)
+                or type(expectation) is not ObservationBindingExpectation
+                for deployment_id, expectation in observation_expectations.items()
+            )
+            or not (required_observations & set(observations)).issubset(
+                observation_expectations
+            )
+            or not set(observation_expectations).issubset(observations)
+        ):
+            raise RuntimePolicyError(
+                "ECO_EVIDENCE_UNTRUSTED",
+                "Exact observation binding expectations are required",
+            )
+        self._observation_expectations = dict(observation_expectations)
         self._encoded_repository_snapshot = repository_snapshot
         if evidence_policies is not None and (
             not isinstance(evidence_policies, tuple)
@@ -187,12 +230,14 @@ class PolicyEngine:
             deployment = self._deployments.get(deployment_id)
             if deployment is None or not isinstance(encoded, bytes):
                 raise RuntimePolicyError("ECO_EVIDENCE_UNTRUSTED", "Observation trust context is invalid")
+            expectation = self._observation_expectations.get(deployment_id)
             verified = self._evidence_ingestor.ingest_observed_capabilities(
                 encoded,
                 expected_deployment_id=deployment_id,
                 expected_deployment_identity_digest=deployment_identity_digest(deployment),
                 trusted_suite_digests=self._trusted_suite_digests,
                 now=now,
+                **(expectation.ingestor_arguments() if expectation is not None else {}),
             )
             verified_observations[deployment_id] = verified.as_dict()
             observation_provenance[deployment_id] = verified.provenance

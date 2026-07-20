@@ -11,6 +11,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
+from eco_runtime import _isolation_worker
 from eco_runtime.errors import RuntimePolicyError
 from eco_runtime.isolation import (
     CredentialBinding,
@@ -89,6 +90,64 @@ class IsolationTests(unittest.TestCase):
             operation()
         self.assertEqual(caught.exception.code, code)
         return caught.exception
+
+    def test_runtime_read_paths_are_narrow_and_inside_base_prefixes(self) -> None:
+        paths = _isolation_worker._runtime_read_paths()
+        prefixes = {
+            Path(raw).resolve(strict=True)
+            for raw in (sys.base_prefix, sys.base_exec_prefix)
+        }
+        self.assertTrue(paths)
+        for path in paths:
+            self.assertNotIn(path, prefixes)
+            self.assertTrue(any(path.is_relative_to(prefix) for prefix in prefixes))
+
+    def test_home_python_prefix_only_grants_runtime_subpaths(self) -> None:
+        prefix = self.root / "home-prefix"
+        executable = prefix / "bin" / "python"
+        stdlib = prefix / "lib" / "python3.11"
+        dynload = stdlib / "lib-dynload"
+        libpython = prefix / "lib" / "libpython3.11.so"
+        executable.parent.mkdir(parents=True)
+        dynload.mkdir(parents=True)
+        executable.write_bytes(b"python")
+        libpython.write_bytes(b"library")
+
+        config = {
+            "DESTSHARED": str(dynload),
+            "LIBDIR": str(libpython.parent),
+            "LDLIBRARY": libpython.name,
+            "INSTSONAME": None,
+        }
+        with (
+            mock.patch.object(_isolation_worker.sys, "_base_executable", str(executable)),
+            mock.patch.object(_isolation_worker.sys, "base_prefix", str(prefix)),
+            mock.patch.object(_isolation_worker.sys, "base_exec_prefix", str(prefix)),
+            mock.patch.object(_isolation_worker.sysconfig, "get_config_vars", return_value={}),
+            mock.patch.object(
+                _isolation_worker.sysconfig,
+                "get_path",
+                side_effect=lambda name, **_: str(stdlib),
+            ),
+            mock.patch.object(
+                _isolation_worker.sysconfig,
+                "get_config_var",
+                side_effect=lambda name: config.get(name),
+            ),
+        ):
+            paths = _isolation_worker._runtime_read_paths()
+
+        self.assertEqual(set(paths), {stdlib, dynload, libpython})
+        self.assertNotIn(prefix, paths)
+
+    def test_runtime_read_paths_reject_unsafe_prefixes(self) -> None:
+        for prefix in (Path(sys.executable).resolve().anchor, str(self.root)):
+            with self.subTest(prefix=prefix), mock.patch.object(
+                _isolation_worker.sys, "base_prefix", prefix
+            ), mock.patch.object(
+                _isolation_worker.sys, "base_exec_prefix", prefix
+            ), self.assertRaises(OSError):
+                _isolation_worker._runtime_read_paths()
 
     @unittest.skipUnless(
         LIVE_ISOLATION_AVAILABLE,
@@ -203,6 +262,46 @@ except PermissionError:
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(result.stdout.strip(), b"blocked")
         self.assertFalse((self.work / "denied.txt").exists())
+
+    @unittest.skipUnless(
+        LIVE_ISOLATION_AVAILABLE,
+        "requires a Linux host with user/net/pid namespaces and Landlock",
+    )
+    def test_exact_external_executable_does_not_grant_sibling_read(self) -> None:
+        sibling = self.root / "sibling-secret.txt"
+        sibling.write_text("must-not-cross", encoding="utf-8")
+        executable = self.root / "isolated-tool"
+        executable.write_text(
+            """#!/usr/bin/python3
+from pathlib import Path
+import sys
+
+try:
+    Path(sys.argv[1]).read_text()
+    print("readable")
+except (PermissionError, FileNotFoundError):
+    print("blocked")
+""",
+            encoding="utf-8",
+        )
+        executable.chmod(0o700)
+        contract = IsolationContract(
+            network_mode="deny",
+            allowed_network_endpoints=(),
+            credential_bindings=(),
+            executable_allowlist=(str(executable),),
+            working_directory_access="read-write",
+            timeout_seconds=10,
+        )
+
+        result = self.launcher.launch(
+            LaunchRequest(str(executable), (str(sibling),), str(self.work)),
+            contract,
+            credential_resolver=MappingCredentialResolver({}),
+        )
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.strip(), b"blocked")
 
     def test_credentials_endpoint_allowlist_and_executable_bypass_fail_closed(self) -> None:
         resolver = _ExplodingResolver()

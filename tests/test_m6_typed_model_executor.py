@@ -4,6 +4,7 @@ import copy
 import hashlib
 import json
 import unittest
+from datetime import timedelta
 from unittest import mock
 
 import tests.test_m6_model_execution as model_fixture_module
@@ -136,6 +137,21 @@ class TypedAdapterTests(unittest.TestCase):
         self.assertNotIn(ATTACK, wire.messages[0].content)
         self.assertNotIn("tool_calls", vars(wire))
         self.assertNotIn(ATTACK, repr(wire))
+
+    def test_typed_transport_is_fenced_to_absolute_binding_deadline(self) -> None:
+        envelope = canonical_role_input_envelope(role_invocation())
+        target = pinned(
+            mode="local-loopback-http",
+            valid_until=NOW + timedelta(milliseconds=1_500),
+        )
+        invoker = TypedRecordingInvoker()
+
+        TypedOpenAICompatibleAdapter(target, invoker).invoke(
+            typed_request(target, envelope), envelope.decode("utf-8"), now=NOW
+        )
+
+        self.assertEqual(len(invoker.calls), 1)
+        self.assertEqual(invoker.calls[0][1], 1_500)
 
     def test_envelope_digest_mismatch_fails_before_egress(self) -> None:
         envelope = canonical_role_input_envelope(role_invocation())
@@ -633,6 +649,47 @@ class GrammarSafeSchemaTests(unittest.TestCase):
         self.assertEqual(projected["properties"]["level"]["enum"], ["low", "high"])
         self.assertFalse(projected["additionalProperties"])
         self.assertEqual(projected["required"], ["items", "label"])
+
+    def test_projection_preserves_property_names_and_literal_data(self) -> None:
+        schema = {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "type": "object",
+            "properties": {
+                "minLength": {
+                    "type": "object",
+                    "properties": {
+                        "uniqueItems": {"type": "boolean", "maxLength": 7},
+                    },
+                },
+                "payload": {
+                    "const": {
+                        "$schema": "literal-data",
+                        "minLength": 1,
+                        "uniqueItems": True,
+                    }
+                },
+            },
+        }
+
+        projected = grammar_safe_response_schema(schema)
+
+        self.assertIn("minLength", projected["properties"])
+        self.assertIn(
+            "uniqueItems",
+            projected["properties"]["minLength"]["properties"],
+        )
+        self.assertNotIn(
+            "maxLength",
+            projected["properties"]["minLength"]["properties"]["uniqueItems"],
+        )
+        self.assertEqual(
+            projected["properties"]["payload"]["const"],
+            {
+                "$schema": "literal-data",
+                "minLength": 1,
+                "uniqueItems": True,
+            },
+        )
 
 
 if __name__ == "__main__":

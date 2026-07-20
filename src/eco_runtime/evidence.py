@@ -23,11 +23,13 @@ from .repository import protected_repository_path, repository_snapshot_entries, 
 
 
 EVIDENCE_PROTOCOL = "eco-trusted-evidence-v1"
+ATTESTED_EVIDENCE_PROTOCOL = "eco-trusted-evidence-v2"
 EVIDENCE_AUTH_DOMAIN = "eco-trusted-evidence-authentication-v1"
 MAX_EVIDENCE_BYTES = 64 * 1024 * 1024
 ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
 DIGEST_RE = re.compile(r"^[a-f0-9]{64}$")
 PROJECT_RE = re.compile(r"^[a-z0-9][a-z0-9._-]*$")
+ENDPOINT_REF_RE = re.compile(r"^env:[A-Z_][A-Z0-9_]{0,127}$")
 DATA_CLASSES = frozenset(f"D{level}" for level in range(5))
 TRUST_LEVELS = frozenset(f"P{level}" for level in range(1, 5))
 TRUST_ORDER = {f"P{level}": level for level in range(5)}
@@ -78,6 +80,36 @@ class VerifiedEvidence:
         return json.loads(self.canonical_record.decode("utf-8"))
 
 
+@dataclass(frozen=True)
+class ObservationBindingExpectation:
+    project_id: str
+    endpoint_ref: str
+    endpoint_reference_digest: str
+    resolved_endpoint_digest: str
+    model: str
+
+    def __post_init__(self) -> None:
+        _evidence_attestation(
+            {
+                "projectId": self.project_id,
+                "endpointRef": self.endpoint_ref,
+                "endpointReferenceDigest": self.endpoint_reference_digest,
+                "resolvedEndpointDigest": self.resolved_endpoint_digest,
+                "requestedModel": self.model,
+                "reportedModels": [self.model],
+            }
+        )
+
+    def ingestor_arguments(self) -> dict[str, str]:
+        return {
+            "expected_project_id": self.project_id,
+            "expected_endpoint_ref": self.endpoint_ref,
+            "expected_endpoint_reference_digest": self.endpoint_reference_digest,
+            "expected_resolved_endpoint_digest": self.resolved_endpoint_digest,
+            "expected_model": self.model,
+        }
+
+
 def _verified_evidence(
     record: dict[str, Any], body: dict[str, Any], encoded: bytes
 ) -> VerifiedEvidence:
@@ -116,6 +148,44 @@ def _auth_bytes(body: Mapping[str, Any]) -> bytes:
     return canonical_json(
         {"domain": EVIDENCE_AUTH_DOMAIN, "payload": dict(body)}
     ).encode("utf-8")
+
+
+def _evidence_attestation(value: object) -> dict[str, Any]:
+    required = {
+        "projectId",
+        "endpointRef",
+        "endpointReferenceDigest",
+        "resolvedEndpointDigest",
+        "requestedModel",
+        "reportedModels",
+    }
+    if not isinstance(value, dict) or set(value) != required:
+        raise ValueError("evidence attestation shape is invalid")
+    project_id = value["projectId"]
+    endpoint_ref = value["endpointRef"]
+    requested_model = value["requestedModel"]
+    reported_models = value["reportedModels"]
+    if (
+        not isinstance(project_id, str)
+        or len(project_id) > 128
+        or PROJECT_RE.fullmatch(project_id) is None
+        or not isinstance(endpoint_ref, str)
+        or ENDPOINT_REF_RE.fullmatch(endpoint_ref) is None
+        or not isinstance(value["endpointReferenceDigest"], str)
+        or DIGEST_RE.fullmatch(value["endpointReferenceDigest"]) is None
+        or value["endpointReferenceDigest"]
+        != semantic_digest({"endpointRef": endpoint_ref})
+        or not isinstance(value["resolvedEndpointDigest"], str)
+        or DIGEST_RE.fullmatch(value["resolvedEndpointDigest"]) is None
+        or not isinstance(requested_model, str)
+        or not 1 <= len(requested_model) <= 512
+        or not isinstance(reported_models, list)
+        or not 1 <= len(reported_models) <= 16
+        or any(not isinstance(item, str) or not 1 <= len(item) <= 512 for item in reported_models)
+        or reported_models != sorted(set(reported_models))
+    ):
+        raise ValueError("evidence attestation value is invalid")
+    return copy.deepcopy(value)
 
 
 @dataclass(frozen=True)
@@ -199,6 +269,7 @@ class HmacEvidenceSigner:
         envelope_id: str,
         issued_at: datetime,
         expires_at: datetime,
+        attestation: Mapping[str, Any] | None = None,
     ) -> bytes:
         if ID_RE.fullmatch(envelope_id) is None:
             raise ValueError("envelope_id must be a bounded safe identifier")
@@ -215,7 +286,11 @@ class HmacEvidenceSigner:
         metadata = record["metadata"]
         record_id = metadata["id"]
         body = {
-            "protocol": EVIDENCE_PROTOCOL,
+            "protocol": (
+                ATTESTED_EVIDENCE_PROTOCOL
+                if attestation is not None
+                else EVIDENCE_PROTOCOL
+            ),
             "envelopeId": envelope_id,
             "issuer": {"id": self.issuer_id, "keyId": self.key_id},
             "issuedAt": _timestamp(issued),
@@ -227,6 +302,8 @@ class HmacEvidenceSigner:
             },
             "record": record,
         }
+        if attestation is not None:
+            body["attestation"] = _evidence_attestation(dict(attestation))
         tag = hmac.new(self._key, _auth_bytes(body), hashlib.sha256).hexdigest()
         return canonical_json(
             {
@@ -264,12 +341,31 @@ class EvidenceTrustStore:
             raise RuntimePolicyError("ECO_EVIDENCE_INVALID", "Evidence envelope is not canonical")
         signature = envelope.get("signature")
         body = {key: value for key, value in envelope.items() if key != "signature"}
+        expected_body_keys = {
+            "protocol",
+            "envelopeId",
+            "issuer",
+            "issuedAt",
+            "expiresAt",
+            "subject",
+            "record",
+        }
+        protocol = body.get("protocol")
+        if "attestation" in body:
+            expected_body_keys.add("attestation")
+            try:
+                _evidence_attestation(body["attestation"])
+            except ValueError as exc:
+                raise RuntimePolicyError(
+                    "ECO_EVIDENCE_INVALID", "Evidence attestation is invalid"
+                ) from exc
         issuer = body.get("issuer")
         subject = body.get("subject")
         if (
-            set(body)
-            != {"protocol", "envelopeId", "issuer", "issuedAt", "expiresAt", "subject", "record"}
-            or body.get("protocol") != EVIDENCE_PROTOCOL
+            set(body) != expected_body_keys
+            or protocol not in {EVIDENCE_PROTOCOL, ATTESTED_EVIDENCE_PROTOCOL}
+            or (protocol == EVIDENCE_PROTOCOL and "attestation" in body)
+            or (protocol == ATTESTED_EVIDENCE_PROTOCOL and "attestation" not in body)
             or not isinstance(body.get("envelopeId"), str)
             or ID_RE.fullmatch(body["envelopeId"]) is None
             or not isinstance(issuer, dict)
@@ -384,6 +480,11 @@ class TrustedEvidenceIngestor:
         expected_deployment_identity_digest: str,
         trusted_suite_digests: frozenset[str],
         now: datetime,
+        expected_project_id: str | None = None,
+        expected_endpoint_ref: str | None = None,
+        expected_endpoint_reference_digest: str | None = None,
+        expected_resolved_endpoint_digest: str | None = None,
+        expected_model: str | None = None,
     ) -> VerifiedEvidence:
         record, policy, body = self._open(encoded, now=now)
         if record["kind"] != "AdapterConformanceProfile":
@@ -392,6 +493,17 @@ class TrustedEvidenceIngestor:
         valid_until = _parse_timestamp(record["metadata"]["validUntil"])
         current = now.astimezone(timezone.utc)
         suite_digest = record["spec"]["suite"]["digest"]
+        binding = body.get("attestation")
+        expected_binding = any(
+            value is not None
+            for value in (
+                expected_project_id,
+                expected_endpoint_ref,
+                expected_endpoint_reference_digest,
+                expected_resolved_endpoint_digest,
+                expected_model,
+            )
+        )
         if (
             record["metadata"]["deploymentId"] != expected_deployment_id
             or (policy.allowed_deployments and expected_deployment_id not in policy.allowed_deployments)
@@ -403,6 +515,37 @@ class TrustedEvidenceIngestor:
             or current >= valid_until
             or current - tested > timedelta(seconds=self._observation_age)
             or valid_until - tested > timedelta(seconds=self._observation_age)
+            or (expected_binding and not isinstance(binding, dict))
+            or (
+                expected_project_id is not None
+                and binding.get("projectId") != expected_project_id
+            )
+            or (
+                expected_project_id is not None
+                and policy.allowed_projects
+                and expected_project_id not in policy.allowed_projects
+            )
+            or (
+                expected_endpoint_ref is not None
+                and binding.get("endpointRef") != expected_endpoint_ref
+            )
+            or (
+                expected_endpoint_reference_digest is not None
+                and binding.get("endpointReferenceDigest")
+                != expected_endpoint_reference_digest
+            )
+            or (
+                expected_resolved_endpoint_digest is not None
+                and binding.get("resolvedEndpointDigest")
+                != expected_resolved_endpoint_digest
+            )
+            or (
+                expected_model is not None
+                and (
+                    binding.get("requestedModel") != expected_model
+                    or binding.get("reportedModels") != [expected_model]
+                )
+            )
         ):
             raise RuntimePolicyError("ECO_OBSERVATION_EVIDENCE_MISMATCH", "Observation evidence does not match trust context")
         return _verified_evidence(record, body, encoded)

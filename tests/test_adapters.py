@@ -273,6 +273,60 @@ class OpenAICompatibleAdapterTests(unittest.TestCase):
         )
         self.assertEqual(invoker.calls, [])
 
+    def test_transport_timeout_is_clamped_to_absolute_binding_deadline(self) -> None:
+        target = pinned(
+            mode="local-loopback-http",
+            valid_until=NOW + timedelta(milliseconds=1_250),
+        )
+        invoker = RecordingInvoker()
+
+        OpenAICompatibleAdapter(target, invoker).invoke(
+            model_request(target), INPUT, now=NOW
+        )
+
+        self.assertEqual(len(invoker.calls), 1)
+        self.assertEqual(invoker.calls[0][1], 1_250)
+
+    def test_sub_millisecond_authority_window_denies_transport(self) -> None:
+        target = pinned(
+            mode="local-loopback-http",
+            valid_until=NOW + timedelta(microseconds=999),
+        )
+        invoker = RecordingInvoker()
+
+        self.assert_code(
+            "ECO_ENDPOINT_BINDING_EXPIRED",
+            lambda: OpenAICompatibleAdapter(target, invoker).invoke(
+                model_request(target), INPUT, now=NOW
+            ),
+        )
+        self.assertEqual(invoker.calls, [])
+
+    def test_endpoint_binding_id_covers_every_immutable_semantic_field(self) -> None:
+        original = pinned(mode="local-loopback-http")
+        original_binding = original.endpoint_binding()
+        original_id = original_binding["metadata"].pop("id")
+        self.assertEqual(
+            original_id,
+            "endpoint-" + semantic_digest(original_binding),
+        )
+        changed_deployment = deployment(mode="local-loopback-http")
+        changed_deployment["model"] = "different-model-revision"
+        changed_deployment["identity"]["modelRevision"] = "sha256:different-model-revision"
+        changed = PinnedOpenAICompatibleDeployment(
+            changed_deployment,
+            endpoint_url="http://127.0.0.1:8000/v1/chat/completions",
+            transport_profile="local-loopback-http",
+            resolved_at=NOW - timedelta(minutes=1),
+            valid_until=NOW + timedelta(minutes=10),
+            maximum_timeout_ms=10_000,
+        )
+
+        self.assertNotEqual(
+            original_id,
+            changed.endpoint_binding()["metadata"]["id"],
+        )
+
     def test_deployment_identity_is_exact_not_transport_compatibility(self) -> None:
         candidate = deployment(mode="direct-cloud-https")
         target = pinned(mode="direct-cloud-https")

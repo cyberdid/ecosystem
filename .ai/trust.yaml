@@ -23,7 +23,7 @@ evidence:
       allowedDeployments:
         - local-llamacpp-gemma
       allowedSuiteDigests:
-        - aa8ed45e3d481a0faf91d442dc2bc4d77f73fdd100d0eb262da64046fa441f5a
+        - 66710ebcdd12eb33b5c729b780048274578a6f3a4500a7c1adaa50096f2cc5d1
 repositorySnapshot:
   issuer:
     id: local-snapshot-authority
@@ -48,9 +48,10 @@ repositorySnapshot:
 conformance:
   trustedSuites:
     - id: adapter-conformance-v1
-      version: 1.0.0
-      digest: aa8ed45e3d481a0faf91d442dc2bc4d77f73fdd100d0eb262da64046fa441f5a
+      version: 1.1.0
+      digest: 66710ebcdd12eb33b5c729b780048274578a6f3a4500a7c1adaa50096f2cc5d1
   requiredObservations:
     - deploymentId: local-llamacpp-gemma
-      suiteDigest: aa8ed45e3d481a0faf91d442dc2bc4d77f73fdd100d0eb262da64046fa441f5a
+      suiteDigest: 66710ebcdd12eb33b5c729b780048274578a6f3a4500a7c1adaa50096f2cc5d1
       envelopeRef: env:ECO_LOCAL_ADAPTER_ENVELOPE_FILE
+routeAuthority: null

@@ -9,8 +9,9 @@ from pathlib import Path
 from unittest import mock
 
 from eco_runtime.evidence import HmacEvidenceSigner
+from eco_runtime.digests import semantic_digest
 from eco_runtime.repository import repository_root_identity
-from eco_runtime.trust_diagnostics import runtime_trust_diagnostics
+from eco_runtime.trust_diagnostics import _issuer_policies, runtime_trust_diagnostics
 from tests.test_policy import DIGEST, exact_deployment, observation
 
 
@@ -256,6 +257,8 @@ class RuntimeTrustDiagnosticsTests(unittest.TestCase):
     def test_each_required_conformance_envelope_is_verified(self) -> None:
         self._write_snapshot()
         deployment = exact_deployment("local-test")
+        endpoint = "http://127.0.0.1:8080/v1/chat/completions"
+        endpoint_ref = deployment["endpointRef"]
         conformance_path = Path(self.temp.name) / "conformance.evidence"
         conformance_path.write_bytes(
             HmacEvidenceSigner("operator-1", "snapshot-key-1", KEY).sign(
@@ -263,6 +266,18 @@ class RuntimeTrustDiagnosticsTests(unittest.TestCase):
                 envelope_id="conformance-envelope-1",
                 issued_at=NOW - timedelta(minutes=1),
                 expires_at=NOW + timedelta(minutes=5),
+                attestation={
+                    "projectId": "sample",
+                    "endpointRef": endpoint_ref,
+                    "endpointReferenceDigest": semantic_digest(
+                        {"endpointRef": endpoint_ref}
+                    ),
+                    "resolvedEndpointDigest": semantic_digest(
+                        {"endpointUrl": endpoint}
+                    ),
+                    "requestedModel": deployment["model"],
+                    "reportedModels": [deployment["model"]],
+                },
             )
         )
         os.chmod(conformance_path, 0o600)
@@ -289,6 +304,7 @@ class RuntimeTrustDiagnosticsTests(unittest.TestCase):
                 "ECO_TEST_TRUST_KEY": KEY.decode("ascii"),
                 "ECO_TEST_SNAPSHOT_EVIDENCE": str(self.evidence_path),
                 "ECO_TEST_CONFORMANCE_EVIDENCE": str(conformance_path),
+                endpoint_ref[4:]: endpoint,
             },
             clear=False,
         ):
@@ -300,6 +316,83 @@ class RuntimeTrustDiagnosticsTests(unittest.TestCase):
             "status": "ready",
             "code": "ECO_RUNTIME_TRUST_CONFORMANCE_VERIFIED",
         })
+
+        with mock.patch.dict(
+            os.environ,
+            {
+                "ECO_TEST_TRUST_KEY": KEY.decode("ascii"),
+                "ECO_TEST_SNAPSHOT_EVIDENCE": str(self.evidence_path),
+                "ECO_TEST_CONFORMANCE_EVIDENCE": str(conformance_path),
+                endpoint_ref[4:]: "http://127.0.0.1:8081/v1/chat/completions",
+            },
+            clear=False,
+        ):
+            changed_endpoint = runtime_trust_diagnostics(
+                self.root, self.bundle, now=NOW
+            )
+        self.assertFalse(changed_endpoint["available"])
+        self.assertEqual(
+            changed_endpoint["checks"][-1]["code"],
+            "ECO_OBSERVATION_EVIDENCE_MISMATCH",
+        )
+
+    def test_required_issuer_id_preserves_all_exact_key_rotations(self) -> None:
+        rotated = dict(self.bundle["trust"]["evidence"]["issuers"][0])
+        rotated["keyId"] = "snapshot-key-2"
+        rotated["verificationKeyRef"] = "env:ECO_TEST_TRUST_KEY_2"
+        self.bundle["trust"]["evidence"]["issuers"].append(rotated)
+        with mock.patch.dict(
+            os.environ,
+            {
+                "ECO_TEST_TRUST_KEY": KEY.decode("ascii"),
+                "ECO_TEST_TRUST_KEY_2": (b"r" * 32).decode("ascii"),
+            },
+            clear=False,
+        ):
+            policies = _issuer_policies(
+                self.bundle["trust"],
+                required_issuer_ids=frozenset({"operator-1"}),
+            )
+
+        self.assertEqual(
+            {(policy.issuer_id, policy.key_id) for policy in policies},
+            {
+                ("operator-1", "snapshot-key-1"),
+                ("operator-1", "snapshot-key-2"),
+            },
+        )
+
+    def test_snapshot_must_use_the_exact_configured_key_id(self) -> None:
+        rotated_key = b"r" * 32
+        rotated = dict(self.bundle["trust"]["evidence"]["issuers"][0])
+        rotated["keyId"] = "snapshot-key-2"
+        rotated["verificationKeyRef"] = "env:ECO_TEST_TRUST_KEY_2"
+        self.bundle["trust"]["evidence"]["issuers"].append(rotated)
+        self.evidence_path.write_bytes(
+            HmacEvidenceSigner("operator-1", "snapshot-key-2", rotated_key).sign(
+                self._snapshot(),
+                envelope_id="snapshot-envelope-rotated",
+                issued_at=NOW - timedelta(minutes=1),
+                expires_at=NOW + timedelta(minutes=5),
+            )
+        )
+        os.chmod(self.evidence_path, 0o600)
+        with mock.patch.dict(
+            os.environ,
+            {
+                "ECO_TEST_TRUST_KEY": KEY.decode("ascii"),
+                "ECO_TEST_TRUST_KEY_2": rotated_key.decode("ascii"),
+                "ECO_TEST_SNAPSHOT_EVIDENCE": str(self.evidence_path),
+            },
+            clear=False,
+        ):
+            result = runtime_trust_diagnostics(self.root, self.bundle, now=NOW)
+
+        self.assertFalse(result["available"])
+        self.assertEqual(
+            result["checks"][-1]["code"],
+            "ECO_RUNTIME_TRUST_SNAPSHOT_ISSUER_MISMATCH",
+        )
 
 
 if __name__ == "__main__":

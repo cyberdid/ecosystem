@@ -271,6 +271,92 @@ class MemoryRetrievalTests(MemoryFixture):
 
 
 class MemoryCompactionTests(MemoryFixture):
+    def test_compaction_cannot_outlive_earliest_source_or_explicit_ttl(self) -> None:
+        expiring = self.put(
+            "expiring-source",
+            b"short lived",
+            ttl=timedelta(minutes=30),
+        )
+        durable = self.put("durable-source", b"durable")
+        summary = self.store.compact(
+            record_id="clamped-summary",
+            source_record_digests=(
+                expiring["metadata"]["recordDigest"],
+                durable["metadata"]["recordDigest"],
+            ),
+            summary_content=b"bounded summary",
+            author="agent:synthesizer",
+            created_at=NOW + timedelta(minutes=1),
+            ttl=timedelta(hours=2),
+        )
+        self.assertEqual(
+            summary["spec"]["expiresAt"],
+            (NOW + timedelta(minutes=30)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        )
+        visible = retrieve_memory(
+            self.store,
+            MemoryQuery(
+                namespace=self.ns,
+                data_classes=("D0",),
+                privacy_levels=("P0",),
+                memory_types=("summary",),
+            ),
+            policy=self.policy,
+            now=NOW + timedelta(minutes=29),
+        )
+        self.assertEqual(
+            [hit.record_digest for hit in visible.hits],
+            [summary["metadata"]["recordDigest"]],
+        )
+        expired = retrieve_memory(
+            self.store,
+            MemoryQuery(
+                namespace=self.ns,
+                data_classes=("D0",),
+                privacy_levels=("P0",),
+                memory_types=("summary",),
+            ),
+            policy=self.policy,
+            now=NOW + timedelta(minutes=31),
+        )
+        self.assertEqual(expired.hits, ())
+
+    def test_nested_compaction_preserves_inherited_relations(self) -> None:
+        claim = self.put("nested-claim", b"claim")
+        refutation = self.put(
+            "nested-refutation",
+            b"refutation",
+            links={"refutes": [claim["metadata"]["recordDigest"]]},
+            created_at=NOW + timedelta(seconds=1),
+        )
+        inner = self.store.compact(
+            record_id="inner-summary",
+            source_record_digests=(
+                claim["metadata"]["recordDigest"],
+                refutation["metadata"]["recordDigest"],
+            ),
+            summary_content=b"inner",
+            author="agent:synthesizer",
+            created_at=NOW + timedelta(seconds=2),
+        )
+        outer = self.store.compact(
+            record_id="outer-summary",
+            source_record_digests=(inner["metadata"]["recordDigest"],),
+            summary_content=b"outer",
+            author="agent:synthesizer",
+            created_at=NOW + timedelta(seconds=3),
+        )
+        self.assertEqual(
+            outer["spec"]["compaction"]["preservedRelations"],
+            [
+                {
+                    "from": refutation["metadata"]["recordDigest"],
+                    "relation": "refutes",
+                    "to": claim["metadata"]["recordDigest"],
+                }
+            ],
+        )
+
     def test_compaction_roundtrip_preserves_sources_artifacts_and_refutation(self) -> None:
         first = self.put("claim", b"claim")
         second = self.put(

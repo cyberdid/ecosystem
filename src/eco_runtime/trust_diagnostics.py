@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from .adapters import normalized_endpoint
 from .evidence import (
     MAX_EVIDENCE_BYTES,
     EvidenceIssuerPolicy,
@@ -14,7 +15,7 @@ from .evidence import (
     TrustedEvidenceIngestor,
 )
 from .errors import EcoRuntimeError, RuntimePolicyError
-from .digests import deployment_identity_digest
+from .digests import deployment_identity_digest, semantic_digest
 from .repository import protected_repository_path, repository_root_identity
 
 
@@ -167,30 +168,57 @@ def _issuer_policies(
     trust: dict[str, Any],
     *,
     required_issuer_ids: frozenset[str] | None = None,
+    required_issuer_keys: frozenset[tuple[str, str]] | None = None,
 ) -> tuple[EvidenceIssuerPolicy, ...]:
     """Build verification policies, resolving keys only where needed.
 
     A workflow that consumes one class of evidence must not become unavailable
     because an unrelated issuer's key is absent from its environment. When
-    ``required_issuer_ids`` is given, only those issuers are materialized (and
-    each requested id must exist); the full-diagnostic doctor keeps the default
-    of resolving every declared issuer.
+    ``required_issuer_ids`` is given, every exact key policy for those issuers
+    is materialized so key rotation is not collapsed. ``required_issuer_keys``
+    narrows the selection to exact ``(issuerId, keyId)`` pairs. The
+    full-diagnostic doctor keeps the default of resolving every declared key.
     """
 
     issuer_specs = trust.get("evidence", {}).get("issuers")
     if not isinstance(issuer_specs, list) or not issuer_specs:
         raise RuntimePolicyError("ECO_RUNTIME_TRUST_CONFIG_INVALID", "Trust configuration is invalid")
-    if required_issuer_ids is not None:
-        by_id = {
-            issuer.get("id"): issuer
-            for issuer in issuer_specs
-            if isinstance(issuer, dict) and isinstance(issuer.get("id"), str)
-        }
-        if not required_issuer_ids or required_issuer_ids - set(by_id):
+    if required_issuer_ids is not None and required_issuer_keys is not None:
+        raise RuntimePolicyError(
+            "ECO_RUNTIME_TRUST_CONFIG_INVALID", "Trust configuration is invalid"
+        )
+    exact_specs: dict[tuple[str, str], dict[str, Any]] = {}
+    for issuer in issuer_specs:
+        if not isinstance(issuer, dict):
             raise RuntimePolicyError(
                 "ECO_RUNTIME_TRUST_CONFIG_INVALID", "Trust configuration is invalid"
             )
-        issuer_specs = [by_id[item] for item in sorted(required_issuer_ids)]
+        key = (issuer.get("id"), issuer.get("keyId"))
+        if (
+            not all(isinstance(item, str) for item in key)
+            or key in exact_specs
+        ):
+            raise RuntimePolicyError(
+                "ECO_RUNTIME_TRUST_CONFIG_INVALID", "Trust configuration is invalid"
+            )
+        exact_specs[key] = issuer
+    if required_issuer_ids is not None:
+        available_ids = {issuer_id for issuer_id, _ in exact_specs}
+        if not required_issuer_ids or required_issuer_ids - available_ids:
+            raise RuntimePolicyError(
+                "ECO_RUNTIME_TRUST_CONFIG_INVALID", "Trust configuration is invalid"
+            )
+        issuer_specs = [
+            exact_specs[key]
+            for key in sorted(exact_specs)
+            if key[0] in required_issuer_ids
+        ]
+    elif required_issuer_keys is not None:
+        if not required_issuer_keys or required_issuer_keys - set(exact_specs):
+            raise RuntimePolicyError(
+                "ECO_RUNTIME_TRUST_CONFIG_INVALID", "Trust configuration is invalid"
+            )
+        issuer_specs = [exact_specs[key] for key in sorted(required_issuer_keys)]
     try:
         policies = tuple(
             EvidenceIssuerPolicy(
@@ -253,10 +281,17 @@ def verified_trust_bootstrap(
     if not isinstance(snapshot_spec, dict):
         raise RuntimePolicyError("ECO_RUNTIME_TRUST_CONFIG_INVALID", "Trust configuration is invalid")
     snapshot_issuer = snapshot_spec.get("issuer")
-    if not isinstance(snapshot_issuer, dict) or not isinstance(snapshot_issuer.get("id"), str):
+    if (
+        not isinstance(snapshot_issuer, dict)
+        or not isinstance(snapshot_issuer.get("id"), str)
+        or not isinstance(snapshot_issuer.get("keyId"), str)
+    ):
         raise RuntimePolicyError("ECO_RUNTIME_TRUST_CONFIG_INVALID", "Trust configuration is invalid")
     policies = _issuer_policies(
-        trust, required_issuer_ids=frozenset({snapshot_issuer["id"]})
+        trust,
+        required_issuer_keys=frozenset(
+            {(snapshot_issuer["id"], snapshot_issuer["keyId"])}
+        ),
     )
     maximum_file_bytes = snapshot_spec.get("maximumFileBytes")
     if not isinstance(maximum_file_bytes, int) or maximum_file_bytes < 1:
@@ -272,10 +307,16 @@ def verified_trust_bootstrap(
     )
     record = verified.as_dict()
     expected_issuer = snapshot_spec.get("issuer")
-    if not isinstance(expected_issuer, dict) or record["metadata"]["issuer"] != {
-        "type": expected_issuer.get("recordIssuerType"),
-        "id": expected_issuer.get("id"),
-    }:
+    if (
+        not isinstance(expected_issuer, dict)
+        or record["metadata"]["issuer"]
+        != {
+            "type": expected_issuer.get("recordIssuerType"),
+            "id": expected_issuer.get("id"),
+        }
+        or verified.provenance.issuer_id != expected_issuer.get("id")
+        or verified.provenance.key_id != expected_issuer.get("keyId")
+    ):
         raise RuntimePolicyError("ECO_RUNTIME_TRUST_SNAPSHOT_ISSUER_MISMATCH", "Snapshot issuer is invalid")
     actual = {
         item["path"]: (item["dataClass"], item["trust"], item["classificationAuthority"])
@@ -393,10 +434,15 @@ def runtime_trust_diagnostics(
         )
         record = verified.as_dict()
         expected_issuer = snapshot_spec["issuer"]
-        if record["metadata"]["issuer"] != {
-            "type": expected_issuer["recordIssuerType"],
-            "id": expected_issuer["id"],
-        }:
+        if (
+            record["metadata"]["issuer"]
+            != {
+                "type": expected_issuer["recordIssuerType"],
+                "id": expected_issuer["id"],
+            }
+            or verified.provenance.issuer_id != expected_issuer["id"]
+            or verified.provenance.key_id != expected_issuer["keyId"]
+        ):
             raise RuntimePolicyError("ECO_RUNTIME_TRUST_SNAPSHOT_ISSUER_MISMATCH", "Snapshot issuer is invalid")
         actual = {
             item["path"]: (item["dataClass"], item["trust"], item["classificationAuthority"])
@@ -442,6 +488,19 @@ def runtime_trust_diagnostics(
             ):
                 raise RuntimePolicyError("ECO_RUNTIME_TRUST_CONFIG_INVALID", "Trust configuration is invalid")
             seen_deployments.add(deployment_id)
+            endpoint_ref = deployment.get("endpointRef")
+            if not isinstance(endpoint_ref, str) or _ENV_REF.fullmatch(endpoint_ref) is None:
+                raise RuntimePolicyError(
+                    "ECO_RUNTIME_TRUST_CONFIG_INVALID",
+                    "Required conformance endpoint binding is invalid",
+                )
+            endpoint_value = os.environ.get(endpoint_ref[4:])
+            if not endpoint_value:
+                raise RuntimePolicyError(
+                    "ECO_RUNTIME_TRUST_ENDPOINT_UNAVAILABLE",
+                    "Required conformance endpoint is unavailable",
+                )
+            endpoint_url = normalized_endpoint(endpoint_value, "local-loopback-http")
             encoded = _external_evidence(requirement.get("envelopeRef"), repository_root=root)
             verified_observation = ingestor.ingest_observed_capabilities(
                 encoded,
@@ -449,6 +508,15 @@ def runtime_trust_diagnostics(
                 expected_deployment_identity_digest=deployment_identity_digest(deployment),
                 trusted_suite_digests=trusted_suites,
                 now=instant,
+                expected_project_id=project_id,
+                expected_endpoint_ref=endpoint_ref,
+                expected_endpoint_reference_digest=deployment["identity"][
+                    "endpointReferenceDigest"
+                ],
+                expected_resolved_endpoint_digest=semantic_digest(
+                    {"endpointUrl": endpoint_url}
+                ),
+                expected_model=deployment["model"],
             ).as_dict()
             if verified_observation["spec"]["suite"]["digest"] != suite_digest:
                 raise RuntimePolicyError("ECO_RUNTIME_TRUST_CONFORMANCE_MISMATCH", "Conformance evidence is invalid")

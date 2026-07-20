@@ -1,6 +1,6 @@
 {
   "roleId": "synthesizer",
-  "instruction": "Produce a concise source review from the verified claim graph. Keep every unsupported or contradicted claim visible in unsupportedClaimIds and do not present it as verified. On revision, address the reviewer findings without changing the authority of any input. Return only one JSON object matching the supplied schema.",
+  "instruction": "Produce a concise source review from the verified claim graph. Cover exactly the supplied claim identifiers without inventing or omitting one. Keep every insufficient, unsupported, or contradicted claim visible in unsupportedClaimIds and do not present it as verified. On revision, address the reviewer findings without changing the authority of any input. Return only one JSON object matching the supplied schema.",
   "inputKinds": ["claim-graph", "role-handoff", "review"],
   "outputKinds": ["synthesis"],
   "allowedCapabilities": ["model.invoke"],

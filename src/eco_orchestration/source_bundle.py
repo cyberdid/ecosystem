@@ -65,6 +65,8 @@ class SourceBundleLimits:
     maximum_source_count: int = 64
     maximum_total_bytes: int = 8_388_608
     maximum_manifest_bytes: int = 262_144
+    maximum_json_depth: int = 64
+    maximum_json_items: int = 20_000
 
     def __post_init__(self) -> None:
         for name in (
@@ -72,6 +74,8 @@ class SourceBundleLimits:
             "maximum_source_count",
             "maximum_total_bytes",
             "maximum_manifest_bytes",
+            "maximum_json_depth",
+            "maximum_json_items",
         ):
             value = getattr(self, name)
             if not isinstance(value, int) or isinstance(value, bool) or value < 1:
@@ -82,6 +86,10 @@ class SourceBundleLimits:
             raise ValueError("maximum_source_count cannot exceed the SourceBundle contract limit")
         if self.maximum_total_bytes > 1_000_000_000:
             raise ValueError("maximum_total_bytes cannot exceed the SourceBundle contract limit")
+        if self.maximum_json_depth > 256:
+            raise ValueError("maximum_json_depth cannot exceed the SourceBundle contract limit")
+        if self.maximum_json_items > 1_000_000:
+            raise ValueError("maximum_json_items cannot exceed the SourceBundle contract limit")
 
     def policy_digest(self) -> str:
         """Digest the broker-owned ingestion behavior, never manifest assertions."""
@@ -96,6 +104,8 @@ class SourceBundleLimits:
                 "maximumSourceCount": self.maximum_source_count,
                 "maximumTotalBytes": self.maximum_total_bytes,
                 "maximumManifestBytes": self.maximum_manifest_bytes,
+                "maximumJsonDepth": self.maximum_json_depth,
+                "maximumJsonItems": self.maximum_json_items,
                 "pathProfile": "canonical-repository-relative-utf8-v1",
                 "contentProfile": "utf8-no-nul-v1",
             }
@@ -118,6 +128,8 @@ class SourceBundleManifest:
     data_class: str
     question: SourceManifestEntry
     sources: tuple[SourceManifestEntry, ...]
+    manifest_digest: str | None = None
+    manifest_byte_length: int | None = None
 
     @property
     def entries(self) -> tuple[SourceManifestEntry, ...]:
@@ -266,6 +278,26 @@ def _reject_duplicate_object_pairs(pairs: list[tuple[str, Any]]) -> dict[str, An
 
 def _reject_nonfinite_json_constant(_: str) -> None:
     raise ValueError("non-finite JSON number")
+
+
+def _enforce_json_shape_limits(
+    document: Any,
+    *,
+    maximum_depth: int,
+    maximum_items: int,
+    code: str,
+) -> None:
+    pending: list[tuple[Any, int]] = [(document, 1)]
+    observed = 0
+    while pending:
+        value, depth = pending.pop()
+        observed += 1
+        if observed > maximum_items or depth > maximum_depth:
+            raise _fail(code, "JSON exceeds the broker-owned structural limits")
+        if isinstance(value, Mapping):
+            pending.extend((item, depth + 1) for item in value.values())
+        elif isinstance(value, list):
+            pending.extend((item, depth + 1) for item in value)
 
 
 class _LinuxAnchoredSourceReader:
@@ -477,9 +509,60 @@ def load_source_bundle_manifest(
         )
     except UnicodeDecodeError as exc:
         raise _fail("ECO_SOURCE_MANIFEST_ENCODING", "Manifest is not valid UTF-8") from exc
+    except RecursionError as exc:
+        raise _fail(
+            "ECO_SOURCE_MANIFEST_JSON_LIMIT",
+            "Manifest JSON exceeds the broker-owned structural limits",
+        ) from exc
     except (json.JSONDecodeError, ValueError) as exc:
         raise _fail("ECO_SOURCE_MANIFEST_JSON", "Manifest is not valid JSON") from exc
-    return validate_source_bundle_manifest(document, limits=limits)
+    _enforce_json_shape_limits(
+        document,
+        maximum_depth=limits.maximum_json_depth,
+        maximum_items=limits.maximum_json_items,
+        code="ECO_SOURCE_MANIFEST_JSON_LIMIT",
+    )
+    parsed = validate_source_bundle_manifest(document, limits=limits)
+    return SourceBundleManifest(
+        parsed.bundle_id,
+        parsed.data_class,
+        parsed.question,
+        parsed.sources,
+        hashlib.sha256(encoded).hexdigest(),
+        len(encoded),
+    )
+
+
+def verify_source_bundle_files(
+    root: str | os.PathLike[str],
+    manifest: SourceBundleManifest,
+    *,
+    limits: SourceBundleLimits | None = None,
+    fault_hook: Callable[[str, str], None] | None = None,
+) -> dict[str, Any]:
+    """Read and validate every declared byte without publishing to the CAS."""
+
+    if not isinstance(manifest, SourceBundleManifest):
+        raise TypeError("manifest must be a SourceBundleManifest")
+    if limits is None:
+        limits = SourceBundleLimits()
+    elif not isinstance(limits, SourceBundleLimits):
+        raise TypeError("limits must be SourceBundleLimits")
+    with _LinuxAnchoredSourceReader(root, fault_hook=fault_hook) as reader:
+        read_sources = tuple(
+            _read_declared_source(reader, entry, limits=limits)
+            for entry in manifest.entries
+        )
+    observed_total = sum(len(item.content) for item in read_sources)
+    if observed_total > limits.maximum_total_bytes:
+        raise _fail("ECO_SOURCE_TOTAL_TOO_LARGE", "Source bundle exceeds the aggregate limit")
+    return {
+        "manifestDigest": manifest.manifest_digest,
+        "manifestByteLength": manifest.manifest_byte_length,
+        "sourceCount": len(manifest.sources),
+        "totalByteLength": observed_total,
+        "ingestionPolicyDigest": limits.policy_digest(),
+    }
 
 
 def _read_declared_source(
@@ -497,13 +580,24 @@ def _read_declared_source(
         raise _fail("ECO_SOURCE_ENCODING_DENIED", "Source is not valid UTF-8") from exc
     if entry.media_type == "application/json":
         try:
-            json.loads(
+            document = json.loads(
                 text,
                 object_pairs_hook=_reject_duplicate_object_pairs,
                 parse_constant=_reject_nonfinite_json_constant,
             )
+        except RecursionError as exc:
+            raise _fail(
+                "ECO_SOURCE_JSON_LIMIT",
+                "JSON source exceeds the broker-owned structural limits",
+            ) from exc
         except (json.JSONDecodeError, ValueError) as exc:
             raise _fail("ECO_SOURCE_JSON_INVALID", "JSON source is invalid") from exc
+        _enforce_json_shape_limits(
+            document,
+            maximum_depth=limits.maximum_json_depth,
+            maximum_items=limits.maximum_json_items,
+            code="ECO_SOURCE_JSON_LIMIT",
+        )
     if len(content) != entry.byte_length:
         raise _fail("ECO_SOURCE_LENGTH_MISMATCH", "Source length differs from manifest")
     digest = hashlib.sha256(content).hexdigest()
@@ -671,6 +765,12 @@ def ingest_source_bundle_manifest_file(
 ) -> dict[str, Any]:
     """CLI-facing composition for safe manifest load plus bounded ingestion."""
 
+    expected_manifest_digest = metadata.pop("expected_manifest_digest", None)
+    if expected_manifest_digest is not None and (
+        not isinstance(expected_manifest_digest, str)
+        or _SHA256_RE.fullmatch(expected_manifest_digest) is None
+    ):
+        raise _fail("ECO_SOURCE_MANIFEST_DIGEST_INVALID", "Manifest digest is invalid")
     limits = metadata.get("limits")
     if limits is not None and not isinstance(limits, SourceBundleLimits):
         raise TypeError("limits must be SourceBundleLimits")
@@ -681,4 +781,9 @@ def ingest_source_bundle_manifest_file(
         limits=limits,
         fault_hook=fault_hook,
     )
+    if (
+        expected_manifest_digest is not None
+        and parsed.manifest_digest != expected_manifest_digest
+    ):
+        raise _fail("ECO_SOURCE_MANIFEST_CHANGED", "Manifest changed after preflight")
     return ingest_source_bundle(root, parsed, artifact_store, **metadata)

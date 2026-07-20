@@ -40,6 +40,26 @@ def _utc(value: datetime) -> str:
     return value.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
+def _parse_utc(value: str) -> datetime:
+    return datetime.fromisoformat(value[:-1] + "+00:00").astimezone(timezone.utc)
+
+
+def _preserved_relations(record: Mapping[str, Any]) -> set[tuple[str, str, str]]:
+    digest = record["metadata"]["recordDigest"]
+    relations = {
+        (digest, relation, target)
+        for relation in LINK_RELATIONS
+        for target in record["spec"]["links"][relation]
+    }
+    compaction = record["spec"]["compaction"]
+    if compaction is not None:
+        relations.update(
+            (item["from"], item["relation"], item["to"])
+            for item in compaction["preservedRelations"]
+        )
+    return relations
+
+
 def _artifact_binding(proof: ArtifactAvailabilityProof) -> dict[str, Any]:
     return {
         "storageRef": proof.storage_ref,
@@ -303,6 +323,9 @@ class PrivateMemoryStore:
         compaction = document["spec"]["compaction"]
         if compaction is not None:
             related.update(compaction["sourceRecordDigests"])
+            for relation in compaction["preservedRelations"]:
+                related.add(relation["from"])
+                related.add(relation["to"])
         loaded: dict[str, dict[str, Any]] = {}
         for digest in sorted(related):
             record = self._load_digest_locked(connection, digest)
@@ -319,10 +342,7 @@ class PrivateMemoryStore:
             artifacts[binding["sha256"]] = binding
             for binding in source["spec"]["sourceArtifacts"]:
                 artifacts[binding["sha256"]] = binding
-            source_digest = source["metadata"]["recordDigest"]
-            for relation in LINK_RELATIONS:
-                for target in source["spec"]["links"][relation]:
-                    relations.add((source_digest, relation, target))
+            relations.update(_preserved_relations(source))
         expected_artifacts = _sorted_artifacts(list(artifacts.values()))
         expected_relations = [
             {"from": source, "relation": relation, "to": target}
@@ -330,6 +350,19 @@ class PrivateMemoryStore:
         ]
         if compaction["sourceArtifacts"] != expected_artifacts or compaction["preservedRelations"] != expected_relations:
             raise RuntimeStoreError("ECO_MEMORY_COMPACTION_INVALID", "Memory compaction provenance is incomplete")
+        source_expiries = [
+            _parse_utc(source["spec"]["expiresAt"])
+            for source in sources
+            if source["spec"]["expiresAt"] is not None
+        ]
+        summary_expiry = document["spec"]["expiresAt"]
+        if source_expiries and (
+            summary_expiry is None or _parse_utc(summary_expiry) > min(source_expiries)
+        ):
+            raise RuntimeStoreError(
+                "ECO_MEMORY_COMPACTION_INVALID",
+                "Memory compaction cannot outlive its sources",
+            )
 
     def _verify_artifact_bindings(self, document: Mapping[str, Any]) -> None:
         bindings = [document["spec"]["contentArtifact"], *document["spec"]["sourceArtifacts"]]
@@ -561,17 +594,33 @@ class PrivateMemoryStore:
         namespace = sources[0]["spec"]["namespace"]
         if any(source["spec"]["namespace"] != namespace for source in sources):
             raise RuntimeStoreError("ECO_MEMORY_COMPACTION_INVALID", "Compaction cannot cross namespaces")
+        provenance_source_digests = set(source_digests)
+        for source in sources:
+            source_compaction = source["spec"]["compaction"]
+            if source_compaction is not None:
+                provenance_source_digests.update(source_compaction["sourceRecordDigests"])
+        source_digests = sorted(provenance_source_digests)
         artifacts: dict[str, dict[str, Any]] = {}
         relations: set[tuple[str, str, str]] = set()
         for source in sources:
             for binding in [source["spec"]["contentArtifact"], *source["spec"]["sourceArtifacts"]]:
                 artifacts[binding["sha256"]] = binding
-            digest = source["metadata"]["recordDigest"]
-            for relation in LINK_RELATIONS:
-                for target in source["spec"]["links"][relation]:
-                    relations.add((digest, relation, target))
+            relations.update(_preserved_relations(source))
         summary_proof = self._artifacts.put(io.BytesIO(summary_content), max_bytes=max_content_bytes)
-        expires_at = None if ttl is None else _utc(created_at + ttl)
+        expiry_candidates = [
+            _parse_utc(source["spec"]["expiresAt"])
+            for source in sources
+            if source["spec"]["expiresAt"] is not None
+        ]
+        if ttl is not None:
+            expiry_candidates.append(created_at + ttl)
+        effective_expiry = min(expiry_candidates) if expiry_candidates else None
+        if effective_expiry is not None and effective_expiry <= created_at:
+            raise RuntimeStoreError(
+                "ECO_MEMORY_COMPACTION_EXPIRED",
+                "Compaction sources are already expired",
+            )
+        expires_at = None if effective_expiry is None else _utc(effective_expiry)
         source_artifacts = _sorted_artifacts(list(artifacts.values()))
         source_classes = [source["spec"]["dataClass"] for source in sources]
         privacy_levels = [source["spec"]["privacyLevel"] for source in sources]

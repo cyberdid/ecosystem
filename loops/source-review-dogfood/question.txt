@@ -1,7 +1,1 @@
 Assess this article about building a multi-model AI team: what are its core claims, which claims are supported by evidence in the text itself, and which are unsupported marketing assertions? Summarize what a careful engineering team should adopt versus verify independently.
-
-Formatting requirements for every structured output:
-1. Give each claim a unique short id (claim-1, claim-2, ...) and each evidence item its own unique id (ev-1, ev-2, ...). Never reuse an id, and never use the source entry id as a claim or evidence id.
-2. Every evidence "observation" field MUST be an exact character-for-character quote copied verbatim from the source text: copy one short contiguous sentence or phrase exactly as written, with identical spelling, casing and punctuation. Do not paraphrase, translate, shorten with ellipsis, or add any words.
-3. When verifying, synthesizing or reviewing, cover EXACTLY the claim ids that were provided to you: one entry per existing claim id, no omissions, and never invent claim ids that were not provided.
-4. Mark a claim "verified" ONLY when its evidenceIds list cites at least one existing supporting evidence id. If a claim has no supporting evidence to cite, mark it "insufficient" instead, with an empty or partial evidenceIds list.

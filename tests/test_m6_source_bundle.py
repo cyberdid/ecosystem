@@ -167,6 +167,28 @@ class SourceBundleTests(unittest.TestCase):
         )
         self.assertEqual(record["spec"]["questionEntryId"], "question")
 
+    def test_exact_manifest_bytes_are_bound_between_preflight_and_ingestion(self) -> None:
+        manifest_path = self.repository / "bundle-bound.json"
+        manifest_path.write_text(json.dumps(self.manifest()), encoding="utf-8")
+        parsed = load_source_bundle_manifest(self.repository, manifest_path.name)
+        self.assertIsNotNone(parsed.manifest_digest)
+        manifest_path.write_text(
+            json.dumps(self.manifest(), indent=2),
+            encoding="utf-8",
+        )
+        with self.assertRaises(SourceBundleError) as caught:
+            ingest_source_bundle_manifest_file(
+                self.repository,
+                manifest_path.name,
+                self.store,
+                project_id="ecosystem",
+                team_id="research-team",
+                run_id="source-review-run-1",
+                created_at=CREATED_AT,
+                expected_manifest_digest=parsed.manifest_digest,
+            )
+        self.assertEqual(caught.exception.code, "ECO_SOURCE_MANIFEST_CHANGED")
+
     def test_manifest_json_duplicate_keys_non_utf8_and_nul_fail_closed(self) -> None:
         valid_tail = (
             ',"dataClass":"D1","question":{},"sources":[]}'
@@ -188,6 +210,44 @@ class SourceBundleTests(unittest.TestCase):
                 with self.assertRaises(SourceBundleError) as caught:
                     load_source_bundle_manifest(self.repository, path.name)
                 self.assertEqual(caught.exception.code, expected[name])
+
+    def test_manifest_json_depth_and_parser_recursion_fail_with_stable_limits(self) -> None:
+        limits = SourceBundleLimits(maximum_json_depth=8)
+        cases = (
+            (b'{"x":' * 9 + b"0" + b"}" * 9, "bounded-depth.json"),
+            (b'[' * 1_500 + b"0" + b"]" * 1_500, "parser-depth.json"),
+        )
+        for content, name in cases:
+            with self.subTest(name=name):
+                (self.repository / name).write_bytes(content)
+                with self.assertRaises(SourceBundleError) as caught:
+                    load_source_bundle_manifest(self.repository, name, limits=limits)
+                self.assertEqual(caught.exception.code, "ECO_SOURCE_MANIFEST_JSON_LIMIT")
+
+    def test_application_json_depth_and_item_limits_are_broker_owned(self) -> None:
+        cases = (
+            (
+                b'{"x":' * 9 + b"0" + b"}" * 9,
+                SourceBundleLimits(maximum_json_depth=8),
+            ),
+            (
+                b"[0,1,2,3,4,5,6,7,8,9]",
+                SourceBundleLimits(maximum_json_items=8),
+            ),
+        )
+        for index, (content, limits) in enumerate(cases):
+            with self.subTest(index=index):
+                path = self.repository / f"bounded-{index}.json"
+                path.write_bytes(content)
+                item = declaration(
+                    f"source-{index}",
+                    path.name,
+                    content,
+                    media_type="application/json",
+                )
+                with self.assertRaises(SourceBundleError) as caught:
+                    self.ingest(self.manifest(sources=[item]), limits=limits)
+                self.assertEqual(caught.exception.code, "ECO_SOURCE_JSON_LIMIT")
 
     def test_absolute_traversal_backslash_percent_control_and_non_nfc_paths_are_denied(self) -> None:
         decomposed = unicodedata.normalize("NFD", "café.md")

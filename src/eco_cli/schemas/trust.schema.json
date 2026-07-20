@@ -64,6 +64,25 @@
           "items": { "$ref": "#/$defs/observation" }
         }
       }
+    },
+    "routeAuthority": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["issuerId", "keyId", "algorithm", "publicKeyRef"],
+          "properties": {
+            "issuerId": { "$ref": "#/$defs/id" },
+            "keyId": { "$ref": "#/$defs/id" },
+            "algorithm": { "const": "ed25519" },
+            "publicKeyRef": {
+              "type": "string",
+              "pattern": "^env:ECO_[A-Z0-9_]{1,96}_ROUTE_PUBLIC_KEY$"
+            }
+          }
+        }
+      ]
     }
   },
   "$defs": {
