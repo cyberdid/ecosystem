@@ -340,6 +340,11 @@ def _parser() -> argparse.ArgumentParser:
         "wiki-health-check", help="Run the fixed five-attempt no-model L0-L2 gate"
     )
     wiki_health_eval.add_argument("--json", action="store_true", dest="json_output")
+    eval_suite = evaluate_commands.add_parser(
+        "suite", help="Run a deterministic eval suite file with judge validation"
+    )
+    eval_suite.add_argument("suite_file", help="Path to an EvalSuite JSON file")
+    eval_suite.add_argument("--json", action="store_true", dest="json_output")
 
     commands.add_parser("lock", help="Write a deterministic lock of canonical configuration inputs")
 
@@ -1409,7 +1414,35 @@ def command_loops(args: argparse.Namespace) -> int:
     return 0 if result["available"] else 1
 
 
+def _command_eval_suite(args: argparse.Namespace) -> int:
+    from eco_eval import EvalError, load_eval_suite, run_eval_suite
+
+    path = Path(args.suite_file)
+    try:
+        document = json.loads(path.read_text(encoding="utf-8"))
+        verdict = run_eval_suite(load_eval_suite(document))
+    except (FileNotFoundError, IsADirectoryError):
+        result: dict[str, Any] = {"available": False, "status": "blocked", "code": "ECO_EVAL_FILE_UNREADABLE"}
+    except json.JSONDecodeError:
+        result = {"available": False, "status": "blocked", "code": "ECO_EVAL_FILE_INVALID"}
+    except EvalError as exc:
+        result = {"available": False, "status": "blocked", "code": exc.code}
+    else:
+        result = {"available": verdict.available, "status": "evaluated", **verdict.as_record()}
+    if args.json_output:
+        print(stable_json(result), end="")
+    elif result["status"] == "blocked":
+        print(f"Eval suite: blocked ({result['code']})")
+    else:
+        print(f"Eval suite: {result['suiteId']} ({'PASS' if result['available'] else 'FAIL'})")
+        print(f"Judge validated: {result['judgeValidated']}")
+        print(f"Passed {result['passed']}/{result['total']} (threshold {result['threshold']})")
+    return 0 if result["available"] else 1
+
+
 def command_eval(args: argparse.Namespace) -> int:
+    if args.eval_command == "suite":
+        return _command_eval_suite(args)
     if args.eval_command != "wiki-health-check":
         raise EcoError(f"Unknown fixed evaluation: {args.eval_command}")
     repo = _repo(args)
