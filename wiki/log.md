@@ -4,6 +4,23 @@ Append-only хронологічний лог операцій. Формат: `#
 
 ---
 
+## [2026-07-22] dogfood | Local live tests of P1/P2 and GSC against Ollama
+
+- Lifted the live-model pause for local testing and drove the new slices against
+  `gemma4:12b-mlx` and `gpt-oss:20b` through the project's cross-platform adapter on
+  macOS (the enforced Linux pipeline was not exercised).
+- Built and ran the **GSC gate** (`eco_gsc`): a model proposes a `SKILL.md`, the
+  deterministic gate decides admissibility (structure, capability narrowing, secret and
+  hard-stop integrity), no auto-promotion. Live: gpt-oss self-created an ADMISSIBLE skill;
+  gemma4's malformed frontmatter and a self-authorizing adversarial proposal were rejected.
+  First live proof of gated self-creation on an unknown local model.
+- Found and fixed two brittleness defects (tests added): P2 admission was too strict about
+  markdown-fenced JSON (now liberal-extract, strict-validate); the GSC gate flagged its own
+  hard-stop prohibition line. Both caught by investigating a suspicious result.
+- Real model finding: structured-output support is flaky and model/prompt-specific — both
+  models return empty completions under strict json-mode on some prompts, though both are
+  factually competent (P1 free-text 3/3 each). Live scripts stay in scratchpad, not git.
+
 ## [2026-07-22] implementation | Cookbook recommendations P1–P6 implemented
 
 - Implemented all four code slices at their deterministic core with passing gates:
