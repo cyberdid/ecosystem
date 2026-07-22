@@ -4,6 +4,22 @@ Append-only хронологічний лог операцій. Формат: `#
 
 ---
 
+## [2026-07-22] research | Agentic teams/graphs/migrations review + gated self-creation proposal
+
+- Preserved six more owner-supplied promotional articles byte-for-byte under
+  `docs/research/sources/` with SHA-256 provenance and reviewed them as untrusted
+  data: Hermes persistent-agent prompts, a 42-skill org chart, graph/dynamic-workflow
+  engineering, Anthropic large-scale code migrations, Karpathy/ADK tooling and Superpowers.
+- Convergent finding continues: the market restates this project's thesis, but reaches
+  discipline via prompt-coercion and framework lock-in (fragile) rather than runtime
+  contracts (model-agnostic). Three work candidates surfaced — graph-orchestration in
+  `eco_loops`, a validate-the-judge adversarial suite, and model-role routing.
+- Proposed the **Gated Self-Creation (GSC)** contract: agents may *generate* skills,
+  agents and loops under a team's own requests, but each artifact stays `proposed`
+  (no rights) until it passes schema, narrowing, deterministic and adversarial gates
+  and binds an accountable owner — then `promoted`, always revocable. Autonomy is a
+  scale (L0 human-approve / L1 auto-gate / L2 forbidden), never unowned self-writing.
+
 ## [2026-07-20] research | Self-correcting loop and harness source review
 
 - Preserved five owner-supplied promotional articles byte-for-byte under

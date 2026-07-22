@@ -31,6 +31,7 @@
 | M6.7 | Governed live research tools | Complete for bounded credential-free public search/fetch contracts and broker; provider quality remains unclaimed |
 | M6.8 | Cross-platform contracts, conformance and `0.8.0` release | Implementation, local gates and independent audit complete; GitHub hosted matrix is externally blocked before job creation |
 | M7 | Enterprise/network authority and native security backends | Re-sequenced from old M6; not dropped or claimed |
+| GSC | Gated self-creation of skills/agents/loops under adversarial promotion gates | Proposed (design only); see [proposal](../docs/research/2026-07-22-gated-self-creation-contract-proposal-claude.md) |
 | M8 | Optional training/learning and experimental nodes | Future; MOLT/local GPU are adapters, not dependencies |
 
 ## M2 exit criteria
