@@ -2,7 +2,7 @@
 name: agent-team-authoring
 description: Assemble a bounded agent team as an AgentTeamManifest with authenticated identity, budgets, delegation, and no self-expansion of authority.
 ---
-<!-- eco-skills:managed surface="gemini" registry="1a35599d47efed2e7e09d1f84cd3c5aeaf5710494421f27bcfb03013b1966370" skill="agent-team-authoring" -->
+<!-- eco-skills:managed surface="gemini" registry="72149b048438ccfbd104239d5586ee78a72386f7692ad2e77f1ab6131545bde4" skill="agent-team-authoring" -->
 
 
 # Agent team authoring

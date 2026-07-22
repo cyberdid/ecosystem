@@ -3,7 +3,7 @@
   "kind": "SkillRegistry",
   "metadata": {
     "id": "ecosystem-builtin",
-    "version": "1.1.0"
+    "version": "1.2.0"
   },
   "skills": [
     {
@@ -191,6 +191,67 @@
       "resource": "ecosystem-contract-change/SKILL.md"
     },
     {
+      "id": "self-consistency-verification",
+      "version": "1.0.0",
+      "source": {
+        "uri": "package://eco_skills/catalog/self-consistency-verification/SKILL.md",
+        "commit": "package-release:m6.2-v1"
+      },
+      "contentDigest": "7cdd0ffb0946f89f8a27a72854ae619f018bc3c00292959012ea0cf219a0528e",
+      "license": "MIT",
+      "owner": "ecosystem maintainers",
+      "capabilities": [
+        "result.verify",
+        "reliability.improve"
+      ],
+      "dependencies": [],
+      "tests": [
+        "tests/test_m6_skills_sync.py::SkillRegistryTests",
+        "tests/test_m6_skills_sync.py::SkillSyncTests"
+      ],
+      "evidence": [
+        "docs/research/2026-07-22-vendor-cookbooks-source-review.md",
+        "docs/research/2026-07-22-cookbook-recommendations-implementation-plan.md"
+      ],
+      "revocation": {
+        "revoked": false,
+        "reason": null
+      },
+      "compatibility": {
+        "codex": {
+          "mode": "native",
+          "limitations": []
+        },
+        "claude": {
+          "mode": "native",
+          "limitations": []
+        },
+        "gemini": {
+          "mode": "native",
+          "limitations": []
+        },
+        "portable": {
+          "mode": "portable",
+          "limitations": [
+            "Client-specific automatic discovery is not claimed."
+          ]
+        },
+        "copilot": {
+          "mode": "instruction-only",
+          "limitations": [
+            "Projected as aggregate repository instructions; native skill invocation is not claimed."
+          ]
+        },
+        "cursor": {
+          "mode": "instruction-only",
+          "limitations": [
+            "Projected as an aggregate rule; native skill invocation is not claimed."
+          ]
+        }
+      },
+      "resource": "self-consistency-verification/SKILL.md"
+    },
+    {
       "id": "skill-authoring",
       "version": "1.0.0",
       "source": {
@@ -311,6 +372,67 @@
         }
       },
       "resource": "source-review-evidence/SKILL.md"
+    },
+    {
+      "id": "task-decomposition",
+      "version": "1.0.0",
+      "source": {
+        "uri": "package://eco_skills/catalog/task-decomposition/SKILL.md",
+        "commit": "package-release:m6.2-v1"
+      },
+      "contentDigest": "cf02b1d597df8cdb131d4731c16ea42edbe52c9e55b402b792b8f9031be4cc3b",
+      "license": "MIT",
+      "owner": "ecosystem maintainers",
+      "capabilities": [
+        "task.decompose",
+        "reliability.improve"
+      ],
+      "dependencies": [],
+      "tests": [
+        "tests/test_m6_skills_sync.py::SkillRegistryTests",
+        "tests/test_m6_skills_sync.py::SkillSyncTests"
+      ],
+      "evidence": [
+        "docs/research/2026-07-22-vendor-cookbooks-source-review.md",
+        "docs/research/2026-07-22-cookbook-recommendations-implementation-plan.md"
+      ],
+      "revocation": {
+        "revoked": false,
+        "reason": null
+      },
+      "compatibility": {
+        "codex": {
+          "mode": "native",
+          "limitations": []
+        },
+        "claude": {
+          "mode": "native",
+          "limitations": []
+        },
+        "gemini": {
+          "mode": "native",
+          "limitations": []
+        },
+        "portable": {
+          "mode": "portable",
+          "limitations": [
+            "Client-specific automatic discovery is not claimed."
+          ]
+        },
+        "copilot": {
+          "mode": "instruction-only",
+          "limitations": [
+            "Projected as aggregate repository instructions; native skill invocation is not claimed."
+          ]
+        },
+        "cursor": {
+          "mode": "instruction-only",
+          "limitations": [
+            "Projected as an aggregate rule; native skill invocation is not claimed."
+          ]
+        }
+      },
+      "resource": "task-decomposition/SKILL.md"
     }
   ]
 }

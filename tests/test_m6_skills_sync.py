@@ -35,7 +35,7 @@ class SkillRegistryTests(unittest.TestCase):
         validate_registry(document, resource_reader=self.resources.__getitem__)
 
     def test_builtin_registry_is_closed_digest_bound_and_sorted(self) -> None:
-        self.assertEqual(len(self.registry.skills), 5)
+        self.assertEqual(len(self.registry.skills), 7)
         self.assertEqual(
             [skill.identifier for skill in self.registry.skills],
             sorted(skill.identifier for skill in self.registry.skills),
@@ -123,16 +123,16 @@ class SkillSyncTests(unittest.TestCase):
         second = plan_skills(self.repo)
         self.assertEqual(first, second)
         self.assertTrue(first["available"])
-        self.assertEqual(first["skillCount"], 5)
-        self.assertEqual(first["projectionCount"], 22)
-        self.assertEqual(first["counts"], {"create": 22})
+        self.assertEqual(first["skillCount"], 7)
+        self.assertEqual(first["projectionCount"], 30)
+        self.assertEqual(first["counts"], {"create": 30})
         self.assertFalse((self.repo / ".ai").exists())
         self.assertFalse(first["safety"]["skillCodeExecuted"])
 
     def test_sync_check_resync_and_uninstall_lifecycle(self) -> None:
         first = sync_skills(self.repo)
         self.assertTrue(first["available"])
-        self.assertEqual(first["changed"], 22)
+        self.assertEqual(first["changed"], 30)
         self.assertTrue(check_skills(self.repo)["available"])
         second = sync_skills(self.repo)
         self.assertEqual(second["changed"], 0)
@@ -140,7 +140,7 @@ class SkillSyncTests(unittest.TestCase):
         sibling.parent.mkdir(parents=True, exist_ok=True)
         sibling.write_text("preserve", encoding="utf-8")
         removed = uninstall_skills(self.repo)
-        self.assertEqual(removed["removed"], 22)
+        self.assertEqual(removed["removed"], 30)
         self.assertEqual(sibling.read_text(encoding="utf-8"), "preserve")
         self.assertEqual(uninstall_skills(self.repo)["status"], "absent")
 
@@ -231,7 +231,7 @@ class SkillSyncTests(unittest.TestCase):
                 SkillSyncError, "ECO_SKILL_SYNC_ROLLED_BACK"
             ):
                 sync_skills(self.repo)
-        self.assertEqual(plan_skills(self.repo)["counts"], {"create": 22})
+        self.assertEqual(plan_skills(self.repo)["counts"], {"create": 30})
         self.assertFalse((self.repo / ".ai/skills/eco-skills.lock.json").exists())
 
     def test_uninstall_failure_restores_complete_owned_set(self) -> None:

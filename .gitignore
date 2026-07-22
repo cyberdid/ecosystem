@@ -10,3 +10,5 @@ build/
 *.egg-info/
 .pytest_cache/
 .ai/.state/
+external/
+

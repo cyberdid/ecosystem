@@ -2,7 +2,7 @@
 name: ecosystem-contract-change
 description: Change canonical ecosystem contracts and deterministic projections without weakening authority boundaries.
 ---
-<!-- eco-skills:managed surface="gemini" registry="1a35599d47efed2e7e09d1f84cd3c5aeaf5710494421f27bcfb03013b1966370" skill="ecosystem-contract-change" -->
+<!-- eco-skills:managed surface="gemini" registry="72149b048438ccfbd104239d5586ee78a72386f7692ad2e77f1ab6131545bde4" skill="ecosystem-contract-change" -->
 
 
 # Ecosystem contract change

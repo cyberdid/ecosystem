@@ -4,6 +4,22 @@ Append-only хронологічний лог операцій. Формат: `#
 
 ---
 
+## [2026-07-22] research | Vendor cookbooks review and P1–P6 implementation plan
+
+- Reviewed three gitignored vendor cookbook clones under `external/cookbooks/` (Anthropic,
+  Google, OpenAI) as untrusted reference: a third independent confirmation of the harness
+  thesis, now from the vendors themselves, who implement it as fragile notebook patterns
+  while the project enforces contracts. `external/` was already gitignored; only the review
+  enters git.
+- Turned the six gaps into a contracts-first plan (candidate milestone M8): P1 general eval
+  harness (`eval-file → N independent runs → metrics → verdict`), P2 structured-output model
+  admission, P3 vendor-neutral reference agents, P4 reliability-technique skills, P5 cost
+  telemetry, P6 compliance positioning.
+- Implemented P4 this session: added `task-decomposition` and `self-consistency-verification`
+  skills, bumped the registry to `1.2.0` (five→seven skills), synchronized 30 projections and
+  updated the sync tests; all gates green. P1/P2/P3/P5 remain designed slices with per-slice
+  gates; nothing unverified is claimed done.
+
 ## [2026-07-22] documentation | Creation guide and authoring skills
 
 - Added `docs/architecture/creation.md`: a map of how every artifact is created
