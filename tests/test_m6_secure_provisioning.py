@@ -8,7 +8,7 @@ import stat
 import tempfile
 import unittest
 from datetime import datetime, timedelta, timezone
-from contextlib import redirect_stdout
+from contextlib import contextmanager, redirect_stdout
 from pathlib import Path
 from unittest import mock
 
@@ -34,6 +34,21 @@ if SPEC is None or SPEC.loader is None:  # pragma: no cover - import machinery g
     raise RuntimeError("provisioning script cannot be loaded")
 SCRIPT = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(SCRIPT)
+
+
+@contextmanager
+def _resolved_tempdir():
+    """A ``TemporaryDirectory`` whose yielded name is symlink-resolved.
+
+    On macOS ``/var`` and ``/tmp`` resolve into ``/private``; the provisioning
+    ceremony legitimately rejects any evidence path that traverses a symlink,
+    so a raw tempdir name would trip its anti-symlink guard. ``resolve()`` is a
+    no-op on Linux CI and leaves deliberately-created symlinks inside the test
+    untouched.
+    """
+
+    with tempfile.TemporaryDirectory() as directory:
+        yield str(Path(directory).resolve())
 
 
 class _Response:
@@ -288,7 +303,7 @@ class SecureProvisioningTests(unittest.TestCase):
             )
 
     def test_context_binds_project_endpoint_reference_resolved_url_and_model(self) -> None:
-        with tempfile.TemporaryDirectory() as directory:
+        with _resolved_tempdir() as directory:
             root = _repository(Path(directory))
             endpoint = "http://127.0.0.1:8080/v1/chat/completions"
             context = SCRIPT._load_context(
@@ -550,7 +565,7 @@ class SecureProvisioningTests(unittest.TestCase):
 
     def test_observed_path_cannot_escape_governed_directory(self) -> None:
         for observed_ref in ("../../outside.json", "/tmp/outside.json", "evals/other.json"):
-            with self.subTest(observed_ref=observed_ref), tempfile.TemporaryDirectory() as directory:
+            with self.subTest(observed_ref=observed_ref), _resolved_tempdir() as directory:
                 deployment = _deployment()
                 deployment["observedCapabilitiesRef"] = observed_ref
                 root = _repository(Path(directory), deployment)
@@ -565,7 +580,7 @@ class SecureProvisioningTests(unittest.TestCase):
     @unittest.skipUnless(os.name == "posix", "POSIX symbolic-link contract")
     def test_observed_leaf_symlink_and_non_enabled_deployment_are_rejected(self) -> None:
         endpoint = "http://127.0.0.1:8080/v1/chat/completions"
-        with tempfile.TemporaryDirectory() as directory:
+        with _resolved_tempdir() as directory:
             root = _repository(Path(directory))
             observed = root / ".ai" / "evals" / "observed"
             observed.mkdir(parents=True)
@@ -576,7 +591,7 @@ class SecureProvisioningTests(unittest.TestCase):
                 SCRIPT._load_context(root, "local-test", "ECO_TEST_ENDPOINT", endpoint)
 
         for enabled in (False, None, "true"):
-            with self.subTest(enabled=enabled), tempfile.TemporaryDirectory() as directory:
+            with self.subTest(enabled=enabled), _resolved_tempdir() as directory:
                 deployment = _deployment()
                 if enabled is None:
                     deployment.pop("enabled")
@@ -590,7 +605,7 @@ class SecureProvisioningTests(unittest.TestCase):
 
     @unittest.skipUnless(os.name == "posix", "POSIX ownership and mode contract")
     def test_external_output_is_outside_repo_private_and_not_linked(self) -> None:
-        with tempfile.TemporaryDirectory() as directory:
+        with _resolved_tempdir() as directory:
             base = Path(directory)
             repo = base / "repo"
             repo.mkdir()
@@ -620,7 +635,7 @@ class SecureProvisioningTests(unittest.TestCase):
 
     @unittest.skipUnless(os.name == "posix", "POSIX atomic publication contract")
     def test_publication_is_atomic_private_locked_and_rolls_back(self) -> None:
-        with tempfile.TemporaryDirectory() as directory:
+        with _resolved_tempdir() as directory:
             base = Path(directory)
             observed_parent = base / "repo" / ".ai" / "evals" / "observed"
             observed_parent.mkdir(parents=True)
@@ -658,7 +673,7 @@ class SecureProvisioningTests(unittest.TestCase):
 
     @unittest.skipUnless(os.name == "posix", "POSIX private output contract")
     def test_failed_probe_does_not_replace_last_valid_evidence(self) -> None:
-        with tempfile.TemporaryDirectory() as directory:
+        with _resolved_tempdir() as directory:
             base = Path(directory)
             repo = _repository(base / "repo")
             observed = repo / ".ai" / "evals" / "observed" / "local-test.json"
@@ -709,7 +724,7 @@ class SecureProvisioningTests(unittest.TestCase):
 
     @unittest.skipUnless(os.name == "posix", "POSIX private output contract")
     def test_successful_run_publishes_an_exact_bound_verifiable_envelope(self) -> None:
-        with tempfile.TemporaryDirectory() as directory:
+        with _resolved_tempdir() as directory:
             base = Path(directory)
             repo = _repository(base / "repo")
             private = base / "private"
