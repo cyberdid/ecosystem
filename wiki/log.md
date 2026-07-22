@@ -4,6 +4,18 @@ Append-only хронологічний лог операцій. Формат: `#
 
 ---
 
+## [2026-07-22] documentation | Creation guide and authoring skills
+
+- Added `docs/architecture/creation.md`: a map of how every artifact is created
+  (loop, contract, skill, agent, memory), the shared proposed→gated→promoted→revoked
+  state machine, the L0/L1/L2 autonomy scale and the seven creation invariants.
+- Closed the authoring gap: added `skill-authoring` and `agent-team-authoring` package
+  skills, bumped the registry to `1.1.0` (three→five skills), synchronized 22 projections
+  across all harnesses and updated the sync tests. The creation skills themselves passed
+  the same tests+evidence+owner+digest gate they document.
+- The runtime gated-self-creation engine (automatic propose→gate→promote) remains the
+  separate GSC proposal, not code.
+
 ## [2026-07-22] research | Agentic teams/graphs/migrations review + gated self-creation proposal
 
 - Preserved six more owner-supplied promotional articles byte-for-byte under

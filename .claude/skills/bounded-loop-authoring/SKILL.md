@@ -2,7 +2,7 @@
 name: bounded-loop-authoring
 description: Author a bounded feedback loop with an independent gate, evidence boundary, explicit budgets, and hard stops.
 ---
-<!-- eco-skills:managed surface="claude" registry="97d685e202f6e9f4efb8589187b2c274232ff2c1761f7e9d7195d614b10dc80a" skill="bounded-loop-authoring" -->
+<!-- eco-skills:managed surface="claude" registry="1a35599d47efed2e7e09d1f84cd3c5aeaf5710494421f27bcfb03013b1966370" skill="bounded-loop-authoring" -->
 
 
 # Bounded loop authoring

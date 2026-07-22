@@ -2,7 +2,7 @@
 name: source-review-evidence
 description: Review untrusted sources with typed context channels, claim-level evidence, and independent verification.
 ---
-<!-- eco-skills:managed surface="claude" registry="97d685e202f6e9f4efb8589187b2c274232ff2c1761f7e9d7195d614b10dc80a" skill="source-review-evidence" -->
+<!-- eco-skills:managed surface="claude" registry="1a35599d47efed2e7e09d1f84cd3c5aeaf5710494421f27bcfb03013b1966370" skill="source-review-evidence" -->
 
 
 # Source-review evidence discipline

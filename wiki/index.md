@@ -12,6 +12,7 @@ remains explicitly unclaimed.
 
 | Page | Purpose | Updated |
 |---|---|---:|
+| [Creating in the ecosystem](../docs/architecture/creation.md) | How loop/contract/skill/agent/memory are created, the shared gate, the L0/L1/L2 autonomy scale and creation invariants | 2026-07-22 |
 | [M6 completion report](../docs/research/2026-07-20-m6-functional-orchestration-completion-report.md) | M6.1–M6.8 delivery, exact-route audit corrections, release evidence, schema identities and honest nonclaims | 2026-07-20 |
 | [M6 functional orchestration](../docs/architecture/functional-orchestration.md) | Additive contracts, governed model bridge, fixed source-review and M6.2–M6.8 delivery sequence | 2026-07-20 |
 | [M6.2 skills/harness sync](../docs/architecture/skills-harness-sync.md) | Closed dogfood registry, deterministic client projections, ownership, drift, rollback and uninstall | 2026-07-17 |
