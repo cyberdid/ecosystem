@@ -4,6 +4,20 @@ Append-only хронологічний лог операцій. Формат: `#
 
 ---
 
+## [2026-07-22] implementation | Cookbook recommendations P1–P6 implemented
+
+- Implemented all four code slices at their deterministic core with passing gates:
+  P1 general eval harness (`eco_eval`, `eco eval suite <file>`, judge validation live
+  and non-zero exit), P2 structured-output admission (`eco_runtime.structured_admission`,
+  grammar-safe wire projection vs authoritative full-schema validation), P3 vendor-neutral
+  reference agents (`eco_teams.reference_manifests`: evaluator-optimizer and
+  orchestrator-workers, validated through the real team contract), P5 content-free cost
+  telemetry (`eco_telemetry`, fail-closed caps stop before breach).
+- 26 new tests across the four slices; integration gate 115 tests green; validate, render and
+  skills-check green. P4 (reliability skills) and P6 (compliance positioning) completed earlier.
+- Two live-dependent boundaries stay deferred with the same dependency as the M6 five-role run:
+  P2's live structured-output probe and P3's live team PASS. Nothing live is claimed.
+
 ## [2026-07-22] research | Vendor cookbooks review and P1–P6 implementation plan
 
 - Reviewed three gitignored vendor cookbook clones under `external/cookbooks/` (Anthropic,

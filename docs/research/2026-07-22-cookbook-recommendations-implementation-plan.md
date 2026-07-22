@@ -16,12 +16,14 @@ Fully implementing P1–P5 as production features is milestone-scale work: each 
 
 | P | Capability | Primary module | Contract / gate | Status |
 |---|---|---|---|---|
-| P4 | Reliability-technique skills | `eco_skills` | registry entry + tests + evidence + owner + digest + sync | **implemented this session** |
-| P1 | General eval harness | `eco_eval` (new) over `evaluation.py` | eval-file schema → N runs → metrics → verdict; `eco eval run <file>` | planned |
-| P2 | Structured-output admission | `eco_runtime` conformance | model must prove valid typed output before admission | planned |
-| P3 | Vendor-neutral reference agents | `eco_teams` | evaluator-optimizer + orchestrator-workers as manifests that run through enforcement | planned (needs live model; owner paused) |
-| P5 | Cost/observability contract | `eco_runtime` telemetry over `budget.py` | per-run/agent/loop cost record, separate from audit | planned |
-| P6 | Compliance positioning | docs | enforcement+audit mapped to AI-governance frameworks | doc-only; folded into review |
+| P4 | Reliability-technique skills | `eco_skills` | registry entry + tests + evidence + owner + digest + sync | **implemented** (`task-decomposition`, `self-consistency-verification`) |
+| P1 | General eval harness | `eco_eval` (new) | eval-file → N runs → metrics → verdict; `eco eval suite <file>` | **implemented** (9 tests; judge validation live; non-zero exit) |
+| P2 | Structured-output admission | `eco_runtime.structured_admission` | model must prove valid typed output before admission | **implemented** (6 tests; deterministic core; live probe deferred) |
+| P3 | Vendor-neutral reference agents | `eco_teams.reference_manifests` | evaluator-optimizer + orchestrator-workers validate through the team contract | **implemented** (5 tests; deterministic validation; live PASS deferred) |
+| P5 | Cost/observability contract | `eco_telemetry` (new) | per-run/role cost record, caps, stop-on-breach, content-free | **implemented** (6 tests; fail-closed caps) |
+| P6 | Compliance positioning | docs | enforcement+audit mapped to AI-governance frameworks | **done** (this plan + review) |
+
+**Delivery note (2026-07-22).** All six recommendations are implemented at their deterministic core with passing gates (26 new tests across the four code slices). Two live-dependent boundaries remain explicitly deferred with the same dependency as the M6 five-role run: P2's live structured-output probe (driving a real model) and P3's live team PASS. Nothing live is claimed.
 
 ## P4 — Reliability-technique skills (implemented)
 
