@@ -232,12 +232,17 @@ class FakeExecution:
 class GeneralTeamRuntimeTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temp = tempfile.TemporaryDirectory()
+        # Resolve the tempdir so the private-path guard sees the real location.
+        # On macOS ``/var`` and ``/tmp`` are symlinks into ``/private``; a raw
+        # ``TemporaryDirectory`` name therefore trips the runtime's legitimate
+        # anti-symlink check. ``resolve()`` is a no-op on Linux CI.
+        base = Path(self.temp.name).resolve()
         self.authority = FakeAuthority()
         self.execution = FakeExecution()
         self.clock_now = NOW
-        self.repo = Path(self.temp.name) / "repository"
+        self.repo = base / "repository"
         self.repo.mkdir()
-        self.database = Path(self.temp.name) / "teams.sqlite3"
+        self.database = base / "teams.sqlite3"
         self.valid_route = route_execution_evidence()
         self.runtime = TeamCoordinator(
             self.database,
