@@ -4,6 +4,28 @@ Append-only хронологічний лог операцій. Формат: `#
 
 ---
 
+## [2026-07-23] verification | Real skill is genuinely followed (dependency-proven through the real gate)
+
+- Extended the dependency method to skill-following: gave both local models the real
+  `source-review-evidence` `SKILL.md` and validated their output through the **real** enforced
+  admission (`parse_role_output` + real analyst schema) and the **real** byte-exact evidence gate
+  (`SourceReviewWorkflow._publish_claim_graph`) over a real content-addressed store. No proxies.
+- The only variable is the skill: the output-shape contract is discipline-neutral (matching the
+  real schema, where `observation` is just a string). Positive = the real skill; negative = a
+  decoy with the same JSON structure but the opposite rule ("paraphrase, never a verbatim
+  substring").
+- Both models: dependency PROVEN. gpt-oss is the clean case — with the real skill it emits four
+  verbatim quotes the gate admits; with the decoy it emits four paraphrases and the **same real
+  gate rejects every one** (`role-failed` at the byte-exact predicate). gemma passes with the real
+  skill (byte-exact quote) and fails the decoy by producing no admissible output.
+- Two honest findings: (1) the first run's negative was contaminated — the shape contract said
+  "exact quote" to both arms, so the decoy wrongly passed; fixed by making the contract neutral,
+  caught by inspecting output not trusting the verdict. (2) gemma's decoy fails by non-admission
+  (empty at `finish=length`), not by the byte-exact predicate — reported, not tuned away.
+- Recorded in [skill-follow verification](../docs/research/2026-07-23-skill-follow-verification-real-gate-claude.md).
+  Next: agent-write into the real team contract (authority-widening role must be rejected), then
+  the full memory→skill→agent→gate chain.
+
 ## [2026-07-23] verification | Real memory concept is genuinely used (dependency-proven)
 
 - Corrected the shallow capability battery (which put facts in the prompt and could not prove
