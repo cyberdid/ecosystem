@@ -101,6 +101,51 @@ def _first_balanced_json(text: str) -> str | None:
     return None
 
 
+def _repair_json_escapes(text: str) -> str:
+    """Drop backslashes that do not form a valid JSON escape.
+
+    Small models (notably gemma) markdown-escape underscores, emitting ``\\_``,
+    which is not a legal JSON escape and fails ``json.loads``. This keeps valid
+    escapes (``\\n``, ``\\"``, ``\\\\``) intact and only removes the stray
+    backslash of an invalid one.
+    """
+
+    out: list[str] = []
+    i, n = 0, len(text)
+    while i < n:
+        char = text[i]
+        if char == "\\" and i + 1 < n:
+            nxt = text[i + 1]
+            if nxt in '"\\/bfnrtu':
+                out.append(char)
+                out.append(nxt)
+            else:
+                out.append(nxt)
+            i += 2
+            continue
+        out.append(char)
+        i += 1
+    return "".join(out)
+
+
+def _parseable_form(candidate: str) -> str:
+    """Return the candidate, or its escape-repaired form when only that parses."""
+
+    try:
+        json.loads(candidate)
+        return candidate
+    except (ValueError, TypeError):
+        pass
+    repaired = _repair_json_escapes(candidate)
+    if repaired != candidate:
+        try:
+            json.loads(repaired)
+            return repaired
+        except (ValueError, TypeError):
+            pass
+    return candidate
+
+
 def extract_json_candidate(text: str) -> tuple[str | None, bool]:
     """Pull a JSON candidate out of a real model output.
 
@@ -124,10 +169,10 @@ def extract_json_candidate(text: str) -> tuple[str | None, bool]:
     for match in _FENCE_RE.finditer(stripped):
         inner = _first_balanced_json(match.group(1))
         if inner is not None:
-            return inner, True
+            return _parseable_form(inner), True
     inner = _first_balanced_json(stripped)
     if inner is not None:
-        return inner, True
+        return _parseable_form(inner), True
     return None, False
 
 

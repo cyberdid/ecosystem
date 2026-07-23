@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import unittest
 
 from eco_runtime.structured_admission import (
@@ -79,6 +80,15 @@ class StructuredAdmissionTests(unittest.TestCase):
         candidate, normalized = extract_json_candidate('```json\n{"answer": "a } b", "confidence": 1}\n```')
         self.assertEqual(candidate, '{"answer": "a } b", "confidence": 1}')
         self.assertTrue(normalized)
+
+    def test_markdown_escaped_underscore_is_repaired(self) -> None:
+        # gemma markdown-escapes underscores, emitting invalid JSON escape ``\_``.
+        candidate, normalized = extract_json_candidate('{"answer": "func\\_checked", "confidence": 1}')
+        self.assertIsNotNone(candidate)
+        self.assertEqual(json.loads(candidate)["answer"], "func_checked")
+        # a valid escape is left intact
+        c2, _ = extract_json_candidate('```\n{"answer": "line\\nbreak", "confidence": 1}\n```')
+        self.assertEqual(json.loads(c2)["answer"], "line\nbreak")
 
     def test_record_shape_includes_normalized(self) -> None:
         self.assertEqual(
