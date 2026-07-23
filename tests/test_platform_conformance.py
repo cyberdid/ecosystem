@@ -596,7 +596,7 @@ class PlatformConformanceTests(unittest.TestCase):
 
             stack.enter_context(mock.patch.object(os, "open", side_effect=_write_only_guard))
             code, output, error = self.run_cli("platform", "doctor", "--json")
-        self.assertEqual(code, 0, error)
+        self.assertEqual(code, 0, f"exit={code} stdout={output!r} stderr={error!r}")
         report = json.loads(output)
         self.assertEqual(sorted(set(discovered)), list(EXECUTABLE_ALLOWLIST))
         self.assertEqual(discovered, list(EXECUTABLE_ALLOWLIST))
