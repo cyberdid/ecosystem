@@ -17,9 +17,12 @@ Append-only хронологічний лог операцій. Формат: `#
 - Found and fixed two brittleness defects (tests added): P2 admission was too strict about
   markdown-fenced JSON (now liberal-extract, strict-validate); the GSC gate flagged its own
   hard-stop prohibition line. Both caught by investigating a suspicious result.
-- Real model finding: structured-output support is flaky and model/prompt-specific — both
-  models return empty completions under strict json-mode on some prompts, though both are
-  factually competent (P1 free-text 3/3 each). Live scripts stay in scratchpad, not git.
+- Real model finding (corrected after a maximal battery): the early "empty/flaky" results
+  were mostly token starvation (`finish_reason=length`, reasoning models) plus the wrong
+  transport, not incapability. With generous budgets both models are competent (P1 6/6) and
+  self-create valid skills (GSC 3/3 each); the adversarial proposals are all rejected. gemma's
+  one real limitation is ignoring Ollama's strict `json_schema` grammar (emits prose), so it
+  routes to prompt-based JSON (P2 4/4). Live scripts stay in scratchpad, not git.
 
 ## [2026-07-22] implementation | Cookbook recommendations P1–P6 implemented
 

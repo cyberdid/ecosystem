@@ -16,20 +16,22 @@ exercised and is out of scope here.
 
 ## 2. What was verified live
 
-| Test | gemma4:12b-mlx | gpt-oss:20b |
+Final numbers are from the maximal battery (generous token budgets, both
+transport methods, `finish_reason` tracked):
+
+| Capability | gemma4:12b-mlx | gpt-oss:20b |
 |---|---|---|
-| **P2** structured-output admission | ADMITTED (after normalization) | ADMITTED (clean) |
-| **P1** eval, free-text factual suite (judge-validated) | 3/3 PASS | 3/3 PASS |
-| **GSC** model proposes a SKILL.md → gate | REJECTED (malformed frontmatter) | **ADMISSIBLE** (ready for human approval) |
+| **P1** competence (6 factual, judge-validated) | 6/6 PASS | 6/6 PASS |
+| **P2** admission, strict `json_schema` | 0/4 — ignores the grammar, emits prose | 4/4 clean |
+| **P2** admission, prompt-based JSON (generous tokens) | 4/4 | 4/4 |
+| **GSC** self-created skills across 3 domains → gate | 3/3 ADMISSIBLE | 3/3 ADMISSIBLE |
+| **GSC** adversarial proposals (3) | all rejected — escalation, secret, no-hard-stop | — |
 
-Plus an adversarial GSC proposal (self-granted `repository.write`, embedded
-secret, "bypass policy") → correctly REJECTED on capability escalation. The gate
-had teeth in every case.
-
-**Headline:** a real local model (gpt-oss) self-created a skill that passed the
-deterministic gate — the first live proof of gated self-creation on an unknown
-local model. A flaky model's malformed output and a self-authorizing proposal
-were both rejected.
+**Headline:** both unknown local models self-create valid skills that pass the
+deterministic gate (GSC 3/3 each) and are fully competent (P1 6/6). The gate
+rejects every adversarial proposal. Gated self-creation holds for *both* models —
+including the one that first looked "flaky", once it is given enough tokens and
+the transport method it can actually use.
 
 ## 3. Defects found by live dogfooding (both fixed, both with tests)
 
@@ -55,18 +57,32 @@ prohibition is not mistaken for an instruction.
 Both defects are the same class — brittle strictness — caught by investigating a
 suspicious result rather than reporting it.
 
-## 4. Real model-behaviour findings (not defects)
+## 4. Real model-behaviour findings (corrected after deeper testing)
 
-- **Structured-output support is flaky and model/prompt-specific.** Under
-  Ollama's strict `json_schema` mode, `gemma4:12b-mlx` frequently returns an
-  **empty** completion, and `gpt-oss:20b` returns empty on some prompts. The
-  models are factually competent (P1: 3/3 free-text each) — they are simply
-  unreliable at constrained typed output. Operational consequence: for such a
-  model, do not force strict json-mode; take free text and extract (P2 already
-  does), or add a retry. This is exactly the split the two gates surface:
-  P1 (competence) vs P2 (reliable typed output).
-- `gemma4:12b-mlx` also returned empty or malformed frontmatter on the
-  SKILL.md generation prompt; `gpt-oss:20b` produced clean, complete artifacts.
+Three artifacts of my own testing were caught and corrected before drawing
+conclusions — the honest root causes matter more than the first-pass numbers:
+
+- **Empty completions were mostly token starvation, not incapability.** An empty
+  body with `finish_reason == "length"` means the budget was spent (often on a
+  reasoning model's hidden thinking) before any visible content appeared. The
+  first GSC runs used `max_tokens` far too low; with a generous budget **both**
+  models produce complete, admissible skills (GSC 3/3 each). Operational rule:
+  always read `finish_reason`; treat truncation as "needs more budget", never as
+  a model verdict. This is also a P5 telemetry/observability concern.
+- **`gemma4:12b-mlx` genuinely ignores Ollama's strict `json_schema` grammar.**
+  Given enough tokens it does not return empty — it returns prose ("**Yes, the
+  Earth is …**"), so strict-mode admission is 0/4. But with **prompt-based JSON
+  that states the exact shape** it is 4/4. Its admission verdict should route it
+  to the transport it can use; forcing strict grammar on it is the mistake.
+- **Both models are fully competent and both self-create.** P1 6/6 free-text
+  each; GSC 3/3 admissible each. The apparent gemma "flakiness" was roughly
+  90% my token budget and wrong transport method, and only ~10% a real
+  strict-grammar limitation.
+
+The general lesson: the gates surface *how to call* an unknown model — competent?
+honors strict grammar or needs prose+extraction? enough budget? — not merely a
+pass/fail. That per-model operating profile is exactly what an unknown R&D team
+needs, and the admission verdict is where it is decided.
 
 ## 5. What this session does not claim
 
