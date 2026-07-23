@@ -4,6 +4,23 @@ Append-only хронологічний лог операцій. Формат: `#
 
 ---
 
+## [2026-07-23] verification | Real memory concept is genuinely used (dependency-proven)
+
+- Corrected the shallow capability battery (which put facts in the prompt and could not prove
+  memory mattered) with a real end-to-end mini-project: the actual `eco_memory`
+  (`PrivateMemoryStore.put_memory` / `retrieve_memory`, SQLite, cross-platform) plus a positive
+  proof and a negative dependency test — a concept is only proven used when the test fails
+  without it.
+- Stored an arbitrary, non-guessable rule (`DEC-7: function names must end with '_checked'`) in
+  real memory; both models flag the violation only when the retrieved record is present and not
+  without it. Digests trace to the store and namespace isolation holds. Memory is genuinely used.
+- Fixed a fifth gemma formatting quirk: it markdown-escapes underscores (`\_`, an invalid JSON
+  escape), so `extract_json_candidate` now repairs invalid escapes (unit-tested). Also recorded
+  an honest limitation: byte-exact quoting drifts (trailing space / reformatting), which the
+  strict quote gate correctly rejects — enforced pipelines will need a retry for exact quotes.
+- Next, same rigor: skill-follow (real SKILL.md + real gate + decoy negative), agent-write into
+  the real team contract, then a full memory→skill→agent→gate chain.
+
 ## [2026-07-23] dogfood | Live capability battery — both local models do everything
 
 - Merged PR #3 into `main`: the repository (now `cyberdid/ecosystem` after a full transfer to
