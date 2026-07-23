@@ -85,6 +85,22 @@ def _parser() -> argparse.ArgumentParser:
     ):
         skill_command = skills_commands.add_parser(name, help=help_text)
         skill_command.add_argument("--json", action="store_true", dest="json_output")
+    gsc_propose = skills_commands.add_parser(
+        "propose", help="Gate a proposed SKILL.md through the GSC gate (does not promote)"
+    )
+    gsc_propose.add_argument("proposal_file", help="Path to a proposed SKILL.md")
+    gsc_propose.add_argument("--capabilities", default="", help="Comma-separated declared capabilities")
+    gsc_propose.add_argument("--allowed", default="", help="Comma-separated allowed capabilities")
+    gsc_propose.add_argument("--json", action="store_true", dest="json_output")
+    gsc_promote = skills_commands.add_parser(
+        "promote", help="Promote an approved admissible proposal into a skills root (L0)"
+    )
+    gsc_promote.add_argument("proposal_file", help="Path to a proposed SKILL.md")
+    gsc_promote.add_argument("--into", required=True, help="Existing skills root directory to write into")
+    gsc_promote.add_argument("--approve", required=True, metavar="APPROVER", help="Approver id (explicit human approval)")
+    gsc_promote.add_argument("--capabilities", default="")
+    gsc_promote.add_argument("--allowed", default="")
+    gsc_promote.add_argument("--json", action="store_true", dest="json_output")
 
     loops = commands.add_parser(
         "loops", help="Validate or run an M6.3 deterministic no-effect loop profile"
@@ -1061,7 +1077,59 @@ def command_identity(args: argparse.Namespace) -> int:
     return 0 if result["available"] else 1
 
 
+def _caps(value: str) -> list[str]:
+    return [c.strip() for c in value.split(",") if c.strip()]
+
+
+def _command_skills_gsc(args: argparse.Namespace) -> int:
+    import hashlib
+
+    from eco_gsc import HumanApproval, PromotionError, gate_skill_proposal, promote_skill
+
+    try:
+        text = Path(args.proposal_file).read_text(encoding="utf-8")
+    except (FileNotFoundError, IsADirectoryError, OSError):
+        result = {"available": False, "status": "blocked", "code": "ECO_GSC_FILE_UNREADABLE"}
+        print(stable_json(result) if args.json_output else f"Proposal: blocked ({result['code']})", end="" if args.json_output else "\n")
+        return 1
+
+    if args.skills_command == "propose":
+        verdict = gate_skill_proposal(
+            text, declared_capabilities=_caps(args.capabilities), allowed_capabilities=_caps(args.allowed)
+        )
+        if args.json_output:
+            print(stable_json({"available": verdict.admissible, "status": "gated", **verdict.as_record()}), end="")
+        else:
+            state = "ADMISSIBLE (ready for human approval)" if verdict.admissible else "REJECTED"
+            print(f"Proposal: {state} ({verdict.code})")
+            if verdict.reasons:
+                print("  reasons: " + "; ".join(verdict.reasons))
+        return 0 if verdict.admissible else 1
+
+    # promote (L0): explicit approval bound to the exact content digest
+    approval = HumanApproval(approver_id=args.approve, approved_digest=hashlib.sha256(text.encode("utf-8")).hexdigest())
+    try:
+        receipt = promote_skill(
+            text, declared_capabilities=_caps(args.capabilities), allowed_capabilities=_caps(args.allowed),
+            approval=approval, skills_root=args.into,
+        )
+    except PromotionError as exc:
+        if args.json_output:
+            print(stable_json({"available": False, "status": "blocked", "code": exc.code}), end="")
+        else:
+            print(f"Promotion: blocked ({exc.code})")
+        return 1
+    if args.json_output:
+        print(stable_json({"available": True, "status": "promoted", **receipt.as_record()}), end="")
+    else:
+        print(f"Promotion: {receipt.skill_id} promoted by {receipt.approver_id}")
+        print(f"  written: {receipt.path}")
+    return 0
+
+
 def command_skills(args: argparse.Namespace) -> int:
+    if args.skills_command in ("propose", "promote"):
+        return _command_skills_gsc(args)
     from eco_skills import (
         SkillSyncError,
         check_skills,

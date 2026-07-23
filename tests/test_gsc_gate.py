@@ -80,7 +80,7 @@ class GscGateTests(unittest.TestCase):
 
     def test_verdict_record_is_content_free_about_body(self) -> None:
         rec = _gate(VALID).as_record()
-        self.assertEqual(set(rec), {"admissible", "code", "reasons", "contentDigest"})
+        self.assertEqual(set(rec), {"admissible", "code", "reasons", "contentDigest", "skillName"})
 
 
 if __name__ == "__main__":

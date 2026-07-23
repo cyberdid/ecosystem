@@ -10,5 +10,13 @@ writing the SKILL.md) is the input; this gate is the enforcement.
 """
 
 from .gate import ProposalVerdict, gate_skill_proposal
+from .promote import HumanApproval, PromotionError, PromotionReceipt, promote_skill
 
-__all__ = ["ProposalVerdict", "gate_skill_proposal"]
+__all__ = [
+    "ProposalVerdict",
+    "gate_skill_proposal",
+    "HumanApproval",
+    "PromotionError",
+    "PromotionReceipt",
+    "promote_skill",
+]

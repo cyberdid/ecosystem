@@ -38,6 +38,7 @@ class ProposalVerdict:
     code: str
     reasons: tuple[str, ...] = ()
     content_digest: str | None = None
+    skill_name: str | None = None
 
     def as_record(self) -> dict[str, Any]:
         return {
@@ -45,6 +46,7 @@ class ProposalVerdict:
             "code": self.code,
             "reasons": list(self.reasons),
             "contentDigest": self.content_digest,
+            "skillName": self.skill_name,
         }
 
 
@@ -119,4 +121,4 @@ def gate_skill_proposal(
         )
 
     digest = hashlib.sha256(proposal_text.encode("utf-8")).hexdigest()
-    return ProposalVerdict(True, "ECO_GSC_OK", (), digest)
+    return ProposalVerdict(True, "ECO_GSC_OK", (), digest, skill_name=name)
