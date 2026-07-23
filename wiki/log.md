@@ -4,6 +4,21 @@ Append-only хронологічний лог операцій. Формат: `#
 
 ---
 
+## [2026-07-23] dogfood | Live capability battery — both local models do everything
+
+- Merged PR #3 into `main`: the repository (now `cyberdid/ecosystem` after a full transfer to
+  the paid account) has green CI across Linux/macOS/Windows × py3.11/py3.12, and `main` holds
+  the complete M1–M6 + P1–P5 + GSC platform.
+- Ran a live capability battery against `gemma4:12b-mlx` and `gpt-oss:20b`, using the project's
+  contracts as validators. Both unknown local models perform every agentic capability: tool-use
+  (valid function calls), skill-follow (byte-exact quotes), memory (ground + refuse to
+  hallucinate), skill-write (through the GSC gate), agent-write (bounded roles within budget),
+  and selecting the right skill for a task (3/3 each). gemma needs a slightly more explicit
+  prompt for strict structure (it first omitted an `id`), but is fully capable.
+- Fixed the transferred repo's hosted CI: a Windows CRLF break of skill `contentDigest`
+  (`.gitattributes` LF pins) and a Windows py3.11 `platform.uname()` subprocess ban in the
+  doctor read-only test (warm the cache before mocks). Both found by diagnosis, not guessing.
+
 ## [2026-07-22] implementation | GSC L0 promotion closes the self-creation loop
 
 - Added `eco skills propose` (gate a proposed SKILL.md) and `eco skills promote` (L0):
