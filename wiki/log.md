@@ -4,6 +4,21 @@ Append-only хронологічний лог операцій. Формат: `#
 
 ---
 
+## [2026-07-23] inventory | Three graph-engineering / company-brain articles ingested as untrusted sources
+
+- Copied three 2026-07-22 promotional articles into `docs/research/sources/` unchanged, with
+  SHA-256 provenance, at the owner's request ("add + analyze, do nothing yet"):
+  - `graph-engineering-how-to-run-1-000-ai-agents-in-parallel-fro.md`
+    (`41c83f4bca67e3c85c352829e98dfa483b56e4ae22eada534d7b1b60750ac35b`)
+  - `how-to-deploy-a-cerebras-style-knowledge-base-this-week.md`
+    (`860c10f36d6606a639bb6854f04bb117b62f8c81893b53471d2d39e9f85f75be`)
+  - `how-to-master-graph-engineering-full-course.md`
+    (`cb68dd64e08fe2e9538ffb6cff942fca0385ad1ccbe3f6ee6dc480051446221f`)
+- Classified as untrusted external reference. Not promoted into policy, memory, a skill, or
+  runtime configuration; no contract, code, or recommendation acted upon. Two are graph/loop
+  method pieces (which the project already enforces as contracts), one is a vendor company-brain
+  advertisement. A reviewed register report is deferred until the owner authorizes action.
+
 ## [2026-07-23] verification | Full chain memory→skill→agent→gate composes and every link is load-bearing
 
 - Capstone verification: one governed review of a release note wires all three concepts together
