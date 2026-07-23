@@ -4,6 +4,24 @@ Append-only хронологічний лог операцій. Формат: `#
 
 ---
 
+## [2026-07-23] verification | Full chain memory→skill→agent→gate composes and every link is load-bearing
+
+- Capstone verification: one governed review of a release note wires all three concepts together
+  and dependency-tests each link, all on real code — real `eco_memory`, real
+  `source-review-evidence` skill, real `parse_role_output` + `_publish_claim_graph` gate, and the
+  real `eco_teams` authority contract.
+- Memory carries a non-guessable marker `[RETRY-SCOPE-9]` a model can only emit if it read the
+  retrieved decision; the skill drives byte-exact evidence the gate checks; the review is authored
+  by a reviewer role the authority contract bounds.
+- Both models PROVEN: marker present with memory and absent without it; gate PASS with the real
+  skill and FAIL with a decoy; bounded reviewer accepted and widened reviewer rejected
+  (`expands authority`). The concepts compose and none is decorative — removing any link breaks
+  only its own check.
+- This closes the four-part roadmap (memory, skill-follow, agent-write, full chain): every concept
+  the project defines is exercised as real code on real cases and proven used by the dependency
+  method. Recorded in
+  [full-chain verification](../docs/research/2026-07-23-full-chain-verification-memory-skill-agent-gate-claude.md).
+
 ## [2026-07-23] verification | A model cannot widen its own authority when writing an agent (dependency-proven)
 
 - Verified the agent-write concept against the **real** team-authority contract

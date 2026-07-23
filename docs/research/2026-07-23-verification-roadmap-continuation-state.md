@@ -23,11 +23,16 @@ proven used when the test **fails without it**. Not "plausible output".
 
 | Concept | Status |
 |---|---|
-| Memory (`eco_memory`) | ✅ verified — dependency-proven (see `2026-07-23-real-memory-verification-mini-project-claude.md`) |
+| Memory (`eco_memory`) | ✅ verified — dependency-proven (`2026-07-23-real-memory-verification-mini-project-claude.md`) |
 | Skill-creation (GSC gate + L0 promote) | ✅ proven live earlier |
-| **Skill-follow** (real `source-review-evidence` SKILL.md → real gate; decoy negative) | 🔜 **NEXT** |
-| **Agent-write** (real team contract; authority-widening role must be rejected) | 🔜 after skill-follow |
-| **Full chain** on a mini-project: memory → skill → agent → gate | 🔜 final |
+| Skill-follow (real `source-review-evidence` SKILL.md → real gate; decoy negative) | ✅ verified — both models (`2026-07-23-skill-follow-verification-real-gate-claude.md`) |
+| Agent-write (real team contract; authority-widening role rejected) | ✅ verified — both models (`2026-07-23-agent-write-verification-authority-gate-claude.md`) |
+| Full chain: memory → skill → agent → gate | ✅ verified — both models (`2026-07-23-full-chain-verification-memory-skill-agent-gate-claude.md`) |
+
+**The four-part verification roadmap is COMPLETE** (2026-07-23): every concept the project defines
+is exercised as real code on real cases and proven used by the dependency method (the test fails
+without it). If resuming after this point, the concept-verification work is done — see the four
+notes above and `wiki/log.md`.
 
 ## Operational lessons (already in code, restate so they aren't re-learned)
 
@@ -48,7 +53,7 @@ Every significant finding = a `docs/research/` note + a `wiki/log.md` entry + a
 
 ## Immediate next action on resume
 
-Build the **skill-follow mini-project**: give a model the real `source-review-evidence`
-`SKILL.md` content + a short source; validate the output through the real source-review gate
-(byte-exact quote + claim coverage); negative test — a decoy skill must fail the gate. Run
-against both local models, record the finding, commit.
+The concept-verification roadmap is complete (all four notes above are committed). No verification
+step is pending. If the owner wants more, the open extensions are all **WSL/Linux-gated**: the
+enforced end-to-end runtime (broker-gated model call, signed-authority mint/revoke, the full
+7-role `SourceReviewWorkflow.run()` live PASS). Otherwise, await the owner's next direction.
