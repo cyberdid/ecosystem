@@ -1,0 +1,438 @@
+{
+  "apiVersion": "skills.ai.ecosystem/v1alpha1",
+  "kind": "SkillRegistry",
+  "metadata": {
+    "id": "ecosystem-builtin",
+    "version": "1.2.0"
+  },
+  "skills": [
+    {
+      "id": "agent-team-authoring",
+      "version": "1.0.0",
+      "source": {
+        "uri": "package://eco_skills/catalog/agent-team-authoring/SKILL.md",
+        "commit": "package-release:m6.2-v1"
+      },
+      "contentDigest": "d8f36bf4a3bf79b5d6a71e9c2596847127f3ac3b56cadba6e871ff8e2ea64cc2",
+      "license": "MIT",
+      "owner": "ecosystem maintainers",
+      "capabilities": [
+        "team.author",
+        "team.verify"
+      ],
+      "dependencies": [],
+      "tests": [
+        "tests/test_m6_skills_sync.py::SkillRegistryTests",
+        "tests/test_m6_skills_sync.py::SkillSyncTests"
+      ],
+      "evidence": [
+        "docs/architecture/creation.md",
+        "docs/architecture/general-agent-teams.md",
+        "docs/architecture/team-authority.md"
+      ],
+      "revocation": {
+        "revoked": false,
+        "reason": null
+      },
+      "compatibility": {
+        "codex": {
+          "mode": "native",
+          "limitations": []
+        },
+        "claude": {
+          "mode": "native",
+          "limitations": []
+        },
+        "gemini": {
+          "mode": "native",
+          "limitations": []
+        },
+        "portable": {
+          "mode": "portable",
+          "limitations": [
+            "Client-specific automatic discovery is not claimed."
+          ]
+        },
+        "copilot": {
+          "mode": "instruction-only",
+          "limitations": [
+            "Projected as aggregate repository instructions; native skill invocation is not claimed."
+          ]
+        },
+        "cursor": {
+          "mode": "instruction-only",
+          "limitations": [
+            "Projected as an aggregate rule; native skill invocation is not claimed."
+          ]
+        }
+      },
+      "resource": "agent-team-authoring/SKILL.md"
+    },
+    {
+      "id": "bounded-loop-authoring",
+      "version": "1.0.0",
+      "source": {
+        "uri": "package://eco_skills/catalog/bounded-loop-authoring/SKILL.md",
+        "commit": "package-release:m6.2-v1"
+      },
+      "contentDigest": "12670772313e6f61d9b8868c3acc924785066a5c34a32fb86d2c997e93d917d1",
+      "license": "MIT",
+      "owner": "ecosystem maintainers",
+      "capabilities": [
+        "loop.author",
+        "loop.verify"
+      ],
+      "dependencies": [],
+      "tests": [
+        "tests/test_m6_skills_sync.py::SkillRegistryTests",
+        "tests/test_m6_skills_sync.py::SkillSyncTests"
+      ],
+      "evidence": [
+        "docs/architecture/skills-harness-sync.md",
+        "wiki/loops.md"
+      ],
+      "revocation": {
+        "revoked": false,
+        "reason": null
+      },
+      "compatibility": {
+        "codex": {
+          "mode": "native",
+          "limitations": []
+        },
+        "claude": {
+          "mode": "native",
+          "limitations": []
+        },
+        "gemini": {
+          "mode": "native",
+          "limitations": []
+        },
+        "portable": {
+          "mode": "portable",
+          "limitations": [
+            "Client-specific automatic discovery is not claimed."
+          ]
+        },
+        "copilot": {
+          "mode": "instruction-only",
+          "limitations": [
+            "Projected as aggregate repository instructions; native skill invocation is not claimed."
+          ]
+        },
+        "cursor": {
+          "mode": "instruction-only",
+          "limitations": [
+            "Projected as an aggregate rule; native skill invocation is not claimed."
+          ]
+        }
+      },
+      "resource": "bounded-loop-authoring/SKILL.md"
+    },
+    {
+      "id": "ecosystem-contract-change",
+      "version": "1.0.0",
+      "source": {
+        "uri": "package://eco_skills/catalog/ecosystem-contract-change/SKILL.md",
+        "commit": "package-release:m6.2-v1"
+      },
+      "contentDigest": "afc902c5c02ba3984a77d10a57ff1961a9a06ddba5b7d9dc3fdf93e55f064206",
+      "license": "MIT",
+      "owner": "ecosystem maintainers",
+      "capabilities": [
+        "contract.change",
+        "projection.verify"
+      ],
+      "dependencies": [],
+      "tests": [
+        "tests/test_m6_skills_sync.py::SkillRegistryTests",
+        "tests/test_m6_skills_sync.py::SkillSyncTests"
+      ],
+      "evidence": [
+        "docs/architecture/skills-harness-sync.md",
+        "docs/architecture/runtime-contracts.md"
+      ],
+      "revocation": {
+        "revoked": false,
+        "reason": null
+      },
+      "compatibility": {
+        "codex": {
+          "mode": "native",
+          "limitations": []
+        },
+        "claude": {
+          "mode": "native",
+          "limitations": []
+        },
+        "gemini": {
+          "mode": "native",
+          "limitations": []
+        },
+        "portable": {
+          "mode": "portable",
+          "limitations": [
+            "Client-specific automatic discovery is not claimed."
+          ]
+        },
+        "copilot": {
+          "mode": "instruction-only",
+          "limitations": [
+            "Projected as aggregate repository instructions; native skill invocation is not claimed."
+          ]
+        },
+        "cursor": {
+          "mode": "instruction-only",
+          "limitations": [
+            "Projected as an aggregate rule; native skill invocation is not claimed."
+          ]
+        }
+      },
+      "resource": "ecosystem-contract-change/SKILL.md"
+    },
+    {
+      "id": "self-consistency-verification",
+      "version": "1.0.0",
+      "source": {
+        "uri": "package://eco_skills/catalog/self-consistency-verification/SKILL.md",
+        "commit": "package-release:m6.2-v1"
+      },
+      "contentDigest": "7cdd0ffb0946f89f8a27a72854ae619f018bc3c00292959012ea0cf219a0528e",
+      "license": "MIT",
+      "owner": "ecosystem maintainers",
+      "capabilities": [
+        "result.verify",
+        "reliability.improve"
+      ],
+      "dependencies": [],
+      "tests": [
+        "tests/test_m6_skills_sync.py::SkillRegistryTests",
+        "tests/test_m6_skills_sync.py::SkillSyncTests"
+      ],
+      "evidence": [
+        "docs/research/2026-07-22-vendor-cookbooks-source-review.md",
+        "docs/research/2026-07-22-cookbook-recommendations-implementation-plan.md"
+      ],
+      "revocation": {
+        "revoked": false,
+        "reason": null
+      },
+      "compatibility": {
+        "codex": {
+          "mode": "native",
+          "limitations": []
+        },
+        "claude": {
+          "mode": "native",
+          "limitations": []
+        },
+        "gemini": {
+          "mode": "native",
+          "limitations": []
+        },
+        "portable": {
+          "mode": "portable",
+          "limitations": [
+            "Client-specific automatic discovery is not claimed."
+          ]
+        },
+        "copilot": {
+          "mode": "instruction-only",
+          "limitations": [
+            "Projected as aggregate repository instructions; native skill invocation is not claimed."
+          ]
+        },
+        "cursor": {
+          "mode": "instruction-only",
+          "limitations": [
+            "Projected as an aggregate rule; native skill invocation is not claimed."
+          ]
+        }
+      },
+      "resource": "self-consistency-verification/SKILL.md"
+    },
+    {
+      "id": "skill-authoring",
+      "version": "1.0.0",
+      "source": {
+        "uri": "package://eco_skills/catalog/skill-authoring/SKILL.md",
+        "commit": "package-release:m6.2-v1"
+      },
+      "contentDigest": "4af94cba8265e3549622434f9780ad49d6c85e1dc570db319a3d71fae7ca0335",
+      "license": "MIT",
+      "owner": "ecosystem maintainers",
+      "capabilities": [
+        "skill.author",
+        "skill.verify"
+      ],
+      "dependencies": [],
+      "tests": [
+        "tests/test_m6_skills_sync.py::SkillRegistryTests",
+        "tests/test_m6_skills_sync.py::SkillSyncTests"
+      ],
+      "evidence": [
+        "docs/architecture/creation.md",
+        "docs/architecture/skills-harness-sync.md"
+      ],
+      "revocation": {
+        "revoked": false,
+        "reason": null
+      },
+      "compatibility": {
+        "codex": {
+          "mode": "native",
+          "limitations": []
+        },
+        "claude": {
+          "mode": "native",
+          "limitations": []
+        },
+        "gemini": {
+          "mode": "native",
+          "limitations": []
+        },
+        "portable": {
+          "mode": "portable",
+          "limitations": [
+            "Client-specific automatic discovery is not claimed."
+          ]
+        },
+        "copilot": {
+          "mode": "instruction-only",
+          "limitations": [
+            "Projected as aggregate repository instructions; native skill invocation is not claimed."
+          ]
+        },
+        "cursor": {
+          "mode": "instruction-only",
+          "limitations": [
+            "Projected as an aggregate rule; native skill invocation is not claimed."
+          ]
+        }
+      },
+      "resource": "skill-authoring/SKILL.md"
+    },
+    {
+      "id": "source-review-evidence",
+      "version": "1.0.0",
+      "source": {
+        "uri": "package://eco_skills/catalog/source-review-evidence/SKILL.md",
+        "commit": "package-release:m6.2-v1"
+      },
+      "contentDigest": "bf2267bac875a6dba9014eda4b80cd0904fc4fb0b5c045e2863a23642e9a1f28",
+      "license": "MIT",
+      "owner": "ecosystem maintainers",
+      "capabilities": [
+        "source.review",
+        "evidence.verify"
+      ],
+      "dependencies": [],
+      "tests": [
+        "tests/test_m6_skills_sync.py::SkillRegistryTests",
+        "tests/test_m6_skills_sync.py::SkillSyncTests"
+      ],
+      "evidence": [
+        "docs/architecture/skills-harness-sync.md",
+        "docs/architecture/functional-orchestration.md"
+      ],
+      "revocation": {
+        "revoked": false,
+        "reason": null
+      },
+      "compatibility": {
+        "codex": {
+          "mode": "native",
+          "limitations": []
+        },
+        "claude": {
+          "mode": "native",
+          "limitations": []
+        },
+        "gemini": {
+          "mode": "native",
+          "limitations": []
+        },
+        "portable": {
+          "mode": "portable",
+          "limitations": [
+            "Client-specific automatic discovery is not claimed."
+          ]
+        },
+        "copilot": {
+          "mode": "instruction-only",
+          "limitations": [
+            "Projected as aggregate repository instructions; native skill invocation is not claimed."
+          ]
+        },
+        "cursor": {
+          "mode": "instruction-only",
+          "limitations": [
+            "Projected as an aggregate rule; native skill invocation is not claimed."
+          ]
+        }
+      },
+      "resource": "source-review-evidence/SKILL.md"
+    },
+    {
+      "id": "task-decomposition",
+      "version": "1.0.0",
+      "source": {
+        "uri": "package://eco_skills/catalog/task-decomposition/SKILL.md",
+        "commit": "package-release:m6.2-v1"
+      },
+      "contentDigest": "cf02b1d597df8cdb131d4731c16ea42edbe52c9e55b402b792b8f9031be4cc3b",
+      "license": "MIT",
+      "owner": "ecosystem maintainers",
+      "capabilities": [
+        "task.decompose",
+        "reliability.improve"
+      ],
+      "dependencies": [],
+      "tests": [
+        "tests/test_m6_skills_sync.py::SkillRegistryTests",
+        "tests/test_m6_skills_sync.py::SkillSyncTests"
+      ],
+      "evidence": [
+        "docs/research/2026-07-22-vendor-cookbooks-source-review.md",
+        "docs/research/2026-07-22-cookbook-recommendations-implementation-plan.md"
+      ],
+      "revocation": {
+        "revoked": false,
+        "reason": null
+      },
+      "compatibility": {
+        "codex": {
+          "mode": "native",
+          "limitations": []
+        },
+        "claude": {
+          "mode": "native",
+          "limitations": []
+        },
+        "gemini": {
+          "mode": "native",
+          "limitations": []
+        },
+        "portable": {
+          "mode": "portable",
+          "limitations": [
+            "Client-specific automatic discovery is not claimed."
+          ]
+        },
+        "copilot": {
+          "mode": "instruction-only",
+          "limitations": [
+            "Projected as aggregate repository instructions; native skill invocation is not claimed."
+          ]
+        },
+        "cursor": {
+          "mode": "instruction-only",
+          "limitations": [
+            "Projected as an aggregate rule; native skill invocation is not claimed."
+          ]
+        }
+      },
+      "resource": "task-decomposition/SKILL.md"
+    }
+  ]
+}

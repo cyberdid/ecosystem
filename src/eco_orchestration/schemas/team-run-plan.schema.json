@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "eco://orchestration/team-run-plan/v1alpha1",
+  "title": "TeamRunPlan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "orchestration.ai.ecosystem/v1alpha1" },
+    "kind": { "const": "TeamRunPlan" },
+    "metadata": { "$ref": "eco://orchestration/common/v1alpha1#/$defs/metadataRun" },
+    "spec": {
+      "type": "object", "additionalProperties": false,
+      "required": ["request", "sourceBundle", "teamManifest", "loopDefinition", "policySnapshotDigest", "deadlineAt", "aggregateBudget", "steps", "gate"],
+      "properties": {
+        "request": { "$ref": "eco://orchestration/common/v1alpha1#/$defs/recordBinding" },
+        "sourceBundle": { "$ref": "eco://orchestration/common/v1alpha1#/$defs/recordBinding" },
+        "teamManifest": { "$ref": "eco://orchestration/common/v1alpha1#/$defs/recordBinding" },
+        "loopDefinition": { "$ref": "eco://orchestration/common/v1alpha1#/$defs/recordBinding" },
+        "policySnapshotDigest": { "$ref": "eco://orchestration/common/v1alpha1#/$defs/sha256" },
+        "deadlineAt": { "$ref": "eco://orchestration/common/v1alpha1#/$defs/timestamp" },
+        "aggregateBudget": { "$ref": "eco://orchestration/common/v1alpha1#/$defs/budget" },
+        "steps": {
+          "type": "array", "minItems": 5, "maxItems": 5,
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["ordinal", "roleId", "profile", "predecessors", "childPlanDigest", "routes", "budget"],
+            "properties": {
+              "ordinal": { "type": "integer", "minimum": 1, "maximum": 5 },
+              "roleId": { "$ref": "eco://orchestration/common/v1alpha1#/$defs/roleId" },
+              "profile": { "$ref": "eco://orchestration/common/v1alpha1#/$defs/recordBinding" },
+              "predecessors": {
+                "type": "array", "maxItems": 1, "uniqueItems": true,
+                "items": { "$ref": "eco://orchestration/common/v1alpha1#/$defs/roleId" }
+              },
+              "childPlanDigest": { "$ref": "eco://orchestration/common/v1alpha1#/$defs/sha256" },
+              "routes": {
+                "type": "array", "minItems": 1, "maxItems": 2,
+                "items": {
+                  "type": "object", "additionalProperties": false,
+                  "required": ["attempt", "decisionId", "routeDigest"],
+                  "properties": {
+                    "attempt": { "type": "integer", "minimum": 1, "maximum": 2 },
+                    "decisionId": { "$ref": "eco://orchestration/common/v1alpha1#/$defs/identifier" },
+                    "routeDigest": { "$ref": "eco://orchestration/common/v1alpha1#/$defs/sha256" }
+                  }
+                }
+              },
+              "budget": { "$ref": "eco://orchestration/common/v1alpha1#/$defs/budget" }
+            }
+          }
+        },
+        "gate": {
+          "type": "object", "additionalProperties": false,
+          "required": ["owner", "reviewRole", "rubricDigest", "maxRevisionCycles"],
+          "properties": {
+            "owner": { "const": "runtime" },
+            "reviewRole": { "const": "reviewer" },
+            "rubricDigest": { "$ref": "eco://orchestration/common/v1alpha1#/$defs/sha256" },
+            "maxRevisionCycles": { "const": 1 }
+          }
+        }
+      }
+    }
+  }
+}

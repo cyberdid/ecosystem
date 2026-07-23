@@ -1,0 +1,40 @@
+{
+  "name": "minimal-python",
+  "projectId": "tiny-python",
+  "existingInstructionSurfaces": [
+    "AGENTS.md"
+  ],
+  "secretPlaceholders": [
+    "env:FIXTURE_PYTHON_TOKEN"
+  ],
+  "files": [
+    {
+      "path": ".gitignore",
+      "text": ".env\n__pycache__/\n.venv/\n"
+    },
+    {
+      "path": "config/runtime.env",
+      "text": "TOKEN=env:FIXTURE_PYTHON_TOKEN\n"
+    },
+    {
+      "path": "README.md",
+      "text": "# Tiny Python\n\nA minimal brownfield Python project.\n"
+    },
+    {
+      "path": "pyproject.toml",
+      "text": "[build-system]\nrequires = [\"setuptools>=69\"]\nbuild-backend = \"setuptools.build_meta\"\n\n[project]\nname = \"tiny-python\"\nversion = \"0.1.0\"\nrequires-python = \">=3.11\"\n"
+    },
+    {
+      "path": "src/tiny_python/__init__.py",
+      "text": "def add(left: int, right: int) -> int:\n    return left + right\n"
+    },
+    {
+      "path": "tests/test_add.py",
+      "text": "from tiny_python import add\n\ndef test_add() -> None:\n    assert add(2, 3) == 5\n"
+    },
+    {
+      "path": "AGENTS.md",
+      "text": "# Local Python guidance\n\nRun pytest before commits."
+    }
+  ]
+}

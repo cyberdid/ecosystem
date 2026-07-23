@@ -1,0 +1,45 @@
+{
+  "apiVersion": "ai.ecosystem/v1alpha1",
+  "deployments": [
+    {
+      "adapter": "openai-compatible",
+      "enabled": false,
+      "id": "local-openai-compatible",
+      "model": "configured-at-runtime",
+      "provider": "local"
+    },
+    {
+      "adapter": "openai-compatible",
+      "enabled": false,
+      "id": "approved-cloud-openai-compatible",
+      "model": "configured-at-runtime",
+      "provider": "configured-at-runtime"
+    }
+  ],
+  "inputs": {
+    "capabilities": {
+      "path": "capabilities.yaml",
+      "sha256": "1d9cfb617867c6378d5b9a2c8ec0b61f230d42577b55782cdde49b501e12e986"
+    },
+    "deployments": {
+      "path": "deployments.yaml",
+      "sha256": "e33d53efa016297d8207a6c0989bdb3dc2191fa2197abae0ec44248a080aa920"
+    },
+    "instructions": {
+      "path": "instructions.yaml",
+      "sha256": "f5ace45850162c507df65d774d4e8db864083ea4ebdf7d7d855cbb364343215f"
+    },
+    "project": {
+      "path": "project.yaml",
+      "sha256": "508aca11a750b7b6f7ce91002579692187f1568411f9b313b65b9a51f8de0b51"
+    },
+    "tools": {
+      "path": "tools.yaml",
+      "sha256": "0f513028b369a35c751b9536111136ef9cbc1860fcb2f95baf88ff2ae3d4f652"
+    },
+    "trust": {
+      "path": "trust.yaml",
+      "sha256": "2bc9d6088b3a3734d156f14219b657a3a07014371630117d168b2845c6f0b200"
+    }
+  }
+}

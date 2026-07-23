@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ai.ecosystem/skills/skill-registry.v1.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "skills"],
+  "properties": {
+    "apiVersion": {"const": "skills.ai.ecosystem/v1alpha1"},
+    "kind": {"const": "SkillRegistry"},
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version"],
+      "properties": {
+        "id": {"const": "ecosystem-builtin"},
+        "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"}
+      }
+    },
+    "skills": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 64,
+      "items": {"$ref": "#/$defs/skill"}
+    }
+  },
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "identifier": {"type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$", "maxLength": 80},
+    "stringSet": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1, "maxLength": 160},
+      "uniqueItems": true,
+      "maxItems": 32
+    },
+    "compatibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["codex", "claude", "gemini", "portable", "copilot", "cursor"],
+      "properties": {
+        "codex": {"$ref": "#/$defs/support"},
+        "claude": {"$ref": "#/$defs/support"},
+        "gemini": {"$ref": "#/$defs/support"},
+        "portable": {"$ref": "#/$defs/support"},
+        "copilot": {"$ref": "#/$defs/support"},
+        "cursor": {"$ref": "#/$defs/support"}
+      }
+    },
+    "support": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "limitations"],
+      "properties": {
+        "mode": {"enum": ["native", "portable", "instruction-only", "unsupported"]},
+        "limitations": {"$ref": "#/$defs/stringSet"}
+      }
+    },
+    "skill": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "source", "contentDigest", "license", "owner", "capabilities", "dependencies", "tests", "evidence", "revocation", "compatibility", "resource"],
+      "properties": {
+        "id": {"$ref": "#/$defs/identifier"},
+        "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+        "source": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["uri", "commit"],
+          "properties": {
+            "uri": {"type": "string", "pattern": "^package://eco_skills/catalog/", "maxLength": 240},
+            "commit": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:@/-]{0,127}$"}
+          }
+        },
+        "contentDigest": {"$ref": "#/$defs/digest"},
+        "license": {"type": "string", "pattern": "^[A-Za-z0-9.-]+$", "maxLength": 40},
+        "owner": {"type": "string", "minLength": 1, "maxLength": 120},
+        "capabilities": {"$ref": "#/$defs/stringSet"},
+        "dependencies": {"type": "array", "items": {"$ref": "#/$defs/identifier"}, "uniqueItems": true, "maxItems": 16},
+        "tests": {"$ref": "#/$defs/stringSet"},
+        "evidence": {"$ref": "#/$defs/stringSet"},
+        "revocation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["revoked", "reason"],
+          "properties": {
+            "revoked": {"type": "boolean"},
+            "reason": {"type": ["string", "null"], "maxLength": 240}
+          }
+        },
+        "compatibility": {"$ref": "#/$defs/compatibility"},
+        "resource": {"type": "string", "pattern": "^[a-z0-9-]+/SKILL\\.md$", "maxLength": 120}
+      }
+    }
+  }
+}

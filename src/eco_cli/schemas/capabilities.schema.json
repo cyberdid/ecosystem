@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai.ecosystem.local/schemas/capabilities.schema.json",
+  "title": "CapabilityCatalog",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "capabilities"],
+  "properties": {
+    "apiVersion": { "const": "ai.ecosystem/v1alpha1" },
+    "kind": { "const": "CapabilityCatalog" },
+    "capabilities": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "description", "actionClass", "sideEffect"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z][a-z0-9._-]+$" },
+          "description": { "type": "string", "minLength": 5 },
+          "actionClass": { "enum": ["A0", "A1", "A2", "A3", "A4"] },
+          "sideEffect": { "type": "boolean" },
+          "defaultSandbox": { "enum": ["inspect", "workspace-change", "build-test", "staging", "production"] }
+        }
+      }
+    }
+  }
+}
+

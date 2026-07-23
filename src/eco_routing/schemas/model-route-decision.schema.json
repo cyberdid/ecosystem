@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai.ecosystem.local/schemas/routing/model-route-decision.schema.json",
+  "type": "object", "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": {"const": "routing.ai.ecosystem/v1alpha1"},
+    "kind": {"const": "ModelRouteDecision"},
+    "metadata": {"$ref": "common.schema.json#/$defs/metadata"},
+    "spec": {
+      "type": "object", "additionalProperties": false,
+      "required": ["requestDigest", "policyDigest", "priceCatalogDigest", "decision", "reasonCode", "routeAttempt", "selected", "validUntil", "fallbackFromDigest", "explainDigest"],
+      "properties": {
+        "requestDigest": {"$ref": "common.schema.json#/$defs/digest"},
+        "policyDigest": {"$ref": "common.schema.json#/$defs/digest"},
+        "priceCatalogDigest": {"$ref": "common.schema.json#/$defs/digest"},
+        "decision": {"enum": ["allowed", "denied"]},
+        "reasonCode": {
+          "enum": ["eligible", "policy-binding-mismatch", "request-policy-denied", "price-catalog-stale", "fallback-not-authorized", "fallback-identity-drift", "fallback-exhausted", "no-eligible-candidate"]
+        },
+        "routeAttempt": {"type": "integer", "minimum": 1, "maximum": 2},
+        "selected": {
+          "oneOf": [
+            {"type": "null"},
+            {
+              "type": "object", "additionalProperties": false,
+              "required": ["deploymentId", "deploymentDigest", "deploymentIdentityDigest", "observedEvidenceDigest", "candidateDigest", "reservedCostMicrousd", "estimatedLatencyP95Millis"],
+              "properties": {
+                "deploymentId": {"$ref": "common.schema.json#/$defs/id"},
+                "deploymentDigest": {"$ref": "common.schema.json#/$defs/digest"},
+                "deploymentIdentityDigest": {"$ref": "common.schema.json#/$defs/digest"},
+                "observedEvidenceDigest": {"$ref": "common.schema.json#/$defs/digest"},
+                "candidateDigest": {"$ref": "common.schema.json#/$defs/digest"},
+                "reservedCostMicrousd": {"type": "integer", "minimum": 0},
+                "estimatedLatencyP95Millis": {"type": "integer", "minimum": 1},
+                "aggregateReservation": {
+                  "type": "object", "additionalProperties": false,
+                  "required": ["maximumCalls", "inputTokenCeiling", "outputTokenCeiling", "reservedCostMicrousd"],
+                  "properties": {
+                    "maximumCalls": {"type": "integer", "minimum": 1, "maximum": 10000},
+                    "inputTokenCeiling": {"type": "integer", "minimum": 0},
+                    "outputTokenCeiling": {"type": "integer", "minimum": 1},
+                    "reservedCostMicrousd": {"type": "integer", "minimum": 0}
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "validUntil": {"$ref": "common.schema.json#/$defs/timestamp"},
+        "fallbackFromDigest": {"oneOf": [{"type": "null"}, {"$ref": "common.schema.json#/$defs/digest"}]},
+        "explainDigest": {"$ref": "common.schema.json#/$defs/digest"},
+        "executionPlanDigest": {"$ref": "common.schema.json#/$defs/digest"}
+      }
+    }
+  }
+}

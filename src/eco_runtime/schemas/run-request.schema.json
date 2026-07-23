@@ -1,0 +1,121 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai.ecosystem.local/schemas/runtime/run-request.schema.json",
+  "title": "RunRequest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "runtime.ai.ecosystem/v1alpha1" },
+    "kind": { "const": "RunRequest" },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "createdAt", "actor"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "actor": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "id"],
+          "properties": {
+            "type": { "enum": ["human", "automation"] },
+            "id": { "$ref": "#/$defs/id" }
+          }
+        }
+      }
+    },
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "projectId",
+        "logicalRole",
+        "dataClass",
+        "classificationAuthority",
+        "task",
+        "requestedTools",
+        "constraints",
+        "budget",
+        "fallbackPolicy"
+      ],
+      "properties": {
+        "logicalRole": { "type": "string", "pattern": "^[a-z][a-z0-9._-]+$" },
+        "projectId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$" },
+        "dataClass": { "enum": ["D0", "D1", "D2", "D3", "D4"] },
+        "classificationAuthority": { "enum": ["operator", "project-policy"] },
+        "deploymentPin": { "$ref": "#/$defs/id" },
+        "task": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "instructionRef", "inputRefs"],
+          "properties": {
+            "type": { "type": "string", "pattern": "^[a-z][a-z0-9._-]+$" },
+            "instructionRef": { "$ref": "#/$defs/artifactRef" },
+            "inputRefs": {
+              "type": "array",
+              "maxItems": 256,
+              "uniqueItems": true,
+              "items": { "$ref": "#/$defs/artifactRef" }
+            }
+          }
+        },
+        "requestedTools": {
+          "type": "array",
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^[a-z][a-z0-9._-]+$" }
+        },
+        "constraints": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["maximumActionClass", "sandbox", "agentNetwork", "toolNetwork"],
+          "properties": {
+            "maximumActionClass": { "enum": ["A0", "A1", "A2"] },
+            "sandbox": { "enum": ["inspect", "workspace-change"] },
+            "agentNetwork": { "const": "deny" },
+            "toolNetwork": { "const": "deny" }
+          },
+          "allOf": [
+            {
+              "if": { "properties": { "maximumActionClass": { "const": "A2" } } },
+              "then": { "properties": { "sandbox": { "const": "workspace-change" } } },
+              "else": { "properties": { "sandbox": { "const": "inspect" } } }
+            }
+          ]
+        },
+        "budget": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "maxDurationSeconds",
+            "maxModelRequests",
+            "maxToolRequests",
+            "maxInputBytes",
+            "maxOutputBytes",
+            "maxTotalTokens",
+            "maxCostMicrousd"
+          ],
+          "properties": {
+            "maxDurationSeconds": { "type": "integer", "minimum": 1, "maximum": 86400 },
+            "maxModelRequests": { "type": "integer", "minimum": 1, "maximum": 1000 },
+            "maxToolRequests": { "type": "integer", "minimum": 0, "maximum": 10000 },
+            "maxInputBytes": { "type": "integer", "minimum": 1, "maximum": 1073741824 },
+            "maxOutputBytes": { "type": "integer", "minimum": 1, "maximum": 1073741824 },
+            "maxTotalTokens": { "type": "integer", "minimum": 1, "maximum": 10000000 },
+            "maxCostMicrousd": { "type": "integer", "minimum": 0, "maximum": 1000000000000 }
+          }
+        },
+        "fallbackPolicy": { "const": "none" }
+      }
+    }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$" },
+    "artifactRef": {
+      "type": "string",
+      "pattern": "^artifact://(?!\\.\\.?(?:/|$))(?!.*?/\\.\\.?(?:/|$))(?!.*//)(?!.*\\\\)(?!.*%2[fF]|.*%5[cC])[A-Za-z0-9][A-Za-z0-9._:/-]{0,4095}$"
+    }
+  }
+}

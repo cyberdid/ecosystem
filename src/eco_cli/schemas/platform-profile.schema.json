@@ -1,0 +1,219 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai.ecosystem.local/schemas/platform/platform-profile.schema.json",
+  "title": "PlatformProfile",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "platform.ai.ecosystem/v1alpha1" },
+    "kind": { "const": "PlatformProfile" },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "profileDigest"],
+      "properties": {
+        "id": { "$ref": "#/$defs/platformId" },
+        "profileDigest": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "classification",
+        "operatingSystem",
+        "contexts",
+        "executables",
+        "clients",
+        "semantics",
+        "adapterConformance",
+        "runtimeSecurity",
+        "effectiveCapabilities",
+        "safety"
+      ],
+      "properties": {
+        "classification": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["declared", "detected", "proven"],
+          "properties": {
+            "declared": { "$ref": "#/$defs/profileValue" },
+            "detected": { "$ref": "#/$defs/profileValue" },
+            "proven": { "type": "null" }
+          }
+        },
+        "operatingSystem": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["family", "state"],
+          "properties": {
+            "family": { "enum": ["linux", "macos", "windows", "unsupported"] },
+            "state": { "enum": ["detected", "blocked", "not-tested"] }
+          }
+        },
+        "contexts": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "state"],
+            "properties": {
+              "id": { "enum": ["container", "hosted-ci", "wsl"] },
+              "state": { "enum": ["absent", "detected", "reported-hint", "not-tested"] }
+            }
+          }
+        },
+        "executables": {
+          "type": "array",
+          "maxItems": 32,
+          "items": { "$ref": "#/$defs/inventoryItem" }
+        },
+        "clients": {
+          "type": "array",
+          "maxItems": 32,
+          "items": { "$ref": "#/$defs/clientItem" }
+        },
+        "semantics": {
+          "type": "array",
+          "minItems": 5,
+          "maxItems": 5,
+          "items": { "$ref": "#/$defs/semanticItem" }
+        },
+        "adapterConformance": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "declaredProfiles",
+            "detectedProfiles",
+            "provenProfiles",
+            "effectiveCapabilities"
+          ],
+          "properties": {
+            "state": { "const": "not-tested" },
+            "declaredProfiles": { "const": 0 },
+            "detectedProfiles": { "const": 0 },
+            "provenProfiles": { "const": 0 },
+            "effectiveCapabilities": { "type": "array", "maxItems": 0 }
+          }
+        },
+        "runtimeSecurity": {
+          "type": "array",
+          "maxItems": 64,
+          "items": { "$ref": "#/$defs/capabilityState" }
+        },
+        "effectiveCapabilities": {
+          "type": "array",
+          "maxItems": 0,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/capabilityId" }
+        },
+        "safety": { "$ref": "#/$defs/safety" }
+      }
+    }
+  },
+  "$defs": {
+    "platformId": {
+      "enum": ["container", "hosted-ci", "linux-native", "macos", "windows-native", "wsl"]
+    },
+    "profileValue": {
+      "enum": [
+        "container",
+        "hosted-ci",
+        "linux-native",
+        "macos",
+        "windows-native",
+        "wsl",
+        "ambiguous",
+        "unsupported",
+        "unspecified"
+      ]
+    },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "capabilityId": { "type": "string", "pattern": "^[a-z][a-z0-9._-]{1,127}$" },
+    "inventoryItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "state"],
+      "properties": {
+        "id": {
+          "enum": [
+            "claude",
+            "codex",
+            "cursor",
+            "docker",
+            "gemini",
+            "git",
+            "node",
+            "nvidia-smi",
+            "ollama",
+            "python"
+          ]
+        },
+        "state": { "enum": ["present", "absent", "not-tested"] }
+      }
+    },
+    "clientItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "state"],
+      "properties": {
+        "id": { "enum": ["claude", "codex", "copilot", "cursor", "gemini"] },
+        "state": { "enum": ["surface-present", "absent", "not-tested"] }
+      }
+    },
+    "semanticItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "state"],
+      "properties": {
+        "id": {
+          "enum": [
+            "client.projection-presence",
+            "environment.reference-resolution",
+            "executable.path-resolution",
+            "filesystem.security-semantics",
+            "process.shell-execution"
+          ]
+        },
+        "state": { "enum": ["detected", "not-tested", "blocked"] }
+      }
+    },
+    "capabilityState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "declared", "detected", "proven", "effective"],
+      "properties": {
+        "id": {
+          "enum": [
+            "runtime.credential-resolution",
+            "runtime.loop-execution",
+            "runtime.model-routing",
+            "runtime.network-denial",
+            "runtime.process-isolation",
+            "runtime.repository-read-broker",
+            "runtime.workspace-write-broker"
+          ]
+        },
+        "declared": { "enum": ["declared", "not-declared", "blocked"] },
+        "detected": { "enum": ["detected", "not-detected", "not-tested", "blocked"] },
+        "proven": { "enum": ["not-proven", "not-tested", "blocked"] },
+        "effective": { "const": false }
+      }
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["executionReady", "authorityCreated", "mutationPerformed", "networkAccessed"],
+      "properties": {
+        "executionReady": { "const": false },
+        "authorityCreated": { "const": false },
+        "mutationPerformed": { "const": false },
+        "networkAccessed": { "const": false }
+      }
+    }
+  }
+}

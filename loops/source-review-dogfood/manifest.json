@@ -1,0 +1,22 @@
+{
+  "bundleId": "source-review-dogfood-1",
+  "dataClass": "D1",
+  "question": {
+    "byteLength": 275,
+    "dataClass": "D1",
+    "id": "question",
+    "mediaType": "text/plain",
+    "path": "loops/source-review-dogfood/question.txt",
+    "sha256": "3657e0d03c3dfb31a7f33dfe7d504f5b2493e89d6867b1886113225ab390fab9"
+  },
+  "sources": [
+    {
+      "byteLength": 11905,
+      "dataClass": "D1",
+      "id": "multi-model-team-article",
+      "mediaType": "text/markdown",
+      "path": "docs/research/sources/how-to-build-a-multi-model-ai-team-in-2026.md",
+      "sha256": "59c616d7b701449797ca747838fdd31b5c7a677017863f2a03b174fd78ee007e"
+    }
+  ]
+}

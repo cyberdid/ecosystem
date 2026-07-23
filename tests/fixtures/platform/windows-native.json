@@ -1,0 +1,31 @@
+{
+  "declaredProfile": "windows-native",
+  "probeInputs": {
+    "version": 1,
+    "os": {"name": "nt", "system": "Windows"},
+    "signals": {
+      "wsl": {"environment": false, "kernel": false},
+      "container": {"environment": false, "filesystem": false},
+      "hostedCi": {"environment": false, "provider": false}
+    },
+    "executables": [
+      {"name": "claude", "present": true},
+      {"name": "codex", "present": true},
+      {"name": "cursor", "present": true},
+      {"name": "docker", "present": true},
+      {"name": "gemini", "present": true},
+      {"name": "git", "present": true},
+      {"name": "node", "present": true},
+      {"name": "nvidia-smi", "present": true},
+      {"name": "ollama", "present": true},
+      {"name": "python", "present": true}
+    ],
+    "clients": [
+      {"id": "claude", "available": false},
+      {"id": "codex", "available": true},
+      {"id": "copilot", "available": true},
+      {"id": "cursor", "available": true},
+      {"id": "gemini", "available": false}
+    ]
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "apiVersion": "runtime.ai.ecosystem/v1alpha1",
+  "kind": "PolicyDecision",
+  "metadata": {
+    "createdAt": "2026-07-15T12:58:25.628337Z",
+    "id": "m2-live-policy-gate-decision",
+    "runId": "m2-live-policy-gate-run"
+  },
+  "spec": {
+    "constraints": {
+      "expiresAt": "2026-07-15T13:03:25.628337Z",
+      "singleUse": true
+    },
+    "effect": "allow",
+    "policySnapshot": {
+      "apiVersion": "ai.ecosystem/v1alpha1",
+      "contractProfile": "runtime-contracts-v1alpha1",
+      "digestProfile": "eco-python-json-v1",
+      "policyEngineVersion": "0.1.0",
+      "schemaBundleDigest": "4e4adc61b9c4ab32049a651a6d8749f3abb739c08c81d8cd5f233ed6a4f41aa0",
+      "semanticConfigDigest": "74f72b4c9760fe355ffa98286d2f8fa5a46f9d6e3be0a76c6dfe08020859481a"
+    },
+    "reasonCodes": [
+      "ECO_RUN_ALLOWED"
+    ],
+    "subject": {
+      "digest": "f2a96589364de8521aa5f726461d7cfc016e0360a41dd7398f917c2781cf55cd",
+      "id": "m2-live-policy-gate-plan",
+      "kind": "RunPlan"
+    }
+  }
+}

@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai.ecosystem.local/schemas/deployments.schema.json",
+  "title": "DeploymentCatalog",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "deployments", "logicalRoles"],
+  "properties": {
+    "apiVersion": { "const": "ai.ecosystem/v1alpha1" },
+    "kind": { "const": "DeploymentCatalog" },
+    "deployments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "provider", "adapter", "model", "zone", "allowedDataClasses", "artifactTrust", "declaredCapabilities", "enabled"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z][a-z0-9._-]+$" },
+          "provider": { "type": "string", "minLength": 1 },
+          "adapter": { "type": "string", "minLength": 1 },
+          "model": { "type": "string", "minLength": 1 },
+          "endpointRef": { "type": "string", "pattern": "^(?:env:|config:|secret://)" },
+          "zone": { "enum": ["Z0", "Z1", "Z2", "Z3", "Z4"] },
+          "allowedDataClasses": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "enum": ["D0", "D1", "D2", "D3"] } },
+          "artifactTrust": { "enum": ["P0", "P1", "P2", "P3", "P4"] },
+          "declaredCapabilities": { "type": "array", "uniqueItems": true, "items": { "type": "string" } },
+          "observedCapabilitiesRef": {
+            "type": "string",
+            "minLength": 1,
+            "not": { "pattern": "^(?:/|[A-Za-z]:|.*(?:^|/)\\.\\.(?:/|$))" },
+            "pattern": "\\.json$"
+          },
+          "retention": { "type": "string" },
+          "trainingUse": { "enum": ["prohibited", "contractual-opt-out", "unknown"] },
+          "region": { "type": "string" },
+          "identity": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "adapterVersion",
+              "modelRevision",
+              "runtimeEngine",
+              "runtimeVersion",
+              "quantization",
+              "endpointReferenceDigest"
+            ],
+            "properties": {
+              "adapterVersion": { "type": "string", "minLength": 1 },
+              "modelRevision": { "type": "string", "minLength": 1 },
+              "runtimeEngine": { "type": "string", "minLength": 1 },
+              "runtimeVersion": { "type": "string", "minLength": 1 },
+              "quantization": { "type": "string", "minLength": 1 },
+              "endpointReferenceDigest": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+            }
+          },
+          "enabled": { "type": "boolean" }
+        },
+        "allOf": [
+          {
+            "if": {
+              "required": ["enabled"],
+              "properties": { "enabled": { "const": true } }
+            },
+            "then": {
+              "required": [
+                "endpointRef",
+                "observedCapabilitiesRef",
+                "retention",
+                "trainingUse",
+                "region",
+                "identity"
+              ],
+              "properties": {
+                "provider": { "not": { "const": "configured-at-runtime" } },
+                "model": { "not": { "const": "configured-at-runtime" } },
+                "retention": { "not": { "enum": ["unknown", "contract-required"] } },
+                "trainingUse": { "not": { "const": "unknown" } },
+                "region": { "not": { "enum": ["unknown", "contract-required"] } }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "logicalRoles": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["requiredCapabilities", "allowedDataClasses", "allowedZones", "minimumArtifactTrust", "maximumActionClass", "candidates"],
+        "properties": {
+          "requiredCapabilities": { "type": "array", "uniqueItems": true, "items": { "type": "string" } },
+          "allowedDataClasses": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "enum": ["D0", "D1", "D2", "D3"] } },
+          "allowedZones": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "enum": ["Z0", "Z1", "Z2", "Z3"] } },
+          "minimumArtifactTrust": { "enum": ["P0", "P1", "P2", "P3", "P4"] },
+          "maximumActionClass": { "enum": ["A0", "A1", "A2", "A3", "A4"] },
+          "candidates": { "type": "array", "uniqueItems": true, "items": { "type": "string" } }
+        }
+      }
+    }
+  }
+}

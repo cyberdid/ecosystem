@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "eco://orchestration/route-decision/v1alpha1",
+  "title": "RouteDecision",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "orchestration.ai.ecosystem/v1alpha1" },
+    "kind": { "const": "RouteDecision" },
+    "metadata": { "$ref": "eco://orchestration/common/v1alpha1#/$defs/metadataRun" },
+    "spec": {
+      "type": "object", "additionalProperties": false,
+      "required": ["planId", "planDigest", "roleId", "attempt", "routeDigest", "decision", "reasonCode", "deployment", "validUntil", "fallbackPolicy"],
+      "properties": {
+        "planId": { "$ref": "eco://orchestration/common/v1alpha1#/$defs/identifier" },
+        "planDigest": { "$ref": "eco://orchestration/common/v1alpha1#/$defs/sha256" },
+        "roleId": { "$ref": "eco://orchestration/common/v1alpha1#/$defs/roleId" },
+        "attempt": { "type": "integer", "minimum": 1, "maximum": 2 },
+        "routeDigest": { "$ref": "eco://orchestration/common/v1alpha1#/$defs/sha256" },
+        "decision": { "enum": ["allowed", "denied"] },
+        "reasonCode": { "enum": ["eligible", "capability-mismatch", "data-denied", "deployment-disabled", "evidence-stale", "policy-denied", "route-unavailable", "zone-denied"] },
+        "deployment": {
+          "oneOf": [
+            {
+              "type": "object", "additionalProperties": false,
+              "required": ["id", "digest", "endpointBindingDigest", "capabilityEvidenceDigest"],
+              "properties": {
+                "id": { "$ref": "eco://orchestration/common/v1alpha1#/$defs/identifier" },
+                "digest": { "$ref": "eco://orchestration/common/v1alpha1#/$defs/sha256" },
+                "endpointBindingDigest": { "$ref": "eco://orchestration/common/v1alpha1#/$defs/sha256" },
+                "capabilityEvidenceDigest": { "$ref": "eco://orchestration/common/v1alpha1#/$defs/sha256" }
+              }
+            },
+            { "type": "null" }
+          ]
+        },
+        "validUntil": { "$ref": "eco://orchestration/common/v1alpha1#/$defs/timestamp" },
+        "fallbackPolicy": { "const": "none" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "decision": { "const": "allowed" } }, "required": ["decision"] },
+          "then": { "properties": { "reasonCode": { "const": "eligible" }, "deployment": { "type": "object" } } }
+        },
+        {
+          "if": { "properties": { "decision": { "const": "denied" } }, "required": ["decision"] },
+          "then": { "properties": { "deployment": { "type": "null" } } }
+        }
+      ]
+    }
+  }
+}

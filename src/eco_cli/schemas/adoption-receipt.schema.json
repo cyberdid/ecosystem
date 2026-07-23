@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai.ecosystem.local/schemas/adoption-receipt.schema.json",
+  "title": "ProjectAdoptionReceipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "adoption.ai.ecosystem/v1alpha1" },
+    "kind": { "const": "ProjectAdoptionReceipt" },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ecosystemVersion", "projectName"],
+      "properties": {
+        "ecosystemVersion": { "type": "string", "minLength": 1 },
+        "projectName": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$" }
+      }
+    },
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["configRoot", "templateVersion", "appliedPlanDigest", "files"],
+      "properties": {
+        "configRoot": { "const": ".ai" },
+        "templateVersion": { "const": "starter-v1" },
+        "appliedPlanDigest": { "$ref": "#/$defs/digest" },
+        "files": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "role", "ownership", "createdDigest", "managedBlockDigest"],
+            "properties": {
+              "path": { "$ref": "#/$defs/relativePath" },
+              "role": { "enum": ["canonical", "projection", "generated"] },
+              "ownership": { "enum": ["created", "preexisting", "managed-block", "generated"] },
+              "createdDigest": { "anyOf": [{ "$ref": "#/$defs/digest" }, { "type": "null" }] },
+              "managedBlockDigest": { "anyOf": [{ "$ref": "#/$defs/digest" }, { "type": "null" }] }
+            },
+            "allOf": [
+              {
+                "if": { "properties": { "role": { "const": "canonical" } } },
+                "then": {
+                  "properties": {
+                    "ownership": { "enum": ["created", "preexisting"] },
+                    "managedBlockDigest": { "type": "null" }
+                  }
+                }
+              },
+              {
+                "if": { "properties": { "role": { "const": "projection" } } },
+                "then": {
+                  "properties": {
+                    "ownership": { "enum": ["created", "managed-block"] },
+                    "managedBlockDigest": { "$ref": "#/$defs/digest" }
+                  }
+                }
+              },
+              {
+                "if": { "properties": { "role": { "const": "generated" } } },
+                "then": {
+                  "properties": {
+                    "ownership": { "const": "generated" },
+                    "createdDigest": { "$ref": "#/$defs/digest" },
+                    "managedBlockDigest": { "type": "null" }
+                  }
+                }
+              },
+              {
+                "if": { "properties": { "ownership": { "const": "created" } } },
+                "then": { "properties": { "createdDigest": { "$ref": "#/$defs/digest" } } }
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "digest": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "relativePath": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096,
+      "not": { "pattern": "^(?:/|[A-Za-z]:|.*\\\\|.*(?:^|/)\\.\\.(?:/|$))" }
+    }
+  }
+}

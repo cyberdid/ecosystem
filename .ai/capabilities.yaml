@@ -1,0 +1,44 @@
+apiVersion: ai.ecosystem/v1alpha1
+kind: CapabilityCatalog
+capabilities:
+  - id: model.text
+    description: Analyze or generate text without an external side effect.
+    actionClass: A0
+    sideEffect: false
+    defaultSandbox: inspect
+  - id: model.structured-output
+    description: Produce output validated against an explicit JSON Schema.
+    actionClass: A0
+    sideEffect: false
+    defaultSandbox: inspect
+  - id: model.tool-calling
+    description: Propose typed tool calls for independent validation and authorization.
+    actionClass: A0
+    sideEffect: false
+    defaultSandbox: inspect
+  - id: filesystem.read
+    description: Read files inside an approved repository boundary.
+    actionClass: A1
+    sideEffect: false
+    defaultSandbox: inspect
+  - id: workspace.write
+    description: Create or modify files inside an approved workspace sandbox.
+    actionClass: A2
+    sideEffect: true
+    defaultSandbox: workspace-change
+  - id: code.execute
+    description: Execute project code or tests inside the build-test sandbox.
+    actionClass: A2
+    sideEffect: true
+    defaultSandbox: build-test
+  - id: external.write
+    description: Write to an external service or publish an artifact.
+    actionClass: A3
+    sideEffect: true
+    defaultSandbox: staging
+  - id: production.change
+    description: Change production, IAM, financial, or destructive external state.
+    actionClass: A4
+    sideEffect: true
+    defaultSandbox: production
+

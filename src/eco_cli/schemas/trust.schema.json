@@ -1,0 +1,190 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai.ecosystem.local/schemas/trust.schema.json",
+  "title": "RuntimeTrustBootstrap",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "evidence", "repositorySnapshot", "conformance"],
+  "properties": {
+    "apiVersion": { "const": "ai.ecosystem/v1alpha1" },
+    "kind": { "const": "RuntimeTrustBootstrap" },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["algorithm", "profile", "issuers"],
+      "properties": {
+        "algorithm": { "const": "HMAC-SHA256" },
+        "profile": { "const": "local-shared-key" },
+        "issuers": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "items": { "$ref": "#/$defs/issuer" }
+        }
+      }
+    },
+    "repositorySnapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["issuer", "envelopeRef", "trust", "maximumFileBytes", "entries"],
+      "properties": {
+        "issuer": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "keyId", "recordIssuerType"],
+          "properties": {
+            "id": { "$ref": "#/$defs/id" },
+            "keyId": { "$ref": "#/$defs/id" },
+            "recordIssuerType": { "const": "operator" }
+          }
+        },
+        "envelopeRef": { "$ref": "#/$defs/externalEvidenceFileRef" },
+        "trust": { "enum": ["P1", "P2", "P3", "P4"] },
+        "maximumFileBytes": { "type": "integer", "minimum": 1, "maximum": 1073741824 },
+        "entries": {
+          "type": "array",
+          "maxItems": 1000000,
+          "items": { "$ref": "#/$defs/snapshotEntry" }
+        }
+      }
+    },
+    "conformance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["trustedSuites", "requiredObservations"],
+      "properties": {
+        "trustedSuites": {
+          "type": "array",
+          "maxItems": 128,
+          "items": { "$ref": "#/$defs/suite" }
+        },
+        "requiredObservations": {
+          "type": "array",
+          "maxItems": 128,
+          "items": { "$ref": "#/$defs/observation" }
+        }
+      }
+    },
+    "routeAuthority": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["issuerId", "keyId", "algorithm", "publicKeyRef"],
+          "properties": {
+            "issuerId": { "$ref": "#/$defs/id" },
+            "keyId": { "$ref": "#/$defs/id" },
+            "algorithm": { "const": "ed25519" },
+            "publicKeyRef": {
+              "type": "string",
+              "pattern": "^env:ECO_[A-Z0-9_]{1,96}_ROUTE_PUBLIC_KEY$"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$" },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "envRef": { "type": "string", "pattern": "^env:ECO_[A-Z0-9_]{1,96}_EVIDENCE_KEY$" },
+    "externalEvidenceFileRef": { "type": "string", "pattern": "^env:ECO_[A-Z0-9_]{1,96}_ENVELOPE_FILE$" },
+    "issuer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "keyId",
+        "verificationKeyRef",
+        "allowedKinds",
+        "allowedProjects",
+        "allowedDeployments",
+        "allowedSuiteDigests"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "keyId": { "$ref": "#/$defs/id" },
+        "verificationKeyRef": { "$ref": "#/$defs/envRef" },
+        "allowedKinds": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "RepositorySnapshot",
+              "AdapterConformanceProfile",
+              "PlatformBackendConformanceProfile"
+            ]
+          }
+        },
+        "allowedProjects": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$" }
+        },
+        "allowedDeployments": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/id" }
+        },
+        "allowedSuiteDigests": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/sha256" }
+        },
+        "allowedPlatformProfiles": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/id" }
+        },
+        "allowedBackendInstances": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/sha256" }
+        },
+        "allowedRunnerDigests": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/sha256" }
+        },
+        "allowedBackendImplementationDigests": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/sha256" }
+        }
+      }
+    },
+    "snapshotEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "dataClass", "trust", "classificationAuthority"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1, "maxLength": 4096 },
+        "dataClass": { "enum": ["D0", "D1", "D2", "D3", "D4"] },
+        "trust": { "enum": ["P1", "P2", "P3", "P4"] },
+        "classificationAuthority": { "enum": ["operator", "policy"] }
+      }
+    },
+    "suite": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "digest"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z][a-z0-9._-]+$" },
+        "version": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "digest": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "observation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["deploymentId", "suiteDigest", "envelopeRef"],
+      "properties": {
+        "deploymentId": { "$ref": "#/$defs/id" },
+        "suiteDigest": { "$ref": "#/$defs/sha256" },
+        "envelopeRef": { "$ref": "#/$defs/externalEvidenceFileRef" }
+      }
+    }
+  }
+}

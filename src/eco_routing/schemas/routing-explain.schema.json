@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai.ecosystem.local/schemas/routing/routing-explain.schema.json",
+  "type": "object", "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": {"const": "routing.ai.ecosystem/v1alpha1"},
+    "kind": {"const": "RoutingExplain"},
+    "metadata": {"$ref": "common.schema.json#/$defs/metadata"},
+    "spec": {
+      "type": "object", "additionalProperties": false,
+      "required": ["requestDigest", "policyDigest", "priceCatalogDigest", "decision", "reasonCode", "selectedCandidateDigest", "candidates"],
+      "properties": {
+        "requestDigest": {"$ref": "common.schema.json#/$defs/digest"},
+        "policyDigest": {"$ref": "common.schema.json#/$defs/digest"},
+        "priceCatalogDigest": {"$ref": "common.schema.json#/$defs/digest"},
+        "decision": {"enum": ["allowed", "denied"]},
+        "reasonCode": {"type": "string", "pattern": "^[a-z][a-z0-9-]{1,63}$"},
+        "selectedCandidateDigest": {"oneOf": [{"type": "null"}, {"$ref": "common.schema.json#/$defs/digest"}]},
+        "executionPlanDigest": {"$ref": "common.schema.json#/$defs/digest"},
+        "candidates": {
+          "type": "array",
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["candidateDigest", "outcome", "reasonCodes", "rankDigest"],
+            "properties": {
+              "candidateDigest": {"$ref": "common.schema.json#/$defs/digest"},
+              "outcome": {"enum": ["eligible", "rejected", "excluded"]},
+              "reasonCodes": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "^[a-z][a-z0-9-]{1,63}$"}},
+              "rankDigest": {"oneOf": [{"type": "null"}, {"$ref": "common.schema.json#/$defs/digest"}]}
+            }
+          }
+        }
+      }
+    }
+  }
+}

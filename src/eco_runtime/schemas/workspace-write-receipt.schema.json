@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai.ecosystem.local/schemas/runtime/workspace-write-receipt.schema.json",
+  "title": "WorkspaceWriteReceipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "runtime.ai.ecosystem/v1alpha1" },
+    "kind": { "const": "WorkspaceWriteReceipt" },
+    "metadata": { "$ref": "#/$defs/metadata" },
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["intentDigest", "proposalDigest", "toolRequestDigest", "policyDecisionDigest", "approvalGrantDigest", "idempotencyKeyDigest", "operation", "pathDigest", "expectedBefore", "applied", "postconditionDigest"],
+      "properties": {
+        "intentDigest": { "$ref": "#/$defs/sha256" },
+        "proposalDigest": { "$ref": "#/$defs/sha256" },
+        "toolRequestDigest": { "$ref": "#/$defs/sha256" },
+        "policyDecisionDigest": { "$ref": "#/$defs/sha256" },
+        "approvalGrantDigest": { "$ref": "#/$defs/sha256" },
+        "idempotencyKeyDigest": { "$ref": "#/$defs/sha256" },
+        "operation": { "enum": ["create", "replace"] },
+        "pathDigest": { "$ref": "#/$defs/sha256" },
+        "expectedBefore": { "$ref": "#/$defs/expectedBefore" },
+        "applied": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["fileType", "encoding", "contentDigest", "byteLength", "mode", "filesystemProfile", "atomicReplace", "directoryFsync"],
+          "properties": {
+            "fileType": { "const": "regular" },
+            "encoding": { "const": "UTF-8" },
+            "contentDigest": { "$ref": "#/$defs/sha256" },
+            "byteLength": { "type": "integer", "minimum": 0, "maximum": 1073741824 },
+            "mode": { "type": "integer", "minimum": 0, "maximum": 511 },
+            "filesystemProfile": { "type": "string", "pattern": "^[a-z][a-z0-9._-]{0,127}$" },
+            "atomicReplace": { "const": true },
+            "directoryFsync": { "const": true }
+          }
+        },
+        "postconditionDigest": { "$ref": "#/$defs/sha256" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "operation": { "const": "create" } }, "required": ["operation"] },
+          "then": { "properties": { "expectedBefore": { "$ref": "#/$defs/absentBefore" } } }
+        },
+        {
+          "if": { "properties": { "operation": { "const": "replace" } }, "required": ["operation"] },
+          "then": { "properties": { "expectedBefore": { "$ref": "#/$defs/presentBefore" } } }
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$" },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "runId", "operationId", "createdAt"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "runId": { "$ref": "#/$defs/id" },
+        "operationId": { "$ref": "#/$defs/id" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "absentBefore": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state"],
+      "properties": { "state": { "const": "absent" } }
+    },
+    "presentBefore": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "fileType", "encoding", "contentDigest", "byteLength", "mode"],
+      "properties": {
+        "state": { "const": "present" },
+        "fileType": { "const": "regular" },
+        "encoding": { "const": "UTF-8" },
+        "contentDigest": { "$ref": "#/$defs/sha256" },
+        "byteLength": { "type": "integer", "minimum": 0, "maximum": 1073741824 },
+        "mode": { "type": "integer", "minimum": 0, "maximum": 511 }
+      }
+    },
+    "expectedBefore": { "oneOf": [{ "$ref": "#/$defs/absentBefore" }, { "$ref": "#/$defs/presentBefore" }] }
+  }
+}

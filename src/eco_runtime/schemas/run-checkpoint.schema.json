@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai.ecosystem.local/schemas/runtime/run-checkpoint.schema.json",
+  "title": "RunCheckpoint",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "runtime.ai.ecosystem/v1alpha1" },
+    "kind": { "const": "RunCheckpoint" },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "runId", "revision", "createdAt"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "runId": { "$ref": "#/$defs/id" },
+        "revision": { "type": "integer", "minimum": 0 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "projection", "historyComplete", "historySource", "eventSequence", "eventHeadDigest", "activePlanDigest", "budget", "openOperationIds", "startedAt", "deadlineAt"],
+      "properties": {
+        "state": { "enum": ["NEW", "RECEIVED", "VALIDATED", "PLANNED", "AUTHORIZED", "RUNNING", "SUCCEEDED", "FAILED", "DENIED", "CANCELLED", "EXHAUSTED"] },
+        "projection": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["state", "toolStates", "adapterCompleted", "adapterFailed", "budgetExhausted"],
+          "properties": {
+            "state": { "enum": ["NEW", "RECEIVED", "VALIDATED", "PLANNED", "AUTHORIZED", "RUNNING", "SUCCEEDED", "FAILED", "DENIED", "CANCELLED", "EXHAUSTED"] },
+            "toolStates": {
+              "type": "array", "maxItems": 10000,
+              "items": {
+                "type": "array", "minItems": 3, "maxItems": 3,
+                "prefixItems": [
+                  { "$ref": "#/$defs/id" },
+                  { "enum": ["requested", "allowed", "denied", "cancelled", "completed", "failed"] },
+                  { "$ref": "#/$defs/sha256" }
+                ]
+              }
+            },
+            "adapterCompleted": { "type": "boolean" },
+            "adapterFailed": { "type": "boolean" },
+            "budgetExhausted": { "type": "boolean" }
+          }
+        },
+        "historyComplete": { "type": "boolean" },
+        "historySource": { "$ref": "#/$defs/id" },
+        "eventSequence": { "type": "integer", "minimum": 0 },
+        "eventHeadDigest": { "$ref": "#/$defs/nullableDigest" },
+        "activePlanDigest": { "$ref": "#/$defs/nullableDigest" },
+        "budget": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["limitsDigest", "toolRequests", "inputBytes", "reservedInputBytes", "outputBytes", "modelRequests", "totalTokens", "costMicrousd"],
+          "properties": {
+            "limitsDigest": { "$ref": "#/$defs/sha256" },
+            "toolRequests": { "type": "integer", "minimum": 0 },
+            "inputBytes": { "type": "integer", "minimum": 0 },
+            "reservedInputBytes": { "type": "integer", "minimum": 0 },
+            "outputBytes": { "type": "integer", "minimum": 0 },
+            "modelRequests": { "type": "integer", "minimum": 0 },
+            "totalTokens": { "type": "integer", "minimum": 0 },
+            "costMicrousd": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "openOperationIds": {
+          "type": "array",
+          "maxItems": 10000,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/id" }
+        },
+        "startedAt": { "type": "string", "format": "date-time" },
+        "deadlineAt": { "oneOf": [{ "type": "string", "format": "date-time" }, { "type": "null" }] }
+      }
+    }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$" },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "nullableDigest": { "oneOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }] }
+  }
+}

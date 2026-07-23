@@ -1,0 +1,78 @@
+{
+  "evidence": {
+    "comparisons": [
+      {
+        "cases": [
+          {
+            "caseId": "exact-ready-token",
+            "status": "parity"
+          }
+        ],
+        "leftDeploymentId": "cloud-claude-sonnet-5",
+        "rightDeploymentId": "local-ollama-qwen3-0.6b",
+        "status": "parity"
+      }
+    ],
+    "deployments": [
+      {
+        "adapterVersion": "claude-cli-eval-v1",
+        "deploymentId": "cloud-claude-sonnet-5",
+        "deviationCodes": [],
+        "observationDigest": "8874544383b3d87dbb129b5978e53f4f8d18f4378ba0818d93be79e4e3fa9abe",
+        "pinnedIdentityDigest": "d9e9fba035867b9006dd7cd9d81e8f5200cc5a960ae0d70db1b27d84af24a144",
+        "probes": [
+          {
+            "caseId": "exact-ready-token",
+            "deviationCode": null,
+            "normalizedOutputDigest": "c2e3ac47f4a325469c1a2d5f117e463ec943c721986d5d9f09ac4540b7d80526",
+            "status": "pass",
+            "usage": {
+              "inputTokens": 8726,
+              "modelRequests": 1,
+              "outputTokens": 4,
+              "totalTokens": 8730
+            }
+          }
+        ],
+        "status": "pass"
+      },
+      {
+        "adapterVersion": "ollama-eval-v1",
+        "deploymentId": "local-ollama-qwen3-0.6b",
+        "deviationCodes": [],
+        "observationDigest": "f18145e4c740a4ac8edbec412e8b0d1d5903cc33501080eb875ec83431f8bd01",
+        "pinnedIdentityDigest": "230d8461ae618f9b8eab69ad0f748db5e8d5b4c8aabb0fad0a71d29e076b14a7",
+        "probes": [
+          {
+            "caseId": "exact-ready-token",
+            "deviationCode": null,
+            "normalizedOutputDigest": "c2e3ac47f4a325469c1a2d5f117e463ec943c721986d5d9f09ac4540b7d80526",
+            "status": "pass",
+            "usage": {
+              "inputTokens": 44,
+              "modelRequests": 1,
+              "outputTokens": 2,
+              "totalTokens": 46
+            }
+          }
+        ],
+        "status": "pass"
+      }
+    ],
+    "domain": "eco-cross-deployment-evidence-v1",
+    "evaluatedAt": "2026-07-15T12:25:06.596412Z",
+    "status": "pass",
+    "suite": {
+      "digest": "b907cb8665d9717d765ccea552480139eacea28042d3feedc29191d3d6f67b8a",
+      "id": "m2-live-local-cloud",
+      "version": "1.0.0"
+    },
+    "version": 1
+  },
+  "evidenceDigest": "dec3516e990bb95db60bbb6879b85b70019867a941292282d80436c7840b1bb0",
+  "signature": {
+    "algorithm": "HMAC-SHA256",
+    "keyId": "m2-live-evaluation-key-1",
+    "value": "a53887e3ddddc2a831f57fe1f80acb6d6ad81807035b4fa86d47af9c70e97d5a"
+  }
+}

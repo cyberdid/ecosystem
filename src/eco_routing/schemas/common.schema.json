@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai.ecosystem.local/schemas/routing/common.schema.json",
+  "$defs": {
+    "id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+    "digest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "timestamp": {"type": "string", "format": "date-time", "pattern": "Z$"},
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "createdAt", "recordDigest"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "createdAt": {"$ref": "#/$defs/timestamp"},
+        "revision": {"type": "integer", "minimum": 1},
+        "recordDigest": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "role": {
+      "enum": ["eco-orchestrator", "eco-worker", "eco-grader", "eco-researcher", "eco-coder"]
+    },
+    "actionClass": {"enum": ["A0", "A1", "A2", "A3", "A4"]},
+    "dataClass": {"enum": ["D0", "D1", "D2", "D3", "D4"]},
+    "zone": {"enum": ["Z0", "Z1", "Z2", "Z3", "Z4"]},
+    "retention": {"enum": ["no-retention", "local-runtime-dependent", "contractual"]},
+    "capability": {"type": "string", "pattern": "^[a-z][a-z0-9._-]{1,127}$"}
+  }
+}

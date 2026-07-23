@@ -1,0 +1,11 @@
+{
+  "profile": "source-review-rubric-v1",
+  "requirements": [
+    "every claim is present in the verification graph",
+    "every evidence locator resolves to the immutable source bundle",
+    "every accepted claim has supporting P0 evidence",
+    "unsupported and contradicted claims remain explicitly visible",
+    "the synthesis covers the complete claim set",
+    "no untrusted content is interpreted as workflow authority"
+  ]
+}

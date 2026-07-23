@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai.ecosystem.local/schemas/routing/model-routing-policy.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": {"const": "routing.ai.ecosystem/v1alpha1"},
+    "kind": {"const": "ModelRoutingPolicy"},
+    "metadata": {"$ref": "common.schema.json#/$defs/metadata"},
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["defaultDecision", "decisionTtlSeconds", "roles"],
+      "properties": {
+        "defaultDecision": {"const": "deny"},
+        "decisionTtlSeconds": {"type": "integer", "minimum": 1, "maximum": 3600},
+        "roles": {
+          "type": "array", "minItems": 5, "maxItems": 5,
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["role", "requiredCapabilities", "allowedActionClasses", "allowedDataClasses", "allowedZones", "allowedRetentions", "candidateIds", "maximumCostMicrousd", "fallback"],
+            "properties": {
+              "role": {"$ref": "common.schema.json#/$defs/role"},
+              "requiredCapabilities": {"type": "array", "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/capability"}},
+              "allowedActionClasses": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/actionClass"}},
+              "allowedDataClasses": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/dataClass"}},
+              "allowedZones": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/zone"}},
+              "allowedRetentions": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/retention"}},
+              "candidateIds": {"type": "array", "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/id"}},
+              "maximumCostMicrousd": {"type": "integer", "minimum": 0},
+              "fallback": {
+                "type": "object", "additionalProperties": false,
+                "required": ["maxRouteAttempts", "retryableFailureClasses"],
+                "properties": {
+                  "maxRouteAttempts": {"type": "integer", "minimum": 1, "maximum": 2},
+                  "retryableFailureClasses": {
+                    "type": "array", "uniqueItems": true,
+                    "items": {"enum": ["capacity", "transport-retryable"]}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

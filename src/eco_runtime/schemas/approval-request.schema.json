@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai.ecosystem.local/schemas/runtime/approval-request.schema.json",
+  "title": "ApprovalRequest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "runtime.ai.ecosystem/v1alpha1" },
+    "kind": { "const": "ApprovalRequest" },
+    "metadata": { "$ref": "#/$defs/metadata" },
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["proposal", "toolRequest", "subject", "authoritySubjectDigest", "displayDigest", "requestedActionClass", "humanRequired", "expiresAt"],
+      "properties": {
+        "proposal": { "$ref": "#/$defs/recordBinding" },
+        "toolRequest": { "$ref": "#/$defs/recordBinding" },
+        "subject": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "id", "digest"],
+          "properties": {
+            "kind": { "const": "WorkspaceChangeProposal" },
+            "id": { "$ref": "#/$defs/id" },
+            "digest": { "$ref": "#/$defs/sha256" }
+          }
+        },
+        "authoritySubjectDigest": { "$ref": "#/$defs/sha256" },
+        "displayDigest": { "$ref": "#/$defs/sha256" },
+        "requestedActionClass": { "const": "A2" },
+        "humanRequired": { "const": true },
+        "expiresAt": { "type": "string", "format": "date-time" }
+      }
+    }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$" },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "runId", "createdAt"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "runId": { "$ref": "#/$defs/id" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "recordBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "digest"],
+      "properties": { "id": { "$ref": "#/$defs/id" }, "digest": { "$ref": "#/$defs/sha256" } }
+    }
+  }
+}

@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "eco://research/policy/v1alpha1",
+  "title": "ResearchPolicy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "research.ai.ecosystem/v1alpha1" },
+    "kind": { "const": "ResearchPolicy" },
+    "metadata": { "$ref": "eco://research/common/v1alpha1#/$defs/metadata" },
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "domainRules", "maxRedirects", "maxWireBytes", "maxDecodedBytes",
+        "connectTimeoutMs", "readTimeoutMs", "allowedMediaTypes",
+        "credentials", "allowedQueryDataClasses", "allowedArtifactDataClasses",
+        "allowedEgressZones", "allowedRetentions", "allowedUrlQueryKeys", "searchProviderConfigDigest",
+        "maxSearchResults"
+      ],
+      "properties": {
+        "domainRules": {
+          "type": "array", "minItems": 1, "maxItems": 64,
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["host", "includeSubdomains"],
+            "properties": {
+              "host": {
+                "type": "string", "minLength": 1, "maxLength": 253,
+                "pattern": "^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)*[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+              },
+              "includeSubdomains": { "type": "boolean" }
+            }
+          }
+        },
+        "maxRedirects": { "type": "integer", "minimum": 0, "maximum": 5 },
+        "maxWireBytes": { "type": "integer", "minimum": 1, "maximum": 8388608 },
+        "maxDecodedBytes": { "type": "integer", "minimum": 1, "maximum": 16777216 },
+        "connectTimeoutMs": { "type": "integer", "minimum": 100, "maximum": 30000 },
+        "readTimeoutMs": { "type": "integer", "minimum": 100, "maximum": 60000 },
+        "allowedMediaTypes": {
+          "type": "array", "minItems": 1, "maxItems": 4, "uniqueItems": true,
+          "items": { "enum": ["application/json", "text/html", "text/markdown", "text/plain"] }
+        },
+        "credentials": { "const": "none" },
+        "allowedQueryDataClasses": {
+          "type": "array", "minItems": 1, "maxItems": 2, "uniqueItems": true,
+          "items": { "enum": ["D0", "D1"] }
+        },
+        "allowedArtifactDataClasses": {
+          "type": "array", "minItems": 1, "maxItems": 4, "uniqueItems": true,
+          "items": { "$ref": "eco://research/common/v1alpha1#/$defs/dataClass" }
+        },
+        "allowedEgressZones": {
+          "type": "array", "minItems": 1, "maxItems": 5, "uniqueItems": true,
+          "items": { "$ref": "eco://research/common/v1alpha1#/$defs/zone" }
+        },
+        "allowedRetentions": {
+          "type": "array", "minItems": 1, "maxItems": 3, "uniqueItems": true,
+          "items": { "$ref": "eco://research/common/v1alpha1#/$defs/retention" }
+        },
+        "allowedUrlQueryKeys": {
+          "type": "array", "maxItems": 32, "uniqueItems": true,
+          "items": {
+            "type": "string", "minLength": 1, "maxLength": 64,
+            "pattern": "^[a-z][a-z0-9._-]*$"
+          }
+        },
+        "searchProviderConfigDigest": { "$ref": "eco://research/common/v1alpha1#/$defs/sha256" },
+        "maxSearchResults": { "type": "integer", "minimum": 1, "maximum": 50 }
+      }
+    }
+  }
+}

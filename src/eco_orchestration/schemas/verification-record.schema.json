@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "eco://orchestration/verification-record/v1alpha1",
+  "title": "VerificationRecord",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "orchestration.ai.ecosystem/v1alpha1" },
+    "kind": { "const": "VerificationRecord" },
+    "metadata": { "$ref": "eco://orchestration/common/v1alpha1#/$defs/metadataRun" },
+    "spec": {
+      "type": "object", "additionalProperties": false,
+      "required": ["planId", "planDigest", "claim", "verifiedByRole", "rubricDigest", "evidence", "status"],
+      "properties": {
+        "planId": { "$ref": "eco://orchestration/common/v1alpha1#/$defs/identifier" },
+        "planDigest": { "$ref": "eco://orchestration/common/v1alpha1#/$defs/sha256" },
+        "claim": { "$ref": "eco://orchestration/common/v1alpha1#/$defs/recordBinding" },
+        "verifiedByRole": { "const": "verifier" },
+        "rubricDigest": { "$ref": "eco://orchestration/common/v1alpha1#/$defs/sha256" },
+        "evidence": {
+          "type": "array", "maxItems": 1000,
+          "items": { "$ref": "eco://orchestration/common/v1alpha1#/$defs/recordBinding" }
+        },
+        "status": { "enum": ["verified", "insufficient", "contradicted"] }
+      }
+    }
+  }
+}

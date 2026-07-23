@@ -1,0 +1,1 @@
+Assess this article about building a multi-model AI team: what are its core claims, which claims are supported by evidence in the text itself, and which are unsupported marketing assertions? Summarize what a careful engineering team should adopt versus verify independently.

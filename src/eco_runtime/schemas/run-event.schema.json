@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai.ecosystem.local/schemas/runtime/run-event.schema.json",
+  "title": "RunEvent",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "runtime.ai.ecosystem/v1alpha1" },
+    "kind": { "const": "RunEvent" },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "runId", "sequence", "occurredAt", "producer", "producerIssuer", "previousEventDigest"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "runId": { "$ref": "#/$defs/id" },
+        "sequence": { "type": "integer", "minimum": 1 },
+        "occurredAt": { "type": "string", "format": "date-time" },
+        "producer": { "enum": ["runtime", "policy", "broker", "adapter"] },
+        "producerIssuer": { "$ref": "#/$defs/id" },
+        "previousEventDigest": {
+          "oneOf": [
+            { "$ref": "#/$defs/sha256" },
+            { "type": "null" }
+          ]
+        }
+      }
+    },
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "outcome"],
+      "properties": {
+        "type": {
+          "enum": [
+            "run.received",
+            "run.validated",
+            "plan.created",
+            "policy.allowed",
+            "policy.denied",
+            "no-model.policy.allowed",
+            "no-model.policy.denied",
+            "adapter.started",
+            "adapter.completed",
+            "adapter.failed",
+            "no-model.workflow.started",
+            "no-model.read.requested",
+            "no-model.read.allowed",
+            "no-model.read.started",
+            "no-model.read.denied",
+            "no-model.read.completed",
+            "no-model.read.failed",
+            "no-model.workflow.succeeded",
+            "tool.requested",
+            "tool.allowed",
+            "tool.denied",
+            "tool.cancelled",
+            "tool.completed",
+            "tool.failed",
+            "artifact.recorded",
+            "budget.exhausted",
+            "run.succeeded",
+            "run.failed",
+            "run.cancelled",
+            "run.exhausted"
+          ]
+        },
+        "outcome": { "enum": ["pending", "success", "denied", "failed", "cancelled", "exhausted"] },
+        "subjectId": { "$ref": "#/$defs/id" },
+        "subjectDigest": { "$ref": "#/$defs/sha256" },
+        "scopeSlot": { "enum": ["slot-1", "slot-2", "slot-3"] },
+        "entryDigest": { "$ref": "#/$defs/sha256" },
+        "contentDigest": { "$ref": "#/$defs/sha256" },
+        "headingCheck": { "enum": ["pass", "fail"] },
+        "scopeEntries": {
+          "type": "array", "minItems": 3, "maxItems": 3,
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["slot", "entryDigest"],
+            "properties": {
+              "slot": { "enum": ["slot-1", "slot-2", "slot-3"] },
+              "entryDigest": { "$ref": "#/$defs/sha256" }
+            }
+          }
+        },
+        "resultDigest": { "$ref": "#/$defs/sha256" },
+        "reasonCode": { "type": "string", "pattern": "^ECO_[A-Z0-9_]+$" },
+        "metrics": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "durationMs": { "type": "integer", "minimum": 0 },
+            "inputTokens": { "type": "integer", "minimum": 0 },
+            "outputTokens": { "type": "integer", "minimum": 0 },
+            "byteCount": { "type": "integer", "minimum": 0 },
+            "modelRequests": { "type": "integer", "minimum": 0 },
+            "toolRequests": { "type": "integer", "minimum": 0 },
+            "costMicrousd": { "type": "integer", "minimum": 0 }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$" },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+  }
+}

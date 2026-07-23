@@ -1,0 +1,31 @@
+{
+  "declaredProfile": "linux-native",
+  "probeInputs": {
+    "version": 1,
+    "os": {"name": "posix", "system": "Linux"},
+    "signals": {
+      "wsl": {"environment": false, "kernel": false},
+      "container": {"environment": false, "filesystem": false},
+      "hostedCi": {"environment": false, "provider": false}
+    },
+    "executables": [
+      {"name": "claude", "present": true},
+      {"name": "codex", "present": true},
+      {"name": "cursor", "present": true},
+      {"name": "docker", "present": false},
+      {"name": "gemini", "present": true},
+      {"name": "git", "present": true},
+      {"name": "node", "present": false},
+      {"name": "nvidia-smi", "present": true},
+      {"name": "ollama", "present": true},
+      {"name": "python", "present": true}
+    ],
+    "clients": [
+      {"id": "claude", "available": true},
+      {"id": "codex", "available": true},
+      {"id": "copilot", "available": true},
+      {"id": "cursor", "available": false},
+      {"id": "gemini", "available": false}
+    ]
+  }
+}

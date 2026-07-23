@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "eco://research/capability/v1alpha1",
+  "title": "ResearchCapability",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "research.ai.ecosystem/v1alpha1" },
+    "kind": { "const": "ResearchCapability" },
+    "metadata": { "$ref": "eco://research/common/v1alpha1#/$defs/metadata" },
+    "spec": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "policyDigest", "providerConfigDigest", "actions", "validFrom", "validUntil",
+        "keyId", "signature"
+      ],
+      "properties": {
+        "policyDigest": { "$ref": "eco://research/common/v1alpha1#/$defs/sha256" },
+        "providerConfigDigest": { "$ref": "eco://research/common/v1alpha1#/$defs/sha256" },
+        "actions": {
+          "type": "array", "minItems": 1, "maxItems": 2, "uniqueItems": true,
+          "items": { "enum": ["research.fetch", "research.search"] }
+        },
+        "validFrom": { "$ref": "eco://research/common/v1alpha1#/$defs/timestamp" },
+        "validUntil": { "$ref": "eco://research/common/v1alpha1#/$defs/timestamp" },
+        "keyId": { "$ref": "eco://research/common/v1alpha1#/$defs/identifier" },
+        "signature": { "$ref": "eco://research/common/v1alpha1#/$defs/sha256" }
+      }
+    }
+  }
+}

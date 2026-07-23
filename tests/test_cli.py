@@ -1,0 +1,300 @@
+from __future__ import annotations
+
+import json
+import subprocess
+import tempfile
+import unittest
+from contextlib import redirect_stderr, redirect_stdout
+from io import StringIO
+from pathlib import Path
+
+import yaml
+
+from eco_cli.audit import audit_repository
+from eco_cli.cli import main
+from eco_cli.constants import MANAGED_START_PREFIX
+
+
+class EcoCliTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.temp = tempfile.TemporaryDirectory()
+        self.repo = Path(self.temp.name)
+
+    def tearDown(self) -> None:
+        self.temp.cleanup()
+
+    def run_cli(self, *arguments: str) -> tuple[int, str, str]:
+        stdout, stderr = StringIO(), StringIO()
+        with redirect_stdout(stdout), redirect_stderr(stderr):
+            code = main(["--repo", str(self.repo), *arguments])
+        return code, stdout.getvalue(), stderr.getvalue()
+
+    def init(self) -> None:
+        code, _, error = self.run_cli("init", "--name", "sample")
+        self.assertEqual(code, 0, error)
+
+    def test_init_validate_render_doctor_and_uninstall(self) -> None:
+        self.init()
+        self.assertEqual(self.run_cli("validate")[0], 0)
+        self.assertEqual(self.run_cli("render")[0], 0)
+        self.assertIn(MANAGED_START_PREFIX, (self.repo / "AGENTS.md").read_text(encoding="utf-8"))
+        self.assertEqual(self.run_cli("render", "--check")[0], 0)
+        self.assertEqual(self.run_cli("doctor")[0], 0)
+        self.assertEqual(self.run_cli("lock")[0], 0)
+        lock = json.loads((self.repo / ".ai/locks/ecosystem.lock.json").read_text(encoding="utf-8"))
+        self.assertIn("instructions", lock["inputs"])
+        self.assertEqual(self.run_cli("uninstall")[0], 0)
+        self.assertFalse((self.repo / "AGENTS.md").exists())
+        self.assertTrue((self.repo / ".ai/project.yaml").exists())
+
+    def test_projection_drift_is_detected_and_repaired(self) -> None:
+        self.init()
+        self.assertEqual(self.run_cli("render")[0], 0)
+        path = self.repo / ".ai/instructions.yaml"
+        document = yaml.safe_load(path.read_text(encoding="utf-8"))
+        document["purpose"] = "A changed purpose that remains long enough for schema validation."
+        path.write_text(yaml.safe_dump(document, sort_keys=False), encoding="utf-8")
+        self.assertEqual(self.run_cli("render", "--check")[0], 1)
+        self.assertEqual(self.run_cli("render")[0], 0)
+        self.assertEqual(self.run_cli("render", "--check")[0], 0)
+
+    def test_unmanaged_surface_requires_explicit_adoption(self) -> None:
+        self.init()
+        (self.repo / "AGENTS.md").write_text("# Existing instructions\n", encoding="utf-8")
+        code, _, error = self.run_cli("render")
+        self.assertEqual(code, 2)
+        self.assertIn("Unmanaged vendor surfaces", error)
+        self.assertEqual(self.run_cli("render", "--adopt")[0], 0)
+        content = (self.repo / "AGENTS.md").read_text(encoding="utf-8")
+        self.assertIn("# Existing instructions", content)
+        self.assertIn(MANAGED_START_PREFIX, content)
+        self.assertEqual(self.run_cli("uninstall")[0], 0)
+        self.assertEqual((self.repo / "AGENTS.md").read_text(encoding="utf-8"), "# Existing instructions\n")
+
+    def test_force_creates_backup_and_uninstall_restores_original(self) -> None:
+        self.init()
+        original = "# Existing instructions\n\nDo not lose me.\n"
+        (self.repo / "AGENTS.md").write_text(original, encoding="utf-8")
+        self.assertEqual(self.run_cli("render", "--force")[0], 0)
+        self.assertNotEqual((self.repo / "AGENTS.md").read_text(encoding="utf-8"), original)
+        self.assertEqual(self.run_cli("uninstall")[0], 0)
+        self.assertEqual((self.repo / "AGENTS.md").read_text(encoding="utf-8"), original)
+
+    def test_secret_literal_is_rejected_without_printing_value(self) -> None:
+        self.init()
+        path = self.repo / ".ai/tools.yaml"
+        document = yaml.safe_load(path.read_text(encoding="utf-8"))
+        document["tools"][0]["credentialRef"] = "literal-super-secret-value"
+        path.write_text(yaml.safe_dump(document, sort_keys=False), encoding="utf-8")
+        code, _, error = self.run_cli("validate")
+        self.assertEqual(code, 1)
+        self.assertIn("credentialRef", error)
+        self.assertNotIn("literal-super-secret-value", error)
+
+    def test_trust_bootstrap_rejects_literal_verification_key_without_echoing_it(self) -> None:
+        self.init()
+        path = self.repo / ".ai/trust.yaml"
+        document = yaml.safe_load(path.read_text(encoding="utf-8"))
+        document["evidence"]["issuers"][0]["verificationKeyRef"] = "literal-trust-key-must-not-leak"
+        path.write_text(yaml.safe_dump(document, sort_keys=False), encoding="utf-8")
+        code, _, error = self.run_cli("validate")
+        self.assertEqual(code, 1)
+        self.assertIn("verificationKeyRef", error)
+        self.assertNotIn("literal-trust-key-must-not-leak", error)
+
+    def test_trust_bootstrap_rejects_unbound_snapshot_issuer_and_noncanonical_entry(self) -> None:
+        self.init()
+        path = self.repo / ".ai/trust.yaml"
+        document = yaml.safe_load(path.read_text(encoding="utf-8"))
+        document["repositorySnapshot"]["issuer"]["id"] = "unbound-snapshot-authority"
+        document["repositorySnapshot"]["entries"] = [
+            {"path": "../outside.md", "dataClass": "D0", "trust": "P1", "classificationAuthority": "policy"},
+            {"path": "../outside.md", "dataClass": "D0", "trust": "P1", "classificationAuthority": "policy"},
+        ]
+        path.write_text(yaml.safe_dump(document, sort_keys=False), encoding="utf-8")
+        code, _, error = self.run_cli("validate")
+        self.assertEqual(code, 1)
+        self.assertIn("not present in evidence issuer policies", error)
+        self.assertIn("canonical repository-relative path", error)
+
+    def test_trust_bootstrap_requires_exact_deployment_and_suite_issuer_binding(self) -> None:
+        self.init()
+        deployments_path = self.repo / ".ai/deployments.yaml"
+        deployments = yaml.safe_load(deployments_path.read_text(encoding="utf-8"))
+        deployments["deployments"] = [
+            {
+                "id": "local-test",
+                "provider": "local",
+                "adapter": "test",
+                "model": "test-model",
+                "zone": "Z1",
+                "allowedDataClasses": ["D0"],
+                "artifactTrust": "P1",
+                "declaredCapabilities": ["model.text"],
+                "enabled": False,
+            }
+        ]
+        deployments_path.write_text(yaml.safe_dump(deployments, sort_keys=False), encoding="utf-8")
+        path = self.repo / ".ai/trust.yaml"
+        document = yaml.safe_load(path.read_text(encoding="utf-8"))
+        digest = "a" * 64
+        document["conformance"] = {
+            "trustedSuites": [{"id": "read-only", "version": "1", "digest": digest}],
+            "requiredObservations": [
+                {
+                    "deploymentId": "local-test",
+                    "suiteDigest": digest,
+                    "envelopeRef": "env:ECO_LOCAL_TEST_ENVELOPE_FILE",
+                }
+            ],
+        }
+        path.write_text(yaml.safe_dump(document, sort_keys=False), encoding="utf-8")
+        code, _, error = self.run_cli("validate")
+        self.assertEqual(code, 1)
+        self.assertIn("no issuer is exactly allowlisted", error)
+
+    def test_trust_bootstrap_rejects_duplicate_entries_suites_and_observations(self) -> None:
+        self.init()
+        deployments_path = self.repo / ".ai/deployments.yaml"
+        deployments = yaml.safe_load(deployments_path.read_text(encoding="utf-8"))
+        deployments["deployments"] = [
+            {
+                "id": "local-test",
+                "provider": "local",
+                "adapter": "test",
+                "model": "test-model",
+                "zone": "Z1",
+                "allowedDataClasses": ["D0"],
+                "artifactTrust": "P1",
+                "declaredCapabilities": ["model.text"],
+                "enabled": False,
+            }
+        ]
+        deployments_path.write_text(yaml.safe_dump(deployments, sort_keys=False), encoding="utf-8")
+        path = self.repo / ".ai/trust.yaml"
+        document = yaml.safe_load(path.read_text(encoding="utf-8"))
+        document["repositorySnapshot"]["entries"] = [
+            {"path": "README.md", "dataClass": "D0", "trust": "P1", "classificationAuthority": "policy"},
+            {"path": "README.md", "dataClass": "D0", "trust": "P1", "classificationAuthority": "policy"},
+        ]
+        digest = "a" * 64
+        issuer = document["evidence"]["issuers"][0]
+        issuer["allowedKinds"].append("AdapterConformanceProfile")
+        issuer["allowedDeployments"] = ["local-test"]
+        issuer["allowedSuiteDigests"] = [digest]
+        observation = {
+            "deploymentId": "local-test",
+            "suiteDigest": digest,
+            "envelopeRef": "env:ECO_LOCAL_TEST_ENVELOPE_FILE",
+        }
+        document["conformance"] = {
+            "trustedSuites": [
+                {"id": "read-only", "version": "1", "digest": digest},
+                {"id": "read-only-duplicate", "version": "1", "digest": digest},
+            ],
+            "requiredObservations": [observation, observation.copy()],
+        }
+        path.write_text(yaml.safe_dump(document, sort_keys=False), encoding="utf-8")
+        code, _, error = self.run_cli("validate")
+        self.assertEqual(code, 1)
+        self.assertIn("duplicate snapshot path", error)
+        self.assertIn("duplicate suite digest", error)
+        self.assertIn("duplicate deployment observation", error)
+
+    def test_cross_contract_capability_mismatch_is_rejected(self) -> None:
+        self.init()
+        path = self.repo / ".ai/tools.yaml"
+        document = yaml.safe_load(path.read_text(encoding="utf-8"))
+        document["tools"][0]["capability"] = "missing.capability"
+        path.write_text(yaml.safe_dump(document, sort_keys=False), encoding="utf-8")
+        code, _, error = self.run_cli("validate")
+        self.assertEqual(code, 1)
+        self.assertIn("unknown capability", error)
+
+    def test_role_candidate_artifact_trust_mismatch_is_rejected(self) -> None:
+        self.init()
+        path = self.repo / ".ai/deployments.yaml"
+        document = yaml.safe_load(path.read_text(encoding="utf-8"))
+        document["deployments"] = [
+            {
+                "id": "weak-local",
+                "provider": "local",
+                "adapter": "test",
+                "model": "test-model",
+                "zone": "Z1",
+                "allowedDataClasses": ["D0", "D1"],
+                "artifactTrust": "P1",
+                "declaredCapabilities": ["model.text"],
+                "enabled": False,
+            }
+        ]
+        role = document["logicalRoles"]["code.read"]
+        role["minimumArtifactTrust"] = "P2"
+        role["candidates"] = ["weak-local"]
+        path.write_text(yaml.safe_dump(document, sort_keys=False), encoding="utf-8")
+        code, _, error = self.run_cli("validate")
+        self.assertEqual(code, 1)
+        self.assertIn("artifact trust", error)
+
+    def test_enabled_deployment_requires_exact_identity_and_observation(self) -> None:
+        self.init()
+        path = self.repo / ".ai/deployments.yaml"
+        document = yaml.safe_load(path.read_text(encoding="utf-8"))
+        document["deployments"] = [
+            {
+                "id": "unresolved-local",
+                "provider": "configured-at-runtime",
+                "adapter": "openai-compatible",
+                "model": "configured-at-runtime",
+                "zone": "Z1",
+                "allowedDataClasses": ["D0"],
+                "artifactTrust": "P1",
+                "declaredCapabilities": ["model.text"],
+                "enabled": True,
+            }
+        ]
+        path.write_text(yaml.safe_dump(document, sort_keys=False), encoding="utf-8")
+        code, _, error = self.run_cli("validate")
+        self.assertEqual(code, 1)
+        self.assertIn("deployments", error)
+        self.assertIn("required property", error)
+
+    def test_projection_path_cannot_escape_repository(self) -> None:
+        self.init()
+        path = self.repo / ".ai/instructions.yaml"
+        document = yaml.safe_load(path.read_text(encoding="utf-8"))
+        document["projections"]["codex"] = "../outside.md"
+        path.write_text(yaml.safe_dump(document, sort_keys=False), encoding="utf-8")
+        code, _, error = self.run_cli("validate")
+        self.assertEqual(code, 1)
+        self.assertIn("projections.codex", error)
+        self.assertFalse((self.repo.parent / "outside.md").exists())
+
+    def test_audit_reports_locations_not_secret_values(self) -> None:
+        (self.repo / "config.yaml").write_text("api_key: should-not-be-returned\n", encoding="utf-8")
+        (self.repo / "README.md").write_text(
+            "Use `env:`, `config:`, or `secret://` references.\n", encoding="utf-8"
+        )
+        subprocess.run(["git", "-C", str(self.repo), "init"], check=True, capture_output=True)
+        subprocess.run(
+            ["git", "-C", str(self.repo), "add", "config.yaml", "README.md"],
+            check=True,
+            capture_output=True,
+        )
+        result = audit_repository(self.repo)
+        serialized = json.dumps(result)
+        self.assertNotIn("should-not-be-returned", serialized)
+        self.assertEqual(
+            result["potentialSecretLocations"],
+            [
+                {
+                    "path": "config.yaml",
+                    "line": 1,
+                    "reason": "secret-like key; value intentionally not displayed",
+                }
+            ],
+        )
+
+
+if __name__ == "__main__":
+    unittest.main()

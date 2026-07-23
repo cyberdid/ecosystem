@@ -1,0 +1,10 @@
+{
+  "deploymentIds": [
+    "cloud-claude-sonnet-5",
+    "local-ollama-qwen3-0.6b"
+  ],
+  "evaluatedAt": "2026-07-15T12:58:25.628337Z",
+  "evidenceDigest": "1c7e8d1a08006c6606cc734b83f94d5a2df7082a0985a48a820a1fb8c9e46927",
+  "status": "pass",
+  "suiteDigest": "08d7ee84c62d53c3ae08419623b48cfb6d645fe8c127ddcd090295e194826dd6"
+}

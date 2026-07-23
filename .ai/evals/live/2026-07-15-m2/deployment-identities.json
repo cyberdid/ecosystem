@@ -1,0 +1,69 @@
+{
+  "deployments": [
+    {
+      "identityDigest": "230d8461ae618f9b8eab69ad0f748db5e8d5b4c8aabb0fad0a71d29e076b14a7",
+      "record": {
+        "adapter": "ollama-evaluation",
+        "allowedDataClasses": [
+          "D0"
+        ],
+        "artifactTrust": "P1",
+        "declaredCapabilities": [
+          "model.text"
+        ],
+        "enabled": false,
+        "endpointRef": "config:ollama-loopback-qwen3-0.6b",
+        "id": "local-ollama-qwen3-0.6b",
+        "identity": {
+          "adapterVersion": "ollama-eval-v1",
+          "endpointReferenceDigest": "537c5274e1cb9abc4e1636476862d3cca8335a1ec0c83ecfbcc907b12649a991",
+          "modelRevision": "sha256:7df6b6e09427a769808717c0a93cadc4ae99ed4eb8bf5ca557c90846becea435",
+          "quantization": "manifest-pinned",
+          "runtimeEngine": "ollama",
+          "runtimeVersion": "0.32.0"
+        },
+        "model": "qwen3:0.6b",
+        "provider": "local",
+        "region": "local",
+        "retention": "local-runtime-dependent",
+        "trainingUse": "prohibited",
+        "zone": "Z1"
+      }
+    },
+    {
+      "identityDigest": "d9e9fba035867b9006dd7cd9d81e8f5200cc5a960ae0d70db1b27d84af24a144",
+      "record": {
+        "adapter": "provider-cli-evaluation",
+        "allowedDataClasses": [
+          "D0"
+        ],
+        "artifactTrust": "P1",
+        "declaredCapabilities": [
+          "model.text"
+        ],
+        "enabled": false,
+        "endpointRef": "config:claude-cli-broker",
+        "id": "cloud-claude-sonnet-5",
+        "identity": {
+          "adapterVersion": "claude-cli-eval-v1",
+          "endpointReferenceDigest": "9b9513eedcd518e1083634acbab496127317137a611b7e6cfadf76cc275a28b8",
+          "modelRevision": "claude-sonnet-5",
+          "quantization": "provider-managed",
+          "runtimeEngine": "claude-code-cli",
+          "runtimeVersion": "2.1.202+sha256:7ff0787ebdc19fc509ccea8886ebf6a53ad8213407fa3a2b7c6d1446efc419f6"
+        },
+        "model": "claude-sonnet-5",
+        "provider": "anthropic",
+        "region": "provider-managed",
+        "retention": "provider-subscription-policy",
+        "trainingUse": "unknown",
+        "zone": "Z3"
+      }
+    }
+  ],
+  "suite": {
+    "digest": "b907cb8665d9717d765ccea552480139eacea28042d3feedc29191d3d6f67b8a",
+    "id": "m2-live-local-cloud",
+    "version": "1.0.0"
+  }
+}

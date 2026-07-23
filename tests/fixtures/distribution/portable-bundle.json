@@ -1,0 +1,64 @@
+{
+  "version": "0.4.0",
+  "sourceRevision": "0123456789abcdef0123456789abcdef01234567",
+  "lock": {
+    "path": "uv.lock",
+    "content": "version = 1\nrevision = 3\nrequires-python = \">=3.11\"\n"
+  },
+  "mainWheel": {
+    "path": "ai_ecosystem_harness-0.4.0-py3-none-any.whl",
+    "entries": [
+      {"path": "eco_cli/__init__.py", "content": "VERSION = \"0.4.0\"\n"},
+      {"path": "eco_cli/authority.py", "content": "# fixture authority input boundary\n"},
+      {"path": "eco_cli/cli.py", "content": "# fixture CLI\n"},
+      {"path": "eco_cli/distribution.py", "content": "# fixture distribution boundary\n"},
+      {"path": "eco_cli/platform_profiles.py", "content": "# fixture platform boundary\n"},
+      {"path": "eco_cli/team.py", "content": "# fixture team CLI boundary\n"},
+      {"path": "eco_runtime/__init__.py", "content": "# fixture runtime\n"},
+      {"path": "eco_runtime/policy_bundle.py", "content": "# fixture policy bundle\n"},
+      {"path": "eco_runtime/team_access.py", "content": "# fixture team access\n"},
+      {"path": "eco_runtime/team_actor.py", "content": "# fixture team actor\n"},
+      {"path": "eco_runtime/team_approval.py", "content": "# fixture team approval\n"},
+      {"path": "eco_runtime/team_authority.py", "content": "# fixture team authority\n"},
+      {"path": "eco_runtime/team_identity.py", "content": "# fixture team identity\n"},
+      {"path": "eco_runtime/team_migration.py", "content": "# fixture team migration\n"},
+      {"path": "eco_runtime/team_rotation.py", "content": "# fixture team rotation\n"},
+      {"path": "eco_runtime/team_runtime.py", "content": "# fixture team runtime\n"},
+      {"path": "eco_cli/schemas/distribution-manifest.schema.json", "content": "{\"title\":\"DistributionManifest fixture\"}\n"},
+      {"path": "eco_cli/schemas/platform-profile.schema.json", "content": "{\"title\":\"PlatformProfile fixture\"}\n"},
+      {"path": "eco_cli/schemas/adapter-capability-profile.schema.json", "content": "{\"title\":\"AdapterCapabilityProfile fixture\"}\n"},
+      {"path": "eco_runtime/schemas/identity-key.schema.json", "content": "{\"title\":\"IdentityKey fixture\"}\n"},
+      {"path": "eco_runtime/schemas/membership-binding.schema.json", "content": "{\"title\":\"MembershipBinding fixture\"}\n"},
+      {"path": "eco_runtime/schemas/principal-identity.schema.json", "content": "{\"title\":\"PrincipalIdentity fixture\"}\n"},
+      {"path": "eco_runtime/schemas/team-access-policy.schema.json", "content": "{\"title\":\"TeamAccessPolicy fixture\"}\n"},
+      {"path": "eco_runtime/schemas/team-approval.schema.json", "content": "{\"title\":\"TeamApproval fixture\"}\n"},
+      {"path": "eco_runtime/schemas/team-identity.schema.json", "content": "{\"title\":\"TeamIdentity fixture\"}\n"},
+      {"path": "eco_runtime/schemas/team-key-rotation.schema.json", "content": "{\"title\":\"TeamKeyRotation fixture\"}\n"},
+      {"path": "eco_runtime/schemas/team-policy-bundle.schema.json", "content": "{\"title\":\"TeamPolicyBundle fixture\"}\n"},
+      {"path": "ai_ecosystem_harness-0.4.0.dist-info/METADATA", "content": "Metadata-Version: 2.1\nName: ai-ecosystem-harness\nVersion: 0.4.0\nRequires-Python: >=3.11\n\n"},
+      {"path": "ai_ecosystem_harness-0.4.0.dist-info/WHEEL", "content": "Wheel-Version: 1.0\nGenerator: eco-fixture\nRoot-Is-Purelib: true\nTag: py3-none-any\n"},
+      {"path": "ai_ecosystem_harness-0.4.0.dist-info/entry_points.txt", "content": "[console_scripts]\neco = eco_cli.cli:main\n"},
+      {"path": "ai_ecosystem_harness-0.4.0.dist-info/RECORD", "content": "eco_cli/__init__.py,,\neco_cli/authority.py,,\neco_cli/cli.py,,\neco_cli/distribution.py,,\neco_cli/platform_profiles.py,,\neco_cli/team.py,,\neco_runtime/__init__.py,,\neco_runtime/policy_bundle.py,,\neco_runtime/team_access.py,,\neco_runtime/team_actor.py,,\neco_runtime/team_approval.py,,\neco_runtime/team_authority.py,,\neco_runtime/team_identity.py,,\neco_runtime/team_migration.py,,\neco_runtime/team_rotation.py,,\neco_runtime/team_runtime.py,,\neco_cli/schemas/distribution-manifest.schema.json,,\neco_cli/schemas/platform-profile.schema.json,,\neco_cli/schemas/adapter-capability-profile.schema.json,,\neco_runtime/schemas/identity-key.schema.json,,\neco_runtime/schemas/membership-binding.schema.json,,\neco_runtime/schemas/principal-identity.schema.json,,\neco_runtime/schemas/team-access-policy.schema.json,,\neco_runtime/schemas/team-approval.schema.json,,\neco_runtime/schemas/team-identity.schema.json,,\neco_runtime/schemas/team-key-rotation.schema.json,,\neco_runtime/schemas/team-policy-bundle.schema.json,,\nai_ecosystem_harness-0.4.0.dist-info/METADATA,,\nai_ecosystem_harness-0.4.0.dist-info/WHEEL,,\nai_ecosystem_harness-0.4.0.dist-info/entry_points.txt,,\nai_ecosystem_harness-0.4.0.dist-info/RECORD,,\n"}
+    ]
+  },
+  "dependencyWheels": [
+    {
+      "path": "jsonschema-4.25.1-py3-none-any.whl",
+      "entries": [
+        {"path": "jsonschema/__init__.py", "content": "# fixture jsonschema\n"},
+        {"path": "jsonschema-4.25.1.dist-info/METADATA", "content": "Metadata-Version: 2.1\nName: jsonschema\nVersion: 4.25.1\n\n"},
+        {"path": "jsonschema-4.25.1.dist-info/WHEEL", "content": "Wheel-Version: 1.0\nRoot-Is-Purelib: true\nTag: py3-none-any\n"},
+        {"path": "jsonschema-4.25.1.dist-info/RECORD", "content": "jsonschema/__init__.py,,\njsonschema-4.25.1.dist-info/METADATA,,\njsonschema-4.25.1.dist-info/WHEEL,,\njsonschema-4.25.1.dist-info/RECORD,,\n"}
+      ]
+    },
+    {
+      "path": "pyyaml-6.0.2-py3-none-any.whl",
+      "entries": [
+        {"path": "yaml/__init__.py", "content": "# fixture pyyaml\n"},
+        {"path": "pyyaml-6.0.2.dist-info/METADATA", "content": "Metadata-Version: 2.1\nName: PyYAML\nVersion: 6.0.2\n\n"},
+        {"path": "pyyaml-6.0.2.dist-info/WHEEL", "content": "Wheel-Version: 1.0\nRoot-Is-Purelib: true\nTag: py3-none-any\n"},
+        {"path": "pyyaml-6.0.2.dist-info/RECORD", "content": "yaml/__init__.py,,\npyyaml-6.0.2.dist-info/METADATA,,\npyyaml-6.0.2.dist-info/WHEEL,,\npyyaml-6.0.2.dist-info/RECORD,,\n"}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,165 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai.ecosystem.local/schemas/distribution/distribution-manifest.schema.json",
+  "title": "DistributionManifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "distribution.ai.ecosystem/v1alpha1" },
+    "kind": { "const": "DistributionManifest" },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "manifestDigest"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^ai-ecosystem-harness-[0-9][A-Za-z0-9._+-]{4,63}$" },
+        "version": { "$ref": "#/$defs/version" },
+        "manifestDigest": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "package",
+        "mainArtifact",
+        "dependencyArtifacts",
+        "lockDigest",
+        "sourceRevision",
+        "schemaEntries",
+        "installers",
+        "support",
+        "provenance",
+        "safety"
+      ],
+      "properties": {
+        "package": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name", "version", "entryPoint", "pythonRequires", "format"],
+          "properties": {
+            "name": { "const": "ai-ecosystem-harness" },
+            "version": { "$ref": "#/$defs/version" },
+            "entryPoint": { "const": "eco" },
+            "pythonRequires": { "const": ">=3.11" },
+            "format": { "const": "wheel" }
+          }
+        },
+        "mainArtifact": { "$ref": "#/$defs/artifact" },
+        "dependencyArtifacts": {
+          "type": "array",
+          "maxItems": 128,
+          "items": { "$ref": "#/$defs/artifact" }
+        },
+        "lockDigest": { "$ref": "#/$defs/sha256" },
+        "sourceRevision": { "type": "string", "pattern": "^[a-f0-9]{7,64}$" },
+        "schemaEntries": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 256,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "sha256", "size"],
+            "properties": {
+              "path": {
+                "type": "string",
+                "pattern": "^eco_(?:cli|runtime)/schemas/[A-Za-z0-9._/-]{1,200}\\.json$"
+              },
+              "sha256": { "$ref": "#/$defs/sha256" },
+              "size": { "type": "integer", "minimum": 1, "maximum": 67108864 }
+            }
+          }
+        },
+        "installers": {
+          "type": "array",
+          "prefixItems": [
+            { "const": "pipx" },
+            { "const": "uv-tool" },
+            { "const": "venv-pip" }
+          ],
+          "items": false,
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "support": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "operatingSystems",
+            "architecture",
+            "offlineWheelhouse",
+            "zipapp",
+            "standaloneBinary"
+          ],
+          "properties": {
+            "operatingSystems": {
+              "type": "array",
+              "prefixItems": [
+                { "const": "linux" },
+                { "const": "macos" },
+                { "const": "windows" },
+                { "const": "wsl" }
+              ],
+              "items": false,
+              "minItems": 4,
+              "maxItems": 4
+            },
+            "architecture": { "const": "python-wheel-dependent" },
+            "offlineWheelhouse": { "const": true },
+            "zipapp": { "const": false },
+            "standaloneBinary": { "const": false }
+          }
+        },
+        "provenance": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["artifactIntegrity", "originAuthentication", "sbom"],
+          "properties": {
+            "artifactIntegrity": { "const": "sha256" },
+            "originAuthentication": { "const": "not-attested" },
+            "sbom": { "const": "not-included" }
+          }
+        },
+        "safety": { "$ref": "#/$defs/safety" }
+      }
+    }
+  },
+  "$defs": {
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+[A-Za-z0-9._+-]{0,32}$"
+    },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["filename", "sha256", "size"],
+      "properties": {
+        "filename": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9](?:[A-Za-z0-9_.]*[A-Za-z0-9])?-[A-Za-z0-9][A-Za-z0-9_.!+]*(?:-[0-9][A-Za-z0-9_]*)?-[A-Za-z0-9_]+(?:\\.[A-Za-z0-9_]+)*-[A-Za-z0-9_]+(?:\\.[A-Za-z0-9_]+)*-[A-Za-z0-9_]+(?:\\.[A-Za-z0-9_]+)*\\.whl$"
+        },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "size": { "type": "integer", "minimum": 1, "maximum": 536870912 }
+      }
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "authorityCreated",
+        "installationPerformed",
+        "projectMutation",
+        "networkAccessed"
+      ],
+      "properties": {
+        "authorityCreated": { "const": false },
+        "installationPerformed": { "const": false },
+        "projectMutation": { "const": false },
+        "networkAccessed": { "const": false }
+      }
+    }
+  }
+}

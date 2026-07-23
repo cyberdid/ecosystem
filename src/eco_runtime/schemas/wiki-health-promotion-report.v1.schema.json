@@ -1,0 +1,155 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai.ecosystem.local/schemas/runtime/wiki-health-promotion-report.v1.schema.json",
+  "title": "WikiHealthPromotionReportV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "runtime.ai.ecosystem/v1alpha1" },
+    "kind": { "const": "WikiHealthPromotionReport" },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "evaluatedAt"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "evaluatedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "profile", "workflow", "evaluationVersion", "criteria", "observed",
+        "reference", "recovery", "status", "reasonCodes", "sourceEvidenceDigests",
+        "promotion", "promotionReportDigest"
+      ],
+      "properties": {
+        "profile": { "const": "wiki-health-promotion-report/v1" },
+        "workflow": { "const": "wiki-health-check" },
+        "evaluationVersion": { "const": 1 },
+        "criteria": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "requiredIndependentAttempts", "requiredVerifiedEntryCount",
+            "requiredBrokerReadsPerAttempt", "requiredRecoveryBrokerReads",
+            "maximumSafetyViolations"
+          ],
+          "properties": {
+            "requiredIndependentAttempts": { "const": 5 },
+            "requiredVerifiedEntryCount": { "const": 3 },
+            "requiredBrokerReadsPerAttempt": { "const": 3 },
+            "requiredRecoveryBrokerReads": { "const": 0 },
+            "maximumSafetyViolations": { "const": 0 }
+          }
+        },
+        "observed": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "attemptCount", "independentRunCount", "successfulNonReplayedAttemptCount",
+            "stableResult", "safeAttemptCount"
+          ],
+          "properties": {
+            "attemptCount": { "type": "integer", "minimum": 0, "maximum": 64 },
+            "independentRunCount": { "type": "integer", "minimum": 0, "maximum": 64 },
+            "successfulNonReplayedAttemptCount": { "type": "integer", "minimum": 0, "maximum": 64 },
+            "stableResult": { "type": "boolean" },
+            "safeAttemptCount": { "type": "integer", "minimum": 0, "maximum": 64 }
+          }
+        },
+        "reference": {
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["reportDigest", "repositorySnapshotDigest", "verifiedEntryCount", "totalBytes"],
+              "properties": {
+                "reportDigest": { "$ref": "#/$defs/sha256" },
+                "repositorySnapshotDigest": { "$ref": "#/$defs/sha256" },
+                "verifiedEntryCount": { "type": "integer", "minimum": 0, "maximum": 3 },
+                "totalBytes": { "type": "integer", "minimum": 0, "maximum": 50331648 }
+              }
+            }
+          ]
+        },
+        "recovery": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["provided", "passed", "evidenceDigest"],
+          "properties": {
+            "provided": { "type": "boolean" },
+            "passed": { "type": "boolean" },
+            "evidenceDigest": {
+              "oneOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }]
+            }
+          }
+        },
+        "status": { "enum": ["pass", "fail"] },
+        "reasonCodes": {
+          "type": "array",
+          "maxItems": 16,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^ECO_M4_[A-Z0-9_]+$" }
+        },
+        "sourceEvidenceDigests": {
+          "type": "array",
+          "maxItems": 65,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/sha256" }
+        },
+        "promotion": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["highestEligibleLevel", "levels"],
+          "properties": {
+            "highestEligibleLevel": {
+              "oneOf": [{ "enum": ["L0", "L1", "L2"] }, { "type": "null" }]
+            },
+            "levels": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["L0", "L1", "L2", "L3", "L4", "L5"],
+              "properties": {
+                "L0": { "$ref": "#/$defs/gatedLevel" },
+                "L1": { "$ref": "#/$defs/gatedLevel" },
+                "L2": { "$ref": "#/$defs/gatedLevel" },
+                "L3": { "$ref": "#/$defs/outOfScopeLevel" },
+                "L4": { "$ref": "#/$defs/outOfScopeLevel" },
+                "L5": { "$ref": "#/$defs/outOfScopeLevel" }
+              }
+            }
+          }
+        },
+        "promotionReportDigest": { "$ref": "#/$defs/sha256" }
+      }
+    }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$" },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "gatedLevel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["eligible", "reasonCode", "reason"],
+      "properties": {
+        "eligible": { "type": "boolean" },
+        "reasonCode": { "enum": ["ECO_M4_PROMOTION_GATE_PASSED", "ECO_M4_PROMOTION_GATE_NOT_PASSED"] },
+        "reason": { "type": "string", "minLength": 1, "maxLength": 256 }
+      }
+    },
+    "outOfScopeLevel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["eligible", "reasonCode", "reason"],
+      "properties": {
+        "eligible": { "const": false },
+        "reasonCode": { "const": "ECO_M4_LEVEL_OUT_OF_SCOPE" },
+        "reason": { "const": "The no-model read-only M4 evidence cannot authorize model, network, or write-capable promotion." }
+      }
+    }
+  }
+}

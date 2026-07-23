@@ -1,0 +1,75 @@
+{
+  "manifest": {
+    "domain": "eco-m2-live-publication-authentication-v1",
+    "evaluatedAt": "2026-07-15T12:57:39.014366Z",
+    "files": [
+      {
+        "byteLength": 2351,
+        "path": "deployment-identities.json",
+        "sha256": "0d49a851c6c3ac5a151fb382a170922e441f69ca86b13d505460140e2971d587"
+      },
+      {
+        "byteLength": 973,
+        "path": "observations/cloud-claude-sonnet-5.json",
+        "sha256": "13a1620aa9ca494e790010ba9988fcb88bdae15b3d170802c2e3c36b3f202f0f"
+      },
+      {
+        "byteLength": 1046,
+        "path": "observations/local-ollama-qwen3-0.6b.json",
+        "sha256": "91d791f489d11380183d8f0ef16795095b7f85be84a9d157c462aec924646096"
+      },
+      {
+        "byteLength": 934,
+        "path": "policy-gate-receipt.json",
+        "sha256": "fd297d12c5f3aa46041a1eb6897f52f501f612bd438385e710357fe9f0b9d1e0"
+      },
+      {
+        "byteLength": 1002,
+        "path": "policy-gate/policy-decision.json",
+        "sha256": "8722d9900d6c54ebe984cb6fe4696c64bad48743951edaf006a4626cb4e29c09"
+      },
+      {
+        "byteLength": 3452,
+        "path": "policy-gate/run-plan.json",
+        "sha256": "3898daf6af1e01460e4b3ba6de7446fe8befea200902b491e4276ef801bf2828"
+      },
+      {
+        "byteLength": 1047,
+        "path": "policy-gate/run-request.json",
+        "sha256": "f2c92af2bbc9cc36596e99d3c97e6f0b9a72c852f24077359372dab39f2ad599"
+      },
+      {
+        "byteLength": 2320,
+        "path": "signed-evidence.json",
+        "sha256": "7ba6510fb463fc96544f96e3508fa3ad674d05621fc7c6c4a9bb31206698b40a"
+      },
+      {
+        "byteLength": 329,
+        "path": "summary.json",
+        "sha256": "319a0597e8a448a3b3b70cfdcaf29fad0816ce3c446a3baebffe695577373d8a"
+      },
+      {
+        "byteLength": 1902,
+        "path": "trust-policy-receipt.json",
+        "sha256": "c460812746deefec12c83c7a740845ec40710645a1e01d80c67aca4b0e17ed6b"
+      },
+      {
+        "byteLength": 1309,
+        "path": "trusted-observations/cloud-claude-sonnet-5.envelope.json",
+        "sha256": "b5a7ce3d207558a09b7024a1747e64663200911ce5e9f7e9afdfab9f23ff20cc"
+      },
+      {
+        "byteLength": 1339,
+        "path": "trusted-observations/local-ollama-qwen3-0.6b.envelope.json",
+        "sha256": "4443d3b586dc3da390f0698a4788a813fe2d013822e24c346823720bbb8d38c7"
+      }
+    ],
+    "version": "1"
+  },
+  "manifestDigest": "ffda4aa99095b9ff4d5911041f2358e28c3a01203474af6182e817946611bfad",
+  "signature": {
+    "algorithm": "HMAC-SHA256",
+    "keyId": "m2-live-evaluation-key-1",
+    "value": "91e8f8416c2edabf898c7c91ed42f1d2d2be46e258dc82b39c42938f42849b31"
+  }
+}

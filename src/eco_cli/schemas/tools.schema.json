@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai.ecosystem.local/schemas/tools.schema.json",
+  "title": "ToolCatalog",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "tools"],
+  "properties": {
+    "apiVersion": { "const": "ai.ecosystem/v1alpha1" },
+    "kind": { "const": "ToolCatalog" },
+    "tools": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "transport", "binding", "capability", "actionClass", "allowedSandboxes", "enabled"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z][a-z0-9._-]+$" },
+          "transport": { "enum": ["builtin", "mcp", "command", "http"] },
+          "binding": { "type": "string", "minLength": 1 },
+          "capability": { "type": "string", "minLength": 1 },
+          "actionClass": { "enum": ["A0", "A1", "A2", "A3", "A4"] },
+          "allowedSandboxes": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "enum": ["inspect", "workspace-change", "build-test", "staging", "production"] } },
+          "credentialRef": { "type": "string", "pattern": "^(?:env:|secret://)" },
+          "enabled": { "type": "boolean" }
+        }
+      }
+    }
+  }
+}
+

@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai.ecosystem.local/schemas/runtime/no-model-run-plan.schema.json",
+  "title": "NoModelRunPlan",
+  "description": "An exact read-only plan with no deployment route, model lifecycle, or write authority.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "runtime.ai.ecosystem/v1alpha1" },
+    "kind": { "const": "NoModelRunPlan" },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "runId", "createdAt"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "runId": { "$ref": "#/$defs/id" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["profile", "requestDigest", "project", "effectivePolicy", "repositorySnapshot", "workflow", "budget"],
+      "properties": {
+        "profile": { "const": "no-model-a1/v1alpha1" },
+        "requestDigest": { "$ref": "#/$defs/sha256" },
+        "project": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "semanticConfigDigest", "digestProfile", "contractProfile", "schemaBundleDigest", "policyEngineVersion", "sourceDigests"],
+          "properties": {
+            "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$" },
+            "semanticConfigDigest": { "$ref": "#/$defs/sha256" },
+            "digestProfile": { "const": "eco-python-json-v1" },
+            "contractProfile": { "const": "runtime-contracts-v1alpha1" },
+            "schemaBundleDigest": { "$ref": "#/$defs/sha256" },
+            "policyEngineVersion": { "type": "string", "minLength": 1 },
+            "sourceDigests": {
+              "type": "object", "minProperties": 1, "maxProperties": 64,
+              "additionalProperties": { "$ref": "#/$defs/sha256" },
+              "propertyNames": { "pattern": "^[a-z][a-z0-9._-]+$" }
+            }
+          }
+        },
+        "effectivePolicy": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["dataClass", "maximumActionClass", "sandbox", "network", "modelRequests", "workspaceWrites"],
+          "properties": {
+            "dataClass": { "const": "D0" },
+            "maximumActionClass": { "const": "A1" },
+            "sandbox": { "const": "inspect" },
+            "network": { "const": "deny" },
+            "modelRequests": { "const": 0 },
+            "workspaceWrites": { "const": 0 }
+          }
+        },
+        "repositorySnapshot": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "digest", "rootIdentityDigest", "trust", "evidence"],
+          "properties": {
+            "id": { "$ref": "#/$defs/id" },
+            "digest": { "$ref": "#/$defs/sha256" },
+            "rootIdentityDigest": { "$ref": "#/$defs/sha256" },
+            "trust": { "const": "P1" },
+            "evidence": { "$ref": "#/$defs/evidenceProvenance" }
+          }
+        },
+        "workflow": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "scopeDigest", "entryCount", "scopeSlots"],
+          "properties": {
+            "id": { "const": "wiki-health-check" },
+            "scopeDigest": { "$ref": "#/$defs/sha256" },
+            "entryCount": { "const": 3 },
+            "scopeSlots": {
+              "type": "array", "minItems": 3, "maxItems": 3,
+              "items": {
+                "type": "object", "additionalProperties": false,
+                "required": ["slot", "entryDigest"],
+                "properties": {
+                  "slot": { "enum": ["slot-1", "slot-2", "slot-3"] },
+                  "entryDigest": { "$ref": "#/$defs/sha256" }
+                }
+              }
+            }
+          }
+        },
+        "budget": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "maxDurationSeconds", "maxReadRequests", "maxInputBytes",
+            "maxModelRequests", "maxNetworkRequests", "maxWorkspaceWrites"
+          ],
+          "properties": {
+            "maxDurationSeconds": { "const": 30 },
+            "maxReadRequests": { "const": 3 },
+            "maxInputBytes": { "type": "integer", "minimum": 0, "maximum": 50331648 },
+            "maxModelRequests": { "const": 0 },
+            "maxNetworkRequests": { "const": 0 },
+            "maxWorkspaceWrites": { "const": 0 }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$" },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "evidenceProvenance": {
+      "type": "object", "additionalProperties": false,
+      "required": ["envelopeId", "envelopeDigest", "issuerId", "keyId", "issuedAt", "expiresAt"],
+      "properties": {
+        "envelopeId": { "$ref": "#/$defs/id" }, "envelopeDigest": { "$ref": "#/$defs/sha256" },
+        "issuerId": { "$ref": "#/$defs/id" }, "keyId": { "$ref": "#/$defs/id" },
+        "issuedAt": { "type": "string", "format": "date-time" }, "expiresAt": { "type": "string", "format": "date-time" }
+      }
+    }
+  }
+}

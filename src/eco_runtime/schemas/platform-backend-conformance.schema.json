@@ -1,0 +1,138 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai.ecosystem.local/schemas/runtime/platform-backend-conformance.schema.json",
+  "title": "PlatformBackendConformanceProfile",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "runtime.ai.ecosystem/v1alpha1" },
+    "kind": { "const": "PlatformBackendConformanceProfile" },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "platformProfileId", "testedAt", "validUntil"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "platformProfileId": { "$ref": "#/$defs/platformId" },
+        "testedAt": { "type": "string", "format": "date-time" },
+        "validUntil": { "type": "string", "format": "date-time" }
+      }
+    },
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "platformProfileDigest",
+        "platform",
+        "distributionManifestDigest",
+        "backend",
+        "runnerDigest",
+        "suite",
+        "status",
+        "observedCapabilities",
+        "probes",
+        "deviationCodes",
+        "safety"
+      ],
+      "properties": {
+        "platformProfileDigest": { "$ref": "#/$defs/sha256" },
+        "platform": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "operatingSystem", "architecture", "context"],
+          "properties": {
+            "id": { "$ref": "#/$defs/platformId" },
+            "operatingSystem": { "enum": ["linux", "macos", "windows", "unsupported"] },
+            "architecture": { "enum": ["x86_64", "aarch64", "other"] },
+            "context": { "enum": ["native", "wsl", "container", "hosted-ci"] }
+          }
+        },
+        "distributionManifestDigest": { "$ref": "#/$defs/sha256" },
+        "backend": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "version", "implementationDigest", "instanceDigest"],
+          "properties": {
+            "id": { "const": "linux-namespace-landlock" },
+            "version": { "const": "1" },
+            "implementationDigest": { "$ref": "#/$defs/sha256" },
+            "instanceDigest": { "$ref": "#/$defs/sha256" }
+          }
+        },
+        "runnerDigest": { "$ref": "#/$defs/sha256" },
+        "suite": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "version", "digest", "probeIds"],
+          "properties": {
+            "id": { "const": "linux-namespace-boundary" },
+            "version": { "const": "1" },
+            "digest": { "$ref": "#/$defs/sha256" },
+            "probeIds": {
+              "type": "array",
+              "minItems": 5,
+              "maxItems": 5,
+              "uniqueItems": true,
+              "items": { "$ref": "#/$defs/capabilityId" }
+            }
+          }
+        },
+        "status": { "enum": ["pass", "fail", "unsupported"] },
+        "observedCapabilities": {
+          "type": "array",
+          "maxItems": 16,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/capabilityId" }
+        },
+        "probes": {
+          "type": "array",
+          "minItems": 5,
+          "maxItems": 5,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "status", "evidenceDigest"],
+            "properties": {
+              "id": { "$ref": "#/$defs/capabilityId" },
+              "status": { "enum": ["pass", "fail", "not-run"] },
+              "evidenceDigest": { "$ref": "#/$defs/sha256" }
+            }
+          }
+        },
+        "deviationCodes": {
+          "type": "array",
+          "maxItems": 16,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^ECO_[A-Z0-9_]+$" }
+        },
+        "safety": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "authenticated",
+            "authorityCreated",
+            "runtimeConsumed",
+            "projectMutation",
+            "rawOutputPersisted"
+          ],
+          "properties": {
+            "authenticated": { "const": false },
+            "authorityCreated": { "const": false },
+            "runtimeConsumed": { "const": false },
+            "projectMutation": { "const": false },
+            "rawOutputPersisted": { "const": false }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$" },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "capabilityId": { "type": "string", "pattern": "^[a-z][a-z0-9._-]{1,127}$" },
+    "platformId": {
+      "enum": ["container", "hosted-ci", "linux-native", "macos", "windows-native", "wsl"]
+    }
+  }
+}

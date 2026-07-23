@@ -1,0 +1,30 @@
+apiVersion: ai.ecosystem/v1alpha1
+kind: ToolCatalog
+tools:
+  - id: repository.read
+    transport: builtin
+    binding: workspace-filesystem
+    capability: filesystem.read
+    actionClass: A1
+    allowedSandboxes:
+      - inspect
+      - workspace-change
+      - build-test
+    enabled: true
+  - id: repository.write
+    transport: builtin
+    binding: workspace-filesystem
+    capability: workspace.write
+    actionClass: A2
+    allowedSandboxes:
+      - workspace-change
+      - build-test
+    enabled: true
+  - id: tests.run
+    transport: command
+    binding: python -m unittest discover -s tests -v
+    capability: code.execute
+    actionClass: A2
+    allowedSandboxes:
+      - build-test
+    enabled: true

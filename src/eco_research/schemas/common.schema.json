@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "eco://research/common/v1alpha1",
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[a-z0-9](?:[a-z0-9._:-]{0,126}[a-z0-9])?$"
+    },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$"
+    },
+    "dataClass": { "enum": ["D0", "D1", "D2", "D3"] },
+    "zone": { "enum": ["Z0", "Z1", "Z2", "Z3", "Z4"] },
+    "retention": {
+      "enum": ["no-retention", "local-runtime-dependent", "contractual"]
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id", "projectId", "teamId", "runId", "createdAt", "recordDigest"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "projectId": { "$ref": "#/$defs/identifier" },
+        "teamId": { "$ref": "#/$defs/identifier" },
+        "runId": { "$ref": "#/$defs/identifier" },
+        "revision": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+        "createdAt": { "$ref": "#/$defs/timestamp" },
+        "recordDigest": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "artifactBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ref", "contentDigest", "byteLength", "dataClass"],
+      "properties": {
+        "ref": {
+          "type": "string",
+          "minLength": 19,
+          "maxLength": 256,
+          "pattern": "^artifact://(?!\\.\\.?(?:/|$))(?!.*?/\\.\\.?(?:/|$))(?!.*//)(?!.*\\\\)(?!.*%2[fF]|.*%5[cC])[a-z0-9][a-z0-9._:/-]*[a-z0-9]$"
+        },
+        "contentDigest": { "$ref": "#/$defs/sha256" },
+        "byteLength": { "type": "integer", "minimum": 1, "maximum": 16777216 },
+        "dataClass": { "$ref": "#/$defs/dataClass" }
+      }
+    }
+  }
+}

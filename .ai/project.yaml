@@ -1,0 +1,37 @@
+apiVersion: ai.ecosystem/v1alpha1
+kind: ProjectAIConfig
+metadata:
+  name: ecosystem
+  owners:
+    - ecosystem-maintainers
+  riskProfile: standard
+project:
+  languages:
+    - python
+    - json-schema
+    - markdown
+  build:
+    - python -m pip install -e .
+  test:
+    - python -m unittest discover -s tests -v
+  protectedPaths:
+    - .git/**
+    - .github/workflows/**
+    - src/eco_cli/schemas/**
+references:
+  instructions: instructions.yaml
+  capabilities: capabilities.yaml
+  deployments: deployments.yaml
+  tools: tools.yaml
+  trust: trust.yaml
+policy:
+  defaultDecision: deny
+  unknownDataClass: D2
+  allowDirectEgress: false
+runtime:
+  profile: embedded
+  auditTrail: sqlite
+  sandboxProfile: inspect
+  telemetry:
+    enabled: false
+    includeSensitiveContent: false

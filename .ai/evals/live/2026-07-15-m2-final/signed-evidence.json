@@ -1,0 +1,78 @@
+{
+  "evidence": {
+    "comparisons": [
+      {
+        "cases": [
+          {
+            "caseId": "text-basic",
+            "status": "parity"
+          }
+        ],
+        "leftDeploymentId": "cloud-claude-sonnet-5",
+        "rightDeploymentId": "local-ollama-qwen3-0.6b",
+        "status": "parity"
+      }
+    ],
+    "deployments": [
+      {
+        "adapterVersion": "claude-cli-eval-v1",
+        "deploymentId": "cloud-claude-sonnet-5",
+        "deviationCodes": [],
+        "observationDigest": "59aa4b6aa18758b120f1f7500aae635b026117801a64bbe0ec61b29abf8d93bd",
+        "pinnedIdentityDigest": "43edd8ca3d7d9fa49765c7deacc37766393479bef37db946a754666f209b0c4d",
+        "probes": [
+          {
+            "caseId": "text-basic",
+            "deviationCode": null,
+            "normalizedOutputDigest": "c2e3ac47f4a325469c1a2d5f117e463ec943c721986d5d9f09ac4540b7d80526",
+            "status": "pass",
+            "usage": {
+              "inputTokens": 8726,
+              "modelRequests": 1,
+              "outputTokens": 4,
+              "totalTokens": 8730
+            }
+          }
+        ],
+        "status": "pass"
+      },
+      {
+        "adapterVersion": "ollama-eval-v1",
+        "deploymentId": "local-ollama-qwen3-0.6b",
+        "deviationCodes": [],
+        "observationDigest": "29daf673d9499f3c46e21c0e951986152464165005448c01175e1c148ee19b4f",
+        "pinnedIdentityDigest": "230d8461ae618f9b8eab69ad0f748db5e8d5b4c8aabb0fad0a71d29e076b14a7",
+        "probes": [
+          {
+            "caseId": "text-basic",
+            "deviationCode": null,
+            "normalizedOutputDigest": "c2e3ac47f4a325469c1a2d5f117e463ec943c721986d5d9f09ac4540b7d80526",
+            "status": "pass",
+            "usage": {
+              "inputTokens": 44,
+              "modelRequests": 1,
+              "outputTokens": 2,
+              "totalTokens": 46
+            }
+          }
+        ],
+        "status": "pass"
+      }
+    ],
+    "domain": "eco-cross-deployment-evidence-v1",
+    "evaluatedAt": "2026-07-15T12:42:50.168856Z",
+    "status": "pass",
+    "suite": {
+      "digest": "08d7ee84c62d53c3ae08419623b48cfb6d645fe8c127ddcd090295e194826dd6",
+      "id": "m2-live-local-cloud",
+      "version": "1.0.0"
+    },
+    "version": 1
+  },
+  "evidenceDigest": "9397ad2f91f7dcdf4a43b6805aedcf429060a980b1e58413c51cf94b92f3dd17",
+  "signature": {
+    "algorithm": "HMAC-SHA256",
+    "keyId": "m2-live-evaluation-key-1",
+    "value": "d560fda18a2081e46fc938860a61d37ef60e5ae531e61cc4e1c011654922cbaf"
+  }
+}

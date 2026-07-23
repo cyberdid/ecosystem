@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai.ecosystem.local/schemas/runtime/tool-execution-outcome.schema.json",
+  "title": "ToolExecutionOutcome",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "runtime.ai.ecosystem/v1alpha1" },
+    "kind": { "const": "ToolExecutionOutcome" },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "runId", "operationId", "createdAt"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "runId": { "$ref": "#/$defs/id" },
+        "operationId": { "$ref": "#/$defs/id" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["intentDigest", "status"],
+      "properties": {
+        "intentDigest": { "$ref": "#/$defs/sha256" },
+        "status": { "enum": ["succeeded", "failed"] },
+        "receiptDigest": { "$ref": "#/$defs/sha256" },
+        "artifactRecordDigest": { "$ref": "#/$defs/sha256" },
+        "errorRecordDigest": { "$ref": "#/$defs/sha256" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "status": { "const": "succeeded" } } },
+          "then": {
+            "required": ["receiptDigest", "artifactRecordDigest"],
+            "not": { "required": ["errorRecordDigest"] }
+          }
+        },
+        {
+          "if": { "properties": { "status": { "const": "failed" } } },
+          "then": {
+            "required": ["errorRecordDigest"],
+            "not": { "anyOf": [{ "required": ["receiptDigest"] }, { "required": ["artifactRecordDigest"] }] }
+          }
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$" },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+  }
+}

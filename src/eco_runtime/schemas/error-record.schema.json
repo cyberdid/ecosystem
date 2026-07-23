@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai.ecosystem.local/schemas/runtime/error-record.schema.json",
+  "title": "ErrorRecord",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "runtime.ai.ecosystem/v1alpha1" },
+    "kind": { "const": "ErrorRecord" },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "runId", "createdAt"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "runId": { "$ref": "#/$defs/id" },
+        "requestId": { "$ref": "#/$defs/id" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "category", "stage", "retryable", "safeMessage"],
+      "properties": {
+        "code": { "type": "string", "pattern": "^ECO_[A-Z0-9_]+$" },
+        "category": { "enum": ["validation", "policy", "capability", "budget", "broker", "adapter", "internal"] },
+        "stage": { "enum": ["planning", "policy", "model", "tool", "finalization"] },
+        "retryable": { "type": "boolean" },
+        "safeMessage": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "causeRef": { "type": "string", "pattern": "^internal://[A-Za-z0-9][A-Za-z0-9._:/-]{0,4095}$" },
+        "details": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "policyRule": { "type": "string", "pattern": "^[A-Z][A-Z0-9_-]+$" },
+            "capability": { "type": "string", "pattern": "^[a-z][a-z0-9._-]+$" },
+            "toolId": { "type": "string", "pattern": "^[a-z][a-z0-9._-]+$" },
+            "deploymentId": { "$ref": "#/$defs/id" },
+            "limitName": { "type": "string", "pattern": "^[a-z][A-Za-z0-9]+$" }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$" }
+  }
+}

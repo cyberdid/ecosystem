@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai.ecosystem.local/schemas/teams/agent-team-manifest.schema.json",
+  "type": "object", "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": {"const": "teams.ai.ecosystem/v1alpha1"},
+    "kind": {"const": "AgentTeamManifest"},
+    "metadata": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "projectId", "createdAt", "recordDigest"],
+      "properties": {
+        "id": {"$ref": "common.schema.json#/$defs/id"},
+        "projectId": {"$ref": "common.schema.json#/$defs/id"},
+        "createdAt": {"$ref": "common.schema.json#/$defs/timestamp"},
+        "recordDigest": {"$ref": "common.schema.json#/$defs/digest"}
+      }
+    },
+    "spec": {
+      "type": "object", "additionalProperties": false,
+      "required": ["profile", "authority", "roles", "budget", "deadline", "safety"],
+      "properties": {
+        "profile": {"const": "bounded-agent-team-v1"},
+        "authority": {
+          "type": "object", "additionalProperties": false,
+          "required": ["teamId", "storeId", "authoritySnapshotDigest", "activeBundleDigest", "accessPolicyDigest"],
+          "properties": {
+            "teamId": {"$ref": "common.schema.json#/$defs/id"},
+            "storeId": {"$ref": "common.schema.json#/$defs/id"},
+            "authoritySnapshotDigest": {"$ref": "common.schema.json#/$defs/digest"},
+            "activeBundleDigest": {"$ref": "common.schema.json#/$defs/digest"},
+            "accessPolicyDigest": {"$ref": "common.schema.json#/$defs/digest"}
+          }
+        },
+        "roles": {
+          "type": "array", "minItems": 1, "maxItems": 64,
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["id", "principal", "membership", "actions", "dataClasses", "toolIds", "zones", "notAfter", "budget", "delegatesTo"],
+            "properties": {
+              "id": {"$ref": "common.schema.json#/$defs/id"},
+              "principal": {"$ref": "common.schema.json#/$defs/binding"},
+              "membership": {"$ref": "common.schema.json#/$defs/binding"},
+              "actions": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1, "maxLength": 64}},
+              "dataClasses": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["D0", "D1", "D2", "D3"]}},
+              "toolIds": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1, "maxLength": 128}},
+              "zones": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1, "maxLength": 64}},
+              "notAfter": {"$ref": "common.schema.json#/$defs/timestamp"},
+              "budget": {"$ref": "common.schema.json#/$defs/budget"},
+              "delegatesTo": {"type": "array", "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/id"}}
+            }
+          }
+        },
+        "budget": {
+          "type": "object", "additionalProperties": false,
+          "required": ["maxTasks", "maxTotalTokens", "maxCostMicrousd"],
+          "properties": {
+            "maxTasks": {"type": "integer", "minimum": 1, "maximum": 10000},
+            "maxTotalTokens": {"type": "integer", "minimum": 0, "maximum": 1000000000},
+            "maxCostMicrousd": {"type": "integer", "minimum": 0, "maximum": 1000000000000}
+          }
+        },
+        "deadline": {"$ref": "common.schema.json#/$defs/timestamp"},
+        "safety": {
+          "type": "object", "additionalProperties": false,
+          "required": ["signedAuthorityRequired", "permissionsGranted", "runtimeAuthorityCreated"],
+          "properties": {
+            "signedAuthorityRequired": {"const": true},
+            "permissionsGranted": {"const": false},
+            "runtimeAuthorityCreated": {"const": false}
+          }
+        }
+      }
+    }
+  }
+}

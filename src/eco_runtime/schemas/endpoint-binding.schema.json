@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai.ecosystem.local/schemas/runtime/endpoint-binding.schema.json",
+  "title": "EndpointBinding",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "runtime.ai.ecosystem/v1alpha1" },
+    "kind": { "const": "EndpointBinding" },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "deploymentId", "resolvedAt", "validUntil"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "deploymentId": { "$ref": "#/$defs/id" },
+        "resolvedAt": { "type": "string", "format": "date-time" },
+        "validUntil": { "type": "string", "format": "date-time" }
+      }
+    },
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["deploymentIdentityDigest", "endpointReferenceDigest", "resolvedEndpointDigest", "adapter", "adapterVersion", "model", "transportProfile", "credentialMode"],
+      "properties": {
+        "deploymentIdentityDigest": { "$ref": "#/$defs/sha256" },
+        "endpointReferenceDigest": { "$ref": "#/$defs/sha256" },
+        "resolvedEndpointDigest": { "$ref": "#/$defs/sha256" },
+        "adapter": { "const": "openai-compatible" },
+        "adapterVersion": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$" },
+        "model": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "transportProfile": { "enum": ["local-loopback-http", "direct-cloud-https"] },
+        "credentialMode": { "enum": ["none", "transport-owned"] }
+      }
+    }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$" },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+  }
+}
