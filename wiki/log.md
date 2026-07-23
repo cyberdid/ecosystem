@@ -4,6 +4,29 @@ Append-only хронологічний лог операцій. Формат: `#
 
 ---
 
+## [2026-07-23] verification | Codex lab accuracy review: numbers real, four harness defects fixed, honest re-run
+
+- Adversarially reviewed the Codex-built `ecosystem-llm-lab` (separate repo, left uncommitted):
+  recomputed the full matrix from raw JSON (matched 1:1), re-ran unit tests and all `eco` checks,
+  verified it exercises the real `eco_gsc`/`eco_loops.BoundedLoopEngine`/`eco_memory`/`eco_teams`/
+  admission/telemetry components, and spot-checked transcripts against every narrative claim.
+- Found four harness defects: a hardcoded control label that presented gemma's schema failures as
+  "escalation caught" (the real `target expands authority` path never fired on model output); a
+  spec-pinning user message that contaminated the agent-authoring ablation; the expected answer
+  leaked into the tool-render prompt and const wire grammar; a deterministic orchestration control
+  indistinguishable from a model control. Plus: `0700` held only for the final run's state dir,
+  and memory markers live plaintext in CAS (the SQLite-only claim was narrowly true).
+- Fixed all of it (real gate codes, neutral request, shape-only wire format with leak-guard unit
+  tests, `code-path` control labeling, full `0700`), lab tests 9/9, and repeated the full 96-call
+  run. The honest picture: agent-authoring drops to 0/3 for BOTH models (gpt-oss now produces
+  genuine widening the real contract rejects 6/6 with the real code); gemma's tool-use falls to
+  0/3 on the render (`"Cobalt-otter"`) while her 3/3 native tool calls stay proven; gpt-oss earns
+  tool-use with no leak. New headline: one-shot authoring (skills and team manifests) is not
+  established for either model — both need the gated propose→gate→revise repair loop the
+  ecosystem already defines.
+- Lab committed as its own repo (`5c08f18`); review recorded in
+  [Codex lab accuracy review](../docs/research/2026-07-23-codex-lab-accuracy-review-claude.md).
+
 ## [2026-07-23] inventory | Three graph-engineering / company-brain articles ingested as untrusted sources
 
 - Copied three 2026-07-22 promotional articles into `docs/research/sources/` unchanged, with
