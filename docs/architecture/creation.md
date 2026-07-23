@@ -16,7 +16,7 @@ In this project **creation is proposal + gate, never emergence.** Nothing become
 | **Skill** | [`skill-authoring`](../../src/eco_skills/catalog/skill-authoring/SKILL.md) skill | [skills-harness-sync](skills-harness-sync.md), M6.2 registry | Schema + tests + evidence + owner + adversarial review, then `eco skills sync` |
 | **Agent / team** | [`agent-team-authoring`](../../src/eco_skills/catalog/agent-team-authoring/SKILL.md) skill | [general-agent-teams](general-agent-teams.md), [team-authority](team-authority.md) | Manifest schema, narrowing, no delegation escalation, M5 identity, owner |
 | **Memory** | (via team workflow) | [private-context-memory](private-context-memory.md), M6.5 | Provenance-bound, TTL-safe, content-free journal |
-| **Generation under a new request** | proposal | [Gated Self-Creation proposal](../research/2026-07-22-gated-self-creation-contract-proposal-claude.md) | Design stage; not yet implemented |
+| **Generation under a new request** | `eco skills propose` → gate → `eco skills promote` | [Gated Self-Creation proposal](../research/2026-07-22-gated-self-creation-contract-proposal-claude.md), `eco_gsc` | Gate (structure, narrowing, secret, hard-stop integrity) + L0 promotion: re-gated, approval bound to the exact digest, no overwrite. Live-proven on a local model. |
 
 ## The common shape
 

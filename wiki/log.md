@@ -4,6 +4,18 @@ Append-only хронологічний лог операцій. Формат: `#
 
 ---
 
+## [2026-07-22] implementation | GSC L0 promotion closes the self-creation loop
+
+- Added `eco skills propose` (gate a proposed SKILL.md) and `eco skills promote` (L0):
+  the promotion re-runs the gate, requires an explicit human approval bound to the exact
+  content digest, refuses to overwrite an existing skill, and writes into a caller-supplied
+  skills root with a content-free receipt. New module `eco_gsc.promote`; 8 promotion tests.
+- Live end-to-end proven on a local model: gpt-oss self-created a bug-triage SKILL.md →
+  `eco skills propose` ADMISSIBLE → `eco skills promote --approve helen` → the skill was
+  written. A hollow "Hard stop:" (label without a prohibition) was correctly rejected first,
+  so the positive path is not a rubber stamp. This closes the model→gate→approval→registry
+  loop without WSL (generation and gate are cross-platform).
+
 ## [2026-07-22] dogfood | Local live tests of P1/P2 and GSC against Ollama
 
 - Lifted the live-model pause for local testing and drove the new slices against
