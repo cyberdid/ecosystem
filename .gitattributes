@@ -11,3 +11,9 @@ docs/research/sources/** -text -diff
 /GEMINI.md text eol=lf
 /.github/copilot-instructions.md text eol=lf
 /.cursor/rules/eco.mdc text eol=lf
+
+# Digest-pinned package-owned sources: their SHA-256 must be stable across
+# platforms, so their exact bytes (LF) must survive a Windows checkout.
+src/eco_skills/catalog/** text eol=lf
+src/eco_cli/schemas/** text eol=lf
+src/eco_runtime/schemas/** text eol=lf
