@@ -580,9 +580,21 @@ class PlatformConformanceTests(unittest.TestCase):
                 stack.enter_context(
                     mock.patch.object(os, name, side_effect=AssertionError("write"))
                 )
-            stack.enter_context(
-                mock.patch.object(os, "open", side_effect=AssertionError("file access"))
+            _real_os_open = os.open
+            _write_flags = (
+                os.O_WRONLY | os.O_RDWR | os.O_CREAT | os.O_APPEND | os.O_TRUNC
+                | getattr(os, "O_TEMPORARY", 0)
             )
+
+            def _write_only_guard(path, flags, *args, **kwargs):
+                # A read-only open is not a write; the doctor legitimately reads
+                # (on some platforms/versions its reads route through os.open).
+                # Only a write-intent open violates read-only discovery.
+                if flags & _write_flags:
+                    raise AssertionError("write")
+                return _real_os_open(path, flags, *args, **kwargs)
+
+            stack.enter_context(mock.patch.object(os, "open", side_effect=_write_only_guard))
             code, output, error = self.run_cli("platform", "doctor", "--json")
         self.assertEqual(code, 0, error)
         report = json.loads(output)
