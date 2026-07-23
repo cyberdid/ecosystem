@@ -4,6 +4,27 @@ Append-only хронологічний лог операцій. Формат: `#
 
 ---
 
+## [2026-07-23] design | Product layer on the core (Nordrassil) — architecture + Slice 0 proof
+
+- Analyzed Odysseus (`~/Downloads/odysseus-dev`, 205k LOC, 759 test files) as a reference product:
+  a genuinely useful self-hosted AI workspace whose security is enforced in-process (Python
+  denylists, prompt wrappers, admin boolean, "treat it like an admin console; don't expose it").
+  That in-process ceiling is exactly what the core exists to replace.
+- Decided to build a new user-facing product **from scratch on the core** (Odysseus as
+  feature/UX reference only), covering all flows. Wrote the boundary design
+  [product-layer-on-the-core.md](../docs/architecture/product-layer-on-the-core.md): the one
+  inversion is "the product never enforces security — it renders and requests; the core grants or
+  denies", with every Odysseus-class feature mapped to a core primitive, honest platform/license
+  boundaries, and a sliced delivery order.
+- Named **Nordrassil**, a new sibling repo (`~/Project/nordrassil`, initial commit `f188bf5`).
+  **Slice 0** proves the inversion on real core code: the gateway wraps
+  `eco_runtime.team_access.evaluate_team_access`; a reader principal may `repository.read`
+  (allow-candidate) while `run_shell` (code.execute) and `send_email` (external.write, high-impact)
+  are denied by the core. A model that insists on a denied tool cannot execute it — the side effect
+  provably never fires — and a dependency control shows the same loop does run a granted tool. 6/6
+  tests pass. Honest boundary carried through: an allow is a narrowing candidate, not final signed
+  runtime authority, and macOS proves the decision path, not kernel isolation.
+
 ## [2026-07-23] verification | Codex lab accuracy review: numbers real, four harness defects fixed, honest re-run
 
 - Adversarially reviewed the Codex-built `ecosystem-llm-lab` (separate repo, left uncommitted):
