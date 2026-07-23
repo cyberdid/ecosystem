@@ -4,6 +4,30 @@ Append-only хронологічний лог операцій. Формат: `#
 
 ---
 
+## [2026-07-23] product | Nordrassil persistent sessions and provenance-bound attachments
+
+- Added private project-bound Chat session create/switch/rename/export/delete
+  flows in `cyberdid/nordrassil` (`05c4b72`). Session history is a real model
+  input dependency and survives browser/process restart without becoming
+  authority.
+- Added explicitly selected UTF-8 attachments stored by SHA-256 in a private
+  content-addressed store. Metadata binds each object to its exact session and
+  project; bytes, size and digest are reverified before model context is built
+  and are labelled as untrusted attachment data.
+- Added separate `sessions.read`, `sessions.manage` and `attachments.upload`
+  capabilities. Negative coverage rejects cross-project/cross-session
+  references, tampered objects, symlinked state roots, path-like names,
+  malformed/binary/unsupported uploads, size-limit violations and capability
+  bypass.
+- Browser proof: attached Nordrassil's `README.md`, asked
+  `gemma4:12b-mlx` for the exact first-heading project name, received
+  `Nordrassil`, reloaded the page and recovered the same messages plus the
+  digest-bound attachment chip. Product gate is 49/49 tests plus compile,
+  JavaScript parse and diff checks.
+- Session search/archive, image/PDF/OCR ingestion and remote provider
+  conformance remain explicit nonclaims. The next slice is the
+  local/API-compatible provider and deployment registry.
+
 ## [2026-07-23] product | Nordrassil Cookbook and multi-project workspace manager
 
 - Added a complete wiki snapshot for the user-facing product layer:

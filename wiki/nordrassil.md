@@ -1,7 +1,8 @@
 # Nordrassil — the user-facing product layer
 
 **Status:** active sibling product; workspace foundation, local-model Cookbook,
-blind Compare and multi-project management are implemented.
+blind Compare, multi-project management and persistent project-bound Chat
+sessions are implemented.
 
 **Snapshot:** 2026-07-23
 
@@ -9,7 +10,7 @@ blind Compare and multi-project management are implemented.
 
 - core: `cyberdid/ecosystem`;
 - product: `cyberdid/nordrassil`;
-- product head in this snapshot: `8f4d0c3`.
+- product head in this snapshot: `05c4b72`.
 
 ## Why Nordrassil exists
 
@@ -182,6 +183,43 @@ halfway through a request. Relative roots, overly broad roots, symlink escapes,
 credential-bearing clone URLs, shell syntax, `.git`, `.env`, sensitive
 configuration paths and Nordrassil private state are rejected.
 
+### Persistent Chat sessions and provenance-bound attachments
+
+Chat now has private, project-bound sessions with create, switch, rename,
+Markdown export and delete flows. A browser reload or process restart rebuilds
+the same bounded conversation from product-private state; switching projects
+does not expose another project's sessions.
+
+The first attachment slice accepts only explicitly selected UTF-8 text,
+Markdown, JSON, XML, YAML, CSV/TSV, Python and JavaScript files. The browser
+sends a display filename, media type and bytes — never a server-side path.
+Ingestion stores the bytes in a private SHA-256 content-addressed store and
+binds the attachment metadata to the exact project and session. Before model
+context is rebuilt, Nordrassil verifies the object size and digest again and
+labels its contents as untrusted attachment data.
+
+The enforced bounds are:
+
+| Boundary | Limit |
+|---|---:|
+| One attachment | 256 KiB |
+| Attachments selected for one message | 5 |
+| Combined attachment model context | 512 KiB |
+| Attachments retained by one session | 50 |
+| One user message | 64 KiB UTF-8 |
+| Model history | 40 messages / 256 KiB |
+| Persisted messages | 400 |
+
+`sessions.read`, `sessions.manage` and `attachments.upload` are separate
+operator capabilities. Negative tests reject cross-project and cross-session
+references, modified CAS objects, symlinked state roots, path-like filenames,
+binary/unsupported media, malformed base64, oversize content and capability
+bypass. Images, audio, PDF extraction, OCR, session search and archive remain
+explicitly outside this slice.
+
+The data graph and done-condition are recorded in
+`nordrassil/docs/session-attachment-contract.md`.
+
 ## Relationship to the local-LLM experiment
 
 The separate `ecosystem-llm-lab` answers an engineering question: can each
@@ -218,18 +256,24 @@ The detailed correction and proof reports are:
 
 At this snapshot:
 
-- Nordrassil: 42 unit tests pass;
+- Nordrassil: 49 unit tests pass;
 - `eco validate`: pass;
 - `eco render --check`: pass;
 - live browser proof: allowed repository read and denied shell execution both
   observed through the real gateway;
+- live browser proof: a `README.md` attachment survived reload with its
+  SHA-256 provenance chip, and `gemma4:12b-mlx` returned the exact project name
+  from those verified bytes;
 - Cookbook mutation tests verify private plan state, identifier/path bounds,
   explicit confirmation and `shell=False`;
 - workspace tests verify private registry permissions, root confinement,
   symlink resolution, per-request root pinning, safe clone plans and
-  capability-gated import/folder creation.
+  capability-gated import/folder creation;
+- session tests verify private CRUD/export, actual history dependency, digest
+  rehydration, project/session isolation, state topology, content limits and
+  distinct capability gates.
 
-The 42 tests are implementation evidence for the current bounded slices. They
+The 49 tests are implementation evidence for the current bounded slices. They
 do not prove native macOS kernel isolation, remote provider conformance,
 production multi-user security or completion of the full product.
 
@@ -237,7 +281,7 @@ production multi-user security or completion of the full product.
 
 | Flow | State |
 |---|---|
-| Core-gated Chat | working foundation; sessions and attachments remain |
+| Core-gated Chat | persistent sessions and bounded UTF-8 attachments working; search/archive and binary extraction remain |
 | Capabilities / Files / Memory / Notes / Skills | working foundation; authoring and richer artifact flows remain |
 | Blind Compare | working local slice; rubric/routing gate remains |
 | Cookbook / local models | working local slice; vLLM, remote servers and benchmarked fit remain |
@@ -252,14 +296,13 @@ The complete live feature inventory is maintained in
 
 ## Next delivery order
 
-1. Persistent sessions and provenance-bound attachments.
-2. Local/API-compatible provider registry, probes and conformance labels.
-3. Governed Research and versioned Documents with exact citations and proposed
+1. Local/API-compatible provider registry, probes and conformance labels.
+2. Governed Research and versioned Documents with exact citations and proposed
    diffs.
-4. Bounded Agent runs, skill repair loops and evaluated team orchestration.
-5. Tasks, MCP, email/calendar and other external connectors with action-point
+3. Bounded Agent runs, skill repair loops and evaluated team orchestration.
+4. Tasks, MCP, email/calendar and other external connectors with action-point
    approvals.
-6. Authentication, backup/import/export, PWA/mobile and accessibility.
+5. Authentication, backup/import/export, PWA/mobile and accessibility.
 
 Each slice is done only when it has a usable UI/API, a named core or adapter
 boundary, positive and negative tests, a dependency test, provenance and an
