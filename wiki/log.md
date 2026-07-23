@@ -4,6 +4,21 @@ Append-only хронологічний лог операцій. Формат: `#
 
 ---
 
+## [2026-07-23] product | Nordrassil Slice 1 — a browser workspace over the core, live and enforced
+
+- Turned the Slice 0 engine into an Odysseus-shaped web app (FastAPI + a themed single-page chat
+  UI) at `cyberdid/nordrassil` (`c5ec235`). A live local model (Ollama, gpt-oss:20b) proposes tool
+  calls; the core decides each one through the gateway; denials render as a chip with the core's
+  own reason code, and the honest "decision-path enforced; kernel isolation Linux-only" badge is
+  always shown.
+- Verified end to end in the browser: asked to run a host shell command, the model proposed
+  `run_shell`, the core denied it (`ECO_TEAM_ACCESS_DEFAULT_DENY`, not executed) and the model
+  explained it lacked permission; asking to read the repo was allowed and executed and the model
+  answered from the tool result. Model I/O is stdlib-only (loopback urllib); 6/6 gate tests pass.
+- Repo home consolidated on cyberdid: `gh` now authenticated as cyberdid, `cyberdid/nordrassil`
+  created and pushed (a stray private `Pylypko1021/nordrassil` remains, deletable later with a
+  `delete_repo` grant). All future commits/pushes go to cyberdid.
+
 ## [2026-07-23] design | Product layer on the core (Nordrassil) — architecture + Slice 0 proof
 
 - Analyzed Odysseus (`~/Downloads/odysseus-dev`, 205k LOC, 759 test files) as a reference product:
