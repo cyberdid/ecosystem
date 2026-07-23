@@ -2,7 +2,7 @@
 
 > Curated operational knowledge. Canonical executable truth lives under `.ai/`; generated vendor files are projections.
 
-**Updated:** 2026-07-22
+**Updated:** 2026-07-23
 **Status:** M1–M6.8 implementation and local/independent gates are complete for
 the bounded reference profile. The `0.8.0` hosted matrix is blocked before job
 creation by GitHub runner/account state; a complete live five-role model PASS
@@ -12,6 +12,7 @@ remains explicitly unclaimed.
 
 | Page | Purpose | Updated |
 |---|---|---:|
+| [Nordrassil product layer](nordrassil.md) | User-facing product over the enforced core: Odysseus audit, local-model Cookbook, Compare, multi-project workspaces, experiment evidence and honest backlog | 2026-07-23 |
 | [Creating in the ecosystem](../docs/architecture/creation.md) | How loop/contract/skill/agent/memory are created, the shared gate, the L0/L1/L2 autonomy scale and creation invariants | 2026-07-22 |
 | [M6 completion report](../docs/research/2026-07-20-m6-functional-orchestration-completion-report.md) | M6.1–M6.8 delivery, exact-route audit corrections, release evidence, schema identities and honest nonclaims | 2026-07-20 |
 | [M6 functional orchestration](../docs/architecture/functional-orchestration.md) | Additive contracts, governed model bridge, fixed source-review and M6.2–M6.8 delivery sequence | 2026-07-20 |
@@ -66,21 +67,22 @@ remains explicitly unclaimed.
 
 1. `README.md`
 2. `.ai/project.yaml`
-3. `docs/architecture/README.md`
-4. `docs/decisions/README.md`
-5. `docs/architecture/functional-orchestration.md` and its threat model for M6 scope and execution gates
-6. `docs/architecture/team-authority.md` and `docs/operations/team-authority-runbook.md` for the current M5 authority and operations boundary
-7. `docs/architecture/runtime-contracts.md`, `read-only-broker.md`, `controlled-writes.md`, and `no-model-wiki-health.md` for the M2–M4 runtime boundary
-8. `docs/architecture/project-adoption.md` for installing the harness into another project
-9. `docs/architecture/platform-adapter-conformance.md` for the portable passive profile boundary
-10. `docs/architecture/portable-distribution.md` and `platform-backend-conformance.md` for the bounded M4 portability surfaces
-11. `wiki/loops.md` for bounded automation, evaluation, proposal, and controlled-apply rules
-12. `docs/research/2026-07-17-m6.0-functional-orchestration-plan.md` for the current research synthesis
-13. `wiki/openresearcher.md` for the current external research-node snapshot
-14. `wiki/labs-molt.md` for the external agentic-RL training-node snapshot
-15. `wiki/ai-legal-claude.md` for the external legal-prompt corpus and its safety limits
-16. `docs/research/README.md` for source reviews and raw-source provenance
-17. This wiki for current operational status
+3. `wiki/nordrassil.md` for the normal-user product layer and its current proof boundary
+4. `docs/architecture/README.md`
+5. `docs/decisions/README.md`
+6. `docs/architecture/functional-orchestration.md` and its threat model for M6 scope and execution gates
+7. `docs/architecture/team-authority.md` and `docs/operations/team-authority-runbook.md` for the current M5 authority and operations boundary
+8. `docs/architecture/runtime-contracts.md`, `read-only-broker.md`, `controlled-writes.md`, and `no-model-wiki-health.md` for the M2–M4 runtime boundary
+9. `docs/architecture/project-adoption.md` for installing the harness into another project
+10. `docs/architecture/platform-adapter-conformance.md` for the portable passive profile boundary
+11. `docs/architecture/portable-distribution.md` and `platform-backend-conformance.md` for the bounded M4 portability surfaces
+12. `wiki/loops.md` for bounded automation, evaluation, proposal, and controlled-apply rules
+13. `docs/research/2026-07-17-m6.0-functional-orchestration-plan.md` for the current research synthesis
+14. `wiki/openresearcher.md` for the current external research-node snapshot
+15. `wiki/labs-molt.md` for the external agentic-RL training-node snapshot
+16. `wiki/ai-legal-claude.md` for the external legal-prompt corpus and its safety limits
+17. `docs/research/README.md` for source reviews and raw-source provenance
+18. This wiki for current operational status
 
 ## Knowledge boundaries
 

@@ -4,6 +4,31 @@ Append-only хронологічний лог операцій. Формат: `#
 
 ---
 
+## [2026-07-23] product | Nordrassil Cookbook and multi-project workspace manager
+
+- Added a complete wiki snapshot for the user-facing product layer:
+  [Nordrassil](nordrassil.md). It records the product/core inversion, the
+  source-backed Odysseus audit, relationship to the local-LLM experiment,
+  implemented features, enforcement boundaries, current verification and
+  delivery backlog.
+- Nordrassil's local Model Cookbook now discovers Apple Silicon hardware,
+  Ollama/Hugging Face models and dependencies; selects the Chat model; searches
+  the catalog; creates typed download/install/serve plans; and exposes private
+  jobs. Mutations require exact plan confirmation and execute argv with
+  `shell=False`.
+- Projects & Files now provides a private recent-project registry, native macOS
+  folder selection, manual import, create-folder/project, confirmation-bound Git
+  clone, Git metadata and a structured file tree. The active root is pinned per
+  request; broad/sensitive roots, symlink escapes, credential URLs and shell
+  syntax fail closed.
+- The observed proof machine has Apple M4 Max / 36 GB memory, Ollama 0.32.1,
+  `gemma4:12b-mlx` and `gpt-oss:20b`. These are inventory facts, not automatic
+  deployment-conformance claims.
+- Current product gate: 42/42 unit tests, canonical validation and projection
+  drift check pass. Linux/WSL native isolation, sessions/attachments, governed
+  provider registry, Research/Documents, agents/tasks, connectors and product
+  hardening remain explicit nonclaims.
+
 ## [2026-07-23] product | Nordrassil Slice 1 — a browser workspace over the core, live and enforced
 
 - Turned the Slice 0 engine into an Odysseus-shaped web app (FastAPI + a themed single-page chat
