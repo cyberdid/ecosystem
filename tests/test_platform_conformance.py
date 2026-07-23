@@ -5,6 +5,7 @@ import copy
 import inspect
 import json
 import os
+import platform
 import shutil
 import subprocess
 import tempfile
@@ -525,6 +526,14 @@ class PlatformConformanceTests(unittest.TestCase):
             "platform doctor must never invoke executables"
         )
         forbidden_network = AssertionError("platform doctor must never access the network")
+
+        # Warm the platform-detection cache before the mocks below. On Windows
+        # with Python 3.11, ``platform.uname()`` shells out (subprocess/os.system)
+        # for the OS version, which this test deliberately forbids; caching it
+        # first keeps OS detection working while still proving the doctor itself
+        # launches no process and performs no write. Python 3.12 uses ``_wmi``
+        # instead, which is why only 3.11 needed this.
+        platform.uname()
 
         with ExitStack() as stack:
             stack.enter_context(
