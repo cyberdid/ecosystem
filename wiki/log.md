@@ -4,6 +4,30 @@ Append-only хронологічний лог операцій. Формат: `#
 
 ---
 
+## [2026-07-24] product | Nordrassil local execution, session lifecycle and Documents
+
+- Verified and recorded four published Nordrassil commits:
+  `6a07898` adds a separate default-off, visibly unisolated local A2 execution
+  opt-in; `bd61204` adds session star/archive/filter; `a29d0ef` adds the
+  proposal-first Documents editor; `63b3510` closes its acceptance gaps.
+- Documents stores bounded project-bound Markdown records in private state,
+  separates read/write/model capabilities and never lets the AI-edit endpoint
+  autosave. Apply is an explicit normal write.
+- The original feature commit claimed 67 passing tests, but an independent full
+  run found one stale capability-migration expectation. The acceptance fix
+  updated that specification, added route-level capability tests,
+  non-autosave proof, instruction bounds and persisted-record tamper
+  revalidation.
+- Final verification is 70/70 Nordrassil tests plus Python compilation,
+  JavaScript parsing and whitespace checks.
+- Live Browser evidence on the restarted current server: create/list/save
+  worked; `gemma4:12b-mlx` returned a separate requested proposal while stored
+  content remained unchanged; the temporary QA record was deleted; browser
+  console errors/warnings were empty.
+- Documents does not yet claim immutable revisions/CAS, research citations,
+  DOCX/PDF import/render, collaboration or correctness of model edits. The next
+  product slice is governed Deep Research.
+
 ## [2026-07-24] design | Nordrassil responsive product shell
 
 - Published `cyberdid/nordrassil` commit `85589a8` with a shared interface

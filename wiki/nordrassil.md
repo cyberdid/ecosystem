@@ -2,8 +2,9 @@
 
 **Status:** active sibling product; workspace foundation, local-model Cookbook,
 provider/deployment registry, blind Compare, multi-project management and
-persistent project-bound Chat sessions are implemented; the shared responsive
-product shell is now live across all current views.
+persistent project-bound Chat sessions are implemented; sessions now support
+star/archive/filter, Documents provides proposal-first Markdown editing, and
+the shared responsive product shell is live across all current views.
 
 **Snapshot:** 2026-07-24
 
@@ -11,7 +12,7 @@ product shell is now live across all current views.
 
 - core: `cyberdid/ecosystem`;
 - product: `cyberdid/nordrassil`;
-- product head in this snapshot: `85589a8`.
+- product head in this snapshot: `63b3510`.
 
 ## Why Nordrassil exists
 
@@ -106,6 +107,7 @@ The FastAPI browser workspace exposes:
 - Files rooted in the active project;
 - provenance-labelled Memory;
 - Notes;
+- project-bound Markdown Documents with explicit AI proposal review;
 - the package-owned Skills catalog;
 - a permanent platform/enforcement status.
 
@@ -159,6 +161,18 @@ proposal passes through the gateway. The verified browser path demonstrated:
 
 On macOS the badge says `local-described`. It proves that the real decision path
 was used, not that Linux `openat2`/Landlock isolation exists on macOS.
+
+### Explicit local A2 execution opt-in
+
+The default behavior remains unchanged: an A2 shell/Python/file-write
+allow-candidate is `approval-required` and does not execute on macOS. Commit
+`6a07898` adds a separate default-off `execution.local` product capability.
+
+When the operator turns on both the named A2 capability and `execution.local`,
+Nordrassil may run the tool as a real local subprocess. The health badge changes
+to `local-execute` and states that there is no kernel isolation. This is a
+convenience/risk opt-in for the local owner, not the Linux enforced runtime and
+not authority for A3 external writes. Email send remains refused by the core.
 
 ### Blind local-model Compare
 
@@ -275,9 +289,10 @@ configuration paths and Nordrassil private state are rejected.
 ### Persistent Chat sessions and provenance-bound attachments
 
 Chat now has private, project-bound sessions with create, switch, rename,
-Markdown export and delete flows. A browser reload or process restart rebuilds
-the same bounded conversation from product-private state; switching projects
-does not expose another project's sessions.
+star/unstar, archive/unarchive, active/archived filtering, Markdown export and
+delete flows. Important sessions sort first within their state. A browser reload
+or process restart rebuilds the same bounded conversation from product-private
+state; switching projects does not expose another project's sessions.
 
 The first attachment slice accepts only explicitly selected UTF-8 text,
 Markdown, JSON, XML, YAML, CSV/TSV, Python and JavaScript files. The browser
@@ -308,6 +323,34 @@ explicitly outside this slice.
 
 The data graph and done-condition are recorded in
 `nordrassil/docs/session-attachment-contract.md`.
+
+### Documents
+
+Commits `a29d0ef` and `63b3510` add and harden a writing-first Documents slice:
+
+- private project-bound Markdown records with opaque IDs;
+- create/list/open/update/delete and word/byte metrics;
+- separate `documents.read` and `documents.write` capabilities;
+- AI edit gated by `documents.read` plus `models.invoke`;
+- the selected observed deployment returns a complete Markdown proposal into a
+  separate review field;
+- stored content remains unchanged until the user chooses Apply, which uses the
+  normal write path;
+- 200-byte title, 1 MiB body, 16,384-character instruction and 200-record list
+  bounds;
+- `0700` directories, `0600` files, atomic replace and persisted-record
+  revalidation;
+- project mismatch, unsafe topology, NUL/control data and malformed IDs fail
+  closed.
+
+The live browser run created and saved a temporary document, invoked
+`gemma4:12b-mlx`, observed the requested revision in the proposal field while
+the editor still held the original text, and deleted the temporary record.
+Browser console warnings/errors were empty.
+
+This slice is not yet immutable CAS revision history, DOCX/PDF import/render,
+collaboration or research-backed citation editing. Those are explicit
+non-claims in `nordrassil/docs/document-contract.md`.
 
 ## Relationship to the local-LLM experiment
 
@@ -345,7 +388,7 @@ The detailed correction and proof reports are:
 
 At this snapshot:
 
-- Nordrassil: 57 unit tests pass;
+- Nordrassil: 70 unit tests pass;
 - `eco validate`: pass;
 - `eco render --check`: pass;
 - live browser proof: allowed repository read and denied shell execution both
@@ -367,9 +410,13 @@ At this snapshot:
   non-persistence, OpenAI tool schema and capability gates;
 - live desktop/mobile Browser checks verify the shared shell, real route
   switching, mobile open/close behavior and 390 px no-overflow condition;
+- Documents tests verify private CRUD, bounds, cross-project denial, tampered
+  record revalidation, distinct route capabilities and that AI edit is a
+  bounded non-autosaving proposal; live browser create/save/propose/delete and
+  zero console errors are also observed;
 - JavaScript parsing, Python compilation and whitespace checks pass.
 
-The 57 tests are implementation evidence for the current bounded slices. They
+The 70 tests are implementation evidence for the current bounded slices. They
 do not prove native macOS kernel isolation, remote provider conformance,
 production multi-user security or completion of the full product.
 
@@ -377,14 +424,15 @@ production multi-user security or completion of the full product.
 
 | Flow | State |
 |---|---|
-| Core-gated Chat | persistent sessions and bounded UTF-8 attachments working; search/archive and binary extraction remain |
+| Core-gated Chat | persistent sessions, star/archive/filter and bounded UTF-8 attachments working; search and binary extraction remain |
 | Capabilities / Files / Memory / Notes / Skills | working foundation; authoring and richer artifact flows remain |
 | Blind Compare | working local slice; rubric/routing gate remains |
 | Cookbook / local models | working local lifecycle slice; remote server lifecycle and benchmarked fit remain |
 | Providers / deployments | registry, probes, native Ollama and OpenAI Chat working; semantic conformance, remote lifecycle and Triton model adapters remain |
 | Projects / Git workspaces | working local slice |
 | Responsive shell / accessibility | desktop and 390 px shell, system light/dark colours, focus and reduced motion working; PWA, user themes and formal assistive-tech audit remain |
-| Deep Research / Documents | planned |
+| Documents | proposal-first project Markdown editor working; revisions/CAS, import/render/export and research citations remain |
+| Deep Research | next slice |
 | Agents / teams / scheduled tasks | planned; must use bounded loops and evaluated delegation |
 | Email / Calendar / MCP | planned; credentials stay broker-owned and writes require approval |
 | Auth / backup | planned |
@@ -396,14 +444,18 @@ The complete live feature inventory is maintained in
 
 1. Completed: local/LAN/remote provider registry, transport probes, runtime
    profiles and native Ollama/OpenAI-compatible Chat selection.
-2. Memory 2.0: provenance-visible namespaces, search, fact/lesson lifecycle,
+2. Completed: session star/archive/filter and proposal-first Markdown
+   Documents.
+3. Governed Deep Research with bounded search/fetch, untrusted-source channels,
+   claim-level citations and durable run evidence.
+4. Memory 2.0: provenance-visible namespaces, search, fact/lesson lifecycle,
    reviewed promotion, conflict display and reversible compaction.
-3. Governed Research and versioned Documents with exact citations and proposed
-   diffs.
-4. Bounded Agent runs, skill repair loops and evaluated team orchestration.
-5. Tasks, MCP, email/calendar and other external connectors with action-point
+5. Versioned Documents with exact research citations, immutable revisions,
+   render/import/export and promotion receipts.
+6. Bounded Agent runs, skill repair loops and evaluated team orchestration.
+7. Tasks, MCP, email/calendar and other external connectors with action-point
    approvals.
-6. Authentication, backup/import/export, PWA/mobile and accessibility.
+8. Authentication, backup/import/export, PWA/mobile and accessibility.
 
 Each slice is done only when it has a usable UI/API, a named core or adapter
 boundary, positive and negative tests, a dependency test, provenance and an

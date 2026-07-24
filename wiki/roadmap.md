@@ -33,7 +33,7 @@
 | M7 | Enterprise/network authority and native security backends | Re-sequenced from old M6; not dropped or claimed |
 | GSC | Gated self-creation of skills/agents/loops under adversarial promotion gates | Proposed (design only); see [proposal](../docs/research/2026-07-22-gated-self-creation-contract-proposal-claude.md) |
 | M8 | Optional training/learning and experimental nodes | Future; MOLT/local GPU are adapters, not dependencies |
-| Product / Nordrassil | Normal-user workspace over the core | Active sibling product: responsive desktop/mobile shell, gateway/chat foundation, persistent sessions/attachments, provider/deployment registry, blind Compare, local-model Cookbook and multi-project Files implemented; see [product page](nordrassil.md) |
+| Product / Nordrassil | Normal-user workspace over the core | Active sibling product: responsive shell, proposal-first Documents, session star/archive/filter, gateway/chat, attachments, provider registry, Compare, Cookbook and multi-project Files implemented; see [product page](nordrassil.md) |
 
 ## Product track — Nordrassil
 
@@ -46,11 +46,15 @@ product sequence is:
    private credential references and native Ollama/OpenAI Chat adapters;
 3. completed: shared desktop/mobile product shell, task-specific surfaces,
    SVG controls, system light/dark colours, focus and reduced-motion handling;
-4. next: Memory 2.0 with provenance-visible namespaces, search, reviewed
+4. completed: session star/archive/filter and proposal-first project-bound
+   Markdown Documents;
+5. next: governed Deep Research with bounded search/fetch, typed untrusted
+   sources, claim-level citations and durable run evidence;
+6. Memory 2.0 with provenance-visible namespaces, search, reviewed
    promotion, conflicts and reversible compaction;
-5. expose governed Research and versioned Documents;
-6. expose bounded Agent runs, skill repair loops and evaluated teams;
-7. add approved external connectors, then auth, backup and PWA hardening.
+7. versioned Documents with exact citations and promotion receipts;
+8. expose bounded Agent runs, skill repair loops and evaluated teams;
+9. add approved external connectors, then auth, backup and PWA hardening.
 
 Product convenience cannot reinterpret an allow-candidate as final runtime
 authority. The detailed current state, local-model inventory, Odysseus audit and
