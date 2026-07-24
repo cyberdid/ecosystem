@@ -33,7 +33,7 @@
 | M7 | Enterprise/network authority and native security backends | Re-sequenced from old M6; not dropped or claimed |
 | GSC | Gated self-creation of skills/agents/loops under adversarial promotion gates | Proposed (design only); see [proposal](../docs/research/2026-07-22-gated-self-creation-contract-proposal-claude.md) |
 | M8 | Optional training/learning and experimental nodes | Future; MOLT/local GPU are adapters, not dependencies |
-| Product / Nordrassil | Normal-user workspace over the core | Active sibling product: responsive shell, proposal-first Documents, session star/archive/filter, gateway/chat, attachments, provider registry, Compare, Cookbook and multi-project Files implemented; see [product page](nordrassil.md) |
+| Product / Nordrassil | Normal-user workspace over the core | Active sibling product: bounded Deep Research, responsive shell, proposal-first Documents, session lifecycle, gateway/chat, provider registry, Compare, Cookbook and multi-project Files implemented; see [product page](nordrassil.md) |
 
 ## Product track — Nordrassil
 
@@ -48,9 +48,10 @@ product sequence is:
    SVG controls, system light/dark colours, focus and reduced-motion handling;
 4. completed: session star/archive/filter and proposal-first project-bound
    Markdown Documents;
-5. next: governed Deep Research with bounded search/fetch, typed untrusted
-   sources, claim-level citations and durable run evidence;
-6. Memory 2.0 with provenance-visible namespaces, search, reviewed
+5. completed: bounded product Deep Research with explicit budgets, typed
+   untrusted source CAS and citation-shape gate; governed broker authority,
+   pinned transport and semantic evidence remain;
+6. next: Memory 2.0 with provenance-visible namespaces, search, reviewed
    promotion, conflicts and reversible compaction;
 7. versioned Documents with exact citations and promotion receipts;
 8. expose bounded Agent runs, skill repair loops and evaluated teams;

@@ -4,6 +4,34 @@ Append-only хронологічний лог операцій. Формат: `#
 
 ---
 
+## [2026-07-24] product | Nordrassil bounded Deep Research and evidence-first design
+
+- Published `cyberdid/nordrassil` commit `96a4263` with a project-bound Deep
+  Research library, explicit launch budgets, selected-model context, report
+  canvas and side-by-side evidence cards.
+- Added separate `research.read`, `research.manage` and default-off
+  `research.run`; a run also depends on `web.read` and `models.invoke`.
+- Model output may propose a bounded keyword query and synthesize marked
+  untrusted source blocks, but it cannot call a tool, select a URL, widen a
+  budget, enable a grant or promote output into Memory/Documents.
+- Public HTTPS sources are normalized, bounded, stored privately by SHA-256 and
+  reverified on read. Cross-project access, local/non-HTTPS targets, unsafe
+  state, tampered source objects and unknown citations fail closed.
+- Independent live acceptance found real search-provider failures:
+  DuckDuckGo returned a bot challenge, while Brave later rate-limited/returned
+  larger HTML. The corrected bounded adapter uses Brave with Bing fallback and
+  a separate 600 KB search-page limit.
+- Final live `gemma4:12b-mlx` proof fetched two sources and rendered their URLs,
+  excerpts, round, sizes and digests. The model response was incomplete and
+  only 2/4 detected claims were cited, so the deterministic gate correctly
+  reported 50%, `citation-coverage-incomplete` and
+  `semanticTruth: not-established`.
+- `research.run` was returned to off after acceptance. The product explicitly
+  does not claim `GovernedResearchBroker` authority, address-pinned transport,
+  semantic truth, prompt-injection immunity or background research jobs.
+- Verification: 79/79 Nordrassil tests, Python compilation, inline JavaScript
+  parse and diff checks pass.
+
 ## [2026-07-24] product | Nordrassil local execution, session lifecycle and Documents
 
 - Verified and recorded four published Nordrassil commits:

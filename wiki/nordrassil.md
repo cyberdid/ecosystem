@@ -4,7 +4,8 @@
 provider/deployment registry, blind Compare, multi-project management and
 persistent project-bound Chat sessions are implemented; sessions now support
 star/archive/filter, Documents provides proposal-first Markdown editing, and
-the shared responsive product shell is live across all current views.
+the shared responsive product shell now includes a bounded Deep Research
+library, launch surface, cited report and inspectable evidence rail.
 
 **Snapshot:** 2026-07-24
 
@@ -12,7 +13,7 @@ the shared responsive product shell is live across all current views.
 
 - core: `cyberdid/ecosystem`;
 - product: `cyberdid/nordrassil`;
-- product head in this snapshot: `63b3510`.
+- product head in this snapshot: `96a4263`.
 
 ## Why Nordrassil exists
 
@@ -108,6 +109,8 @@ The FastAPI browser workspace exposes:
 - provenance-labelled Memory;
 - Notes;
 - project-bound Markdown Documents with explicit AI proposal review;
+- project-bound Deep Research runs with explicit budgets, private source CAS
+  and citation-shape verification;
 - the package-owned Skills catalog;
 - a permanent platform/enforcement status.
 
@@ -352,6 +355,52 @@ This slice is not yet immutable CAS revision history, DOCX/PDF import/render,
 collaboration or research-backed citation editing. Those are explicit
 non-claims in `nordrassil/docs/document-contract.md`.
 
+### Bounded Deep Research
+
+Commit `96a4263` adds the first usable Research slice:
+
+- a project-bound library of running, complete and failed runs;
+- a launch surface with selected observed model, one-to-three round budget and
+  two-to-six source budget;
+- separate `research.read`, `research.manage` and default-off
+  `research.run` capabilities;
+- a run also requires independent `web.read` and `models.invoke` grants;
+- the model proposes bounded keyword queries and synthesizes fetched text, but
+  cannot select a URL, tool, capability or larger budget;
+- fixed credential-free Brave/Bing HTML search adapters and public-HTTPS source
+  fetch with proxy inheritance disabled;
+- normalized source text stored privately by SHA-256, with URL, host, media
+  type, byte count, digest, excerpt, retrieval round and `untrusted: true`;
+- side-by-side report, citation coverage, search plan and source evidence;
+- deterministic recomputation of citation-shape coverage from the report;
+- `semanticTruth` remains `not-established` even when citation coverage passes.
+
+The product boundary is explicitly
+`product-adapter-not-governed-broker`. It reuses the
+`eco_research` URL normalizer and public-address checks, but Nordrassil does not
+mint the operator-authored policy or signed capability needed by
+`GovernedResearchBroker`. It therefore does not claim that broker's
+pinned-address transport, egress policy or signed provenance receipt.
+
+The live run exposed and corrected two provider assumptions. DuckDuckGo's HTML
+endpoint returned a bot challenge, and Brave later returned rate limiting/a
+larger search page. The final adapter uses bounded Brave with Bing fallback and
+a separately bounded 600 KB search response. A real
+`gemma4:12b-mlx` run completed with two fetched sources and the recorded search
+plan `Python design goals intended uses documentation python.org`.
+
+The model's report ended incomplete and cited only two of four detected claim
+lines. Nordrassil did not relabel that as success: the UI showed 50%,
+`citation-coverage-incomplete`, and `semanticTruth: not-established`. This is a
+valuable negative acceptance result—the retrieval/product flow works while the
+model-output gate remains load-bearing.
+
+The slice does not yet provide broker authority, DNS-to-connect pinning,
+JavaScript/authenticated/PDF sources, byte-exact quote spans, semantic source
+support, background streaming/cancel/retry, automatic memory/document
+promotion or multi-agent research. The complete contract is
+`nordrassil/docs/research-contract.md`.
+
 ## Relationship to the local-LLM experiment
 
 The separate `ecosystem-llm-lab` answers an engineering question: can each
@@ -388,7 +437,7 @@ The detailed correction and proof reports are:
 
 At this snapshot:
 
-- Nordrassil: 70 unit tests pass;
+- Nordrassil: 79 unit tests pass;
 - `eco validate`: pass;
 - `eco render --check`: pass;
 - live browser proof: allowed repository read and denied shell execution both
@@ -414,9 +463,17 @@ At this snapshot:
   record revalidation, distinct route capabilities and that AI edit is a
   bounded non-autosaving proposal; live browser create/save/propose/delete and
   zero console errors are also observed;
+- Research tests verify three independent run grants, separate read/manage
+  paths, round/source/request bounds, project isolation, source-CAS privacy and
+  tamper denial, search-result parsers, safe target rejection, deletion and
+  incomplete/unknown citation handling;
+- live Research proof verifies default-off denial, explicit opt-in, real public
+  search/fetch, two source cards, digest/excerpt display, saved search plan and
+  a 50% incomplete citation result from the selected local model; the temporary
+  run grant was disabled afterward;
 - JavaScript parsing, Python compilation and whitespace checks pass.
 
-The 70 tests are implementation evidence for the current bounded slices. They
+The 79 tests are implementation evidence for the current bounded slices. They
 do not prove native macOS kernel isolation, remote provider conformance,
 production multi-user security or completion of the full product.
 
@@ -432,7 +489,7 @@ production multi-user security or completion of the full product.
 | Projects / Git workspaces | working local slice |
 | Responsive shell / accessibility | desktop and 390 px shell, system light/dark colours, focus and reduced motion working; PWA, user themes and formal assistive-tech audit remain |
 | Documents | proposal-first project Markdown editor working; revisions/CAS, import/render/export and research citations remain |
-| Deep Research | next slice |
+| Deep Research | bounded project library/report/evidence slice working; governed broker authority, pinned transport, semantic evidence gate and background job lifecycle remain |
 | Agents / teams / scheduled tasks | planned; must use bounded loops and evaluated delegation |
 | Email / Calendar / MCP | planned; credentials stay broker-owned and writes require approval |
 | Auth / backup | planned |
@@ -446,9 +503,10 @@ The complete live feature inventory is maintained in
    profiles and native Ollama/OpenAI-compatible Chat selection.
 2. Completed: session star/archive/filter and proposal-first Markdown
    Documents.
-3. Governed Deep Research with bounded search/fetch, untrusted-source channels,
-   claim-level citations and durable run evidence.
-4. Memory 2.0: provenance-visible namespaces, search, fact/lesson lifecycle,
+3. Completed: bounded product Deep Research with default-off run, explicit
+   budgets, private untrusted source CAS and citation-shape gate; governed
+   broker integration and semantic evidence remain.
+4. Next: Memory 2.0 with provenance-visible namespaces, search, fact/lesson lifecycle,
    reviewed promotion, conflict display and reversible compaction.
 5. Versioned Documents with exact research citations, immutable revisions,
    render/import/export and promotion receipts.
