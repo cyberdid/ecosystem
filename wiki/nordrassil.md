@@ -1,16 +1,16 @@
 # Nordrassil — the user-facing product layer
 
 **Status:** active sibling product; workspace foundation, local-model Cookbook,
-blind Compare, multi-project management and persistent project-bound Chat
-sessions are implemented.
+provider/deployment registry, blind Compare, multi-project management and
+persistent project-bound Chat sessions are implemented.
 
-**Snapshot:** 2026-07-23
+**Snapshot:** 2026-07-24
 
 **Repositories:**
 
 - core: `cyberdid/ecosystem`;
 - product: `cyberdid/nordrassil`;
-- product head in this snapshot: `05c4b72`.
+- product head in this snapshot: `dc7c781`.
 
 ## Why Nordrassil exists
 
@@ -35,9 +35,13 @@ actions remain denied even if a model repeatedly asks for them.
 
 ## What the Odysseus audit established
 
-The local Odysseus source was inspected rather than inferred from screenshots:
-36 route groups, more than 430 HTTP endpoints, over 92,000 frontend lines and
-over 37,000 lines in its main Python systems. Its local `LICENSE` is MIT.
+The local Odysseus source at
+`/Users/helenshkirenko/Downloads/odysseus-dev` was inspected rather than
+inferred from screenshots: 73 Python route files with 465 HTTP/WebSocket route
+decorators, 152 JavaScript files with 128,328 lines, 58,669 Python lines across
+`src` and `core`, and 737 test files with 4,076 test functions. Its local
+`LICENSE` is MIT. These are orientation counts, not a claim that every branch
+has been ported.
 
 Useful patterns to retain:
 
@@ -164,6 +168,56 @@ Current local inventory used for the product proof:
 This inventory is observational, not a capability claim. A model becomes a
 governed deployment only after identity and conformance evidence are bound.
 
+### Providers and deployments
+
+The Odysseus endpoint/model-picker workflow is now adapted through a stricter
+product boundary:
+
+- private create/edit/delete endpoint registry;
+- built-in native Ollama deployment;
+- grouped provider/model picker in Chat;
+- explicit default provider/model pair;
+- runtime profiles for Ollama, llama.cpp, MLX-LM, vLLM-Metal, LM Studio, vLLM,
+  SGLang, Hugging Face TGI, NVIDIA NIM and NVIDIA Triton;
+- native Ollama and OpenAI-compatible Chat adapters;
+- transport-specific probe paths for Ollama, OpenAI/NIM and Triton KServe V2;
+- private observations and observed model IDs;
+- separate `providers.read`, `providers.manage` and default-off
+  `providers.probe` capabilities.
+
+Network zones are explicit:
+
+| Zone | Accepted endpoint |
+|---|---|
+| local | loopback hostname or address only |
+| private LAN | literal RFC1918 or IPv6 ULA address; no DNS rebinding surface |
+| remote | HTTPS only |
+
+Provider URLs reject userinfo, query and fragments. Credential values are never
+stored; the only accepted form is `env:VARIABLE`, resolved at the adapter
+boundary. Probe and Chat disable environment proxies and revalidate redirects
+against the original zone.
+
+A successful probe proves transport reachability and a parseable model catalog
+only. `tools`, `structuredOutput`, `vision` and `embeddings` remain `unknown`
+until independent per-deployment conformance exists. In particular, Triton is
+shown as a KServe V2 model platform and can expose health/repository
+observations, but it is not sent to Chat as if KServe were OpenAI-compatible.
+
+The live acceptance proof established two real paths on this Mac:
+
+1. native `ollama-native` probe and Chat returned
+   `provider-registry-ok`;
+2. a separately registered `http://127.0.0.1:11434/v1` endpoint was probed and
+   returned `openai-adapter-ok` through the OpenAI-compatible adapter;
+3. both observed `gemma4:12b-mlx` and `gpt-oss:20b`;
+4. semantic labels remained `unknown`;
+5. the temporary `providers.probe` grant was turned off after the run.
+
+The provider record and observations remain ignored product-private runtime
+state. The complete record, data-edge, probe and non-claim contract is in
+`nordrassil/docs/provider-deployment-contract.md`.
+
 ### Projects and Files
 
 The multi-project manager supports:
@@ -256,7 +310,7 @@ The detailed correction and proof reports are:
 
 At this snapshot:
 
-- Nordrassil: 49 unit tests pass;
+- Nordrassil: 57 unit tests pass;
 - `eco validate`: pass;
 - `eco render --check`: pass;
 - live browser proof: allowed repository read and denied shell execution both
@@ -272,8 +326,13 @@ At this snapshot:
 - session tests verify private CRUD/export, actual history dependency, digest
   rehydration, project/session isolation, state topology, content limits and
   distinct capability gates.
+- provider tests verify private permissions, CRUD, built-in immutability,
+  revalidation of tampered state, URL/zone/transport rejection, plaintext
+  secret rejection, probe observations, default persistence, secret
+  non-persistence, OpenAI tool schema and capability gates;
+- JavaScript parsing, Python compilation and whitespace checks pass.
 
-The 49 tests are implementation evidence for the current bounded slices. They
+The 57 tests are implementation evidence for the current bounded slices. They
 do not prove native macOS kernel isolation, remote provider conformance,
 production multi-user security or completion of the full product.
 
@@ -284,7 +343,8 @@ production multi-user security or completion of the full product.
 | Core-gated Chat | persistent sessions and bounded UTF-8 attachments working; search/archive and binary extraction remain |
 | Capabilities / Files / Memory / Notes / Skills | working foundation; authoring and richer artifact flows remain |
 | Blind Compare | working local slice; rubric/routing gate remains |
-| Cookbook / local models | working local slice; vLLM, remote servers and benchmarked fit remain |
+| Cookbook / local models | working local lifecycle slice; remote server lifecycle and benchmarked fit remain |
+| Providers / deployments | registry, probes, native Ollama and OpenAI Chat working; semantic conformance, remote lifecycle and Triton model adapters remain |
 | Projects / Git workspaces | working local slice |
 | Deep Research / Documents | planned |
 | Agents / teams / scheduled tasks | planned; must use bounded loops and evaluated delegation |
@@ -296,13 +356,16 @@ The complete live feature inventory is maintained in
 
 ## Next delivery order
 
-1. Local/API-compatible provider registry, probes and conformance labels.
-2. Governed Research and versioned Documents with exact citations and proposed
+1. Completed: local/LAN/remote provider registry, transport probes, runtime
+   profiles and native Ollama/OpenAI-compatible Chat selection.
+2. Memory 2.0: provenance-visible namespaces, search, fact/lesson lifecycle,
+   reviewed promotion, conflict display and reversible compaction.
+3. Governed Research and versioned Documents with exact citations and proposed
    diffs.
-3. Bounded Agent runs, skill repair loops and evaluated team orchestration.
-4. Tasks, MCP, email/calendar and other external connectors with action-point
+4. Bounded Agent runs, skill repair loops and evaluated team orchestration.
+5. Tasks, MCP, email/calendar and other external connectors with action-point
    approvals.
-5. Authentication, backup/import/export, PWA/mobile and accessibility.
+6. Authentication, backup/import/export, PWA/mobile and accessibility.
 
 Each slice is done only when it has a usable UI/API, a named core or adapter
 boundary, positive and negative tests, a dependency test, provenance and an

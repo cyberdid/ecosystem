@@ -2,7 +2,7 @@
 
 > Curated operational knowledge. Canonical executable truth lives under `.ai/`; generated vendor files are projections.
 
-**Updated:** 2026-07-23
+**Updated:** 2026-07-24
 **Status:** M1–M6.8 implementation and local/independent gates are complete for
 the bounded reference profile. The `0.8.0` hosted matrix is blocked before job
 creation by GitHub runner/account state; a complete live five-role model PASS
@@ -12,7 +12,7 @@ remains explicitly unclaimed.
 
 | Page | Purpose | Updated |
 |---|---|---:|
-| [Nordrassil product layer](nordrassil.md) | User-facing product over the enforced core: Odysseus audit, local-model Cookbook, Compare, multi-project workspaces, experiment evidence and honest backlog | 2026-07-23 |
+| [Nordrassil product layer](nordrassil.md) | User-facing product over the enforced core: Odysseus audit, provider/deployment registry, local-model Cookbook, Compare, multi-project workspaces, experiment evidence and honest backlog | 2026-07-24 |
 | [Creating in the ecosystem](../docs/architecture/creation.md) | How loop/contract/skill/agent/memory are created, the shared gate, the L0/L1/L2 autonomy scale and creation invariants | 2026-07-22 |
 | [M6 completion report](../docs/research/2026-07-20-m6-functional-orchestration-completion-report.md) | M6.1–M6.8 delivery, exact-route audit corrections, release evidence, schema identities and honest nonclaims | 2026-07-20 |
 | [M6 functional orchestration](../docs/architecture/functional-orchestration.md) | Additive contracts, governed model bridge, fixed source-review and M6.2–M6.8 delivery sequence | 2026-07-20 |
@@ -32,7 +32,7 @@ remains explicitly unclaimed.
 | [openresearcher.md](openresearcher.md) | Downloaded upstream research node, evidence, boundaries, and possible role | 2026-07-15 |
 | [labs-molt.md](labs-molt.md) | NVIDIA agentic-RL training node, architecture, evidence, risks, and gated role | 2026-07-15 |
 | [ai-legal-claude.md](ai-legal-claude.md) | Claude-specific legal prompt corpus, compatibility audit, legal limits, and safe-adoption gate | 2026-07-15 |
-| [roadmap.md](roadmap.md) | Dependency-ordered M0–M8 delivery plan with M6 exit evidence and enterprise M7 | 2026-07-20 |
+| [roadmap.md](roadmap.md) | Dependency-ordered M0–M8 delivery plan with M6 exit evidence, enterprise M7 and Nordrassil product track | 2026-07-24 |
 | [M4.5.1 safe project adoption](../docs/architecture/project-adoption.md) | Preview/apply contract, ownership receipt, reversible projections and exact non-claims | 2026-07-16 |
 | [M4.5.1 completion report](../docs/research/2026-07-16-m4.5.1-adoption-bootstrap-report.md) | Threat model, multi-agent review, adversarial fixtures, verification gate and handoff | 2026-07-16 |
 | [M4.5.2 platform/adapter conformance](../docs/architecture/platform-adapter-conformance.md) | Passive doctor, declared/detected/proven boundary, schemas and exact non-claims | 2026-07-16 |
@@ -52,7 +52,7 @@ remains explicitly unclaimed.
 | [M2 completion report](../docs/research/2026-07-15-m2-completion-report.md) | Exit-criteria evidence, test gate, and exact limitations | 2026-07-15 |
 | [M2 evaluation report](../docs/research/2026-07-15-m2-cross-deployment-evaluation-report.md) | Identical suite runner, governed local/cloud evidence, cloud-alias and renewal boundaries | 2026-07-15 |
 | [Research register](../docs/research/README.md) | Reviewed external sources and preserved raw material | 2026-07-15 |
-| [log.md](log.md) | Append-only change/decision log | 2026-07-15 |
+| [log.md](log.md) | Append-only change/decision log | 2026-07-24 |
 
 ## Canonical contracts
 

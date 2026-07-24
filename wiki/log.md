@@ -4,6 +4,40 @@ Append-only хронологічний лог операцій. Формат: `#
 
 ---
 
+## [2026-07-24] product | Nordrassil provider and deployment registry
+
+- Added the provider/deployment slice in `cyberdid/nordrassil` at
+  `dc7c781`: private endpoint CRUD, grouped Chat model selection, explicit
+  defaults, native Ollama and OpenAI-compatible adapters, and runtime profiles
+  for Ollama, llama.cpp, MLX-LM, vLLM-Metal, LM Studio, vLLM, SGLang, TGI,
+  NVIDIA NIM and NVIDIA Triton.
+- Added explicit loopback, private-LAN and remote network zones. LAN accepts
+  only literal RFC1918/ULA addresses; remote requires HTTPS. URL credentials,
+  plaintext secret fields, transport mismatches, proxy inheritance, unsafe
+  redirects and tampered persisted endpoints fail closed.
+- Provider credentials are stored only as `env:VARIABLE` references and
+  resolved at the adapter boundary. `providers.probe` is separately gated and
+  off by default.
+- Probes observe transport health and model IDs but keep tools, structured
+  output, vision and embeddings `unknown`. Triton exposes KServe V2
+  health/repository observation only and is not misrepresented as an OpenAI
+  Chat endpoint.
+- Live proof: native Ollama returned `provider-registry-ok`; a separately
+  registered Ollama `/v1` endpoint returned `openai-adapter-ok` through the
+  OpenAI adapter. Both observed `gemma4:12b-mlx` and `gpt-oss:20b`; the
+  temporary probe grant was disabled afterward.
+- Verification: 57/57 Nordrassil unit tests, Python compilation, JavaScript
+  parsing and diff checks pass. The source-backed Odysseus audit was refreshed
+  to the actual `Downloads/odysseus-dev` tree and its current measured counts.
+- Ecosystem documentation gates pass: `eco validate`, `eco render --check`,
+  `eco doctor` and `git diff --check`. Full discovery on this Mac is not a
+  portability pass: 815 tests report 25 failures, 67 errors and 26 skips,
+  dominated by Linux `openat2` requirements and macOS `/var` path aliasing.
+  That pre-existing platform harness behavior is retained as an explicit
+  non-claim rather than relabelled green.
+- Next product slice: Memory 2.0 with provenance-visible namespaces, search,
+  reviewed promotion, conflict handling and reversible compaction.
+
 ## [2026-07-23] product | Nordrassil persistent sessions and provenance-bound attachments
 
 - Added private project-bound Chat session create/switch/rename/export/delete
