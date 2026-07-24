@@ -4,6 +4,30 @@ Append-only хронологічний лог операцій. Формат: `#
 
 ---
 
+## [2026-07-24] design | Nordrassil responsive product shell
+
+- Published `cyberdid/nordrassil` commit `85589a8` with a shared interface
+  system for every current product view.
+- Replaced the generic light admin layout and emoji navigation with a dark
+  grouped control rail, semantic light/dark tokens, SVG controls, persistent
+  project/enforcement context, clearer operational density and a full-height
+  Chat workspace.
+- Adapted only the useful Odysseus interaction grammar — persistent workspace
+  navigation, inline model context, responsive sidebar and compact operational
+  surfaces. The Odysseus application shell and monolithic stylesheet were not
+  copied, and UI state did not become authority.
+- Added a real off-canvas mobile navigation pattern, labelled icon-only
+  controls, `:focus-visible` treatment and reduced-motion behavior.
+- Live Browser verification covered desktop Chat, Providers and Projects &
+  Files plus 390 × 844 Chat, open navigation and Providers. The mobile document
+  had no horizontal overflow (`390 === 390`).
+- Added `nordrassil/docs/design-system.md` with tokens, layout/component
+  contracts, acceptance criteria and explicit non-claims.
+- Verification: HTML parser pass, inline JavaScript compilation pass,
+  `git diff --check` pass and 57/57 Nordrassil unit tests pass.
+- This slice does not claim an installable/offline PWA, user-authored themes,
+  persistent density settings or formal WCAG/assistive-technology conformance.
+
 ## [2026-07-24] product | Nordrassil provider and deployment registry
 
 - Added the provider/deployment slice in `cyberdid/nordrassil` at

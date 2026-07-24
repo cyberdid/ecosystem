@@ -2,7 +2,8 @@
 
 **Status:** active sibling product; workspace foundation, local-model Cookbook,
 provider/deployment registry, blind Compare, multi-project management and
-persistent project-bound Chat sessions are implemented.
+persistent project-bound Chat sessions are implemented; the shared responsive
+product shell is now live across all current views.
 
 **Snapshot:** 2026-07-24
 
@@ -10,7 +11,7 @@ persistent project-bound Chat sessions are implemented.
 
 - core: `cyberdid/ecosystem`;
 - product: `cyberdid/nordrassil`;
-- product head in this snapshot: `dc7c781`.
+- product head in this snapshot: `85589a8`.
 
 ## Why Nordrassil exists
 
@@ -110,6 +111,40 @@ The FastAPI browser workspace exposes:
 
 Direct API routes and model-proposed tools use the same capability state. A
 disabled feature cannot be reached by bypassing its UI.
+
+### Responsive product shell
+
+The product no longer presents the implemented slices as a generic technical
+dashboard. The source-backed Odysseus review identified the useful interface
+grammar — persistent navigation, inline model context, dense operational
+surfaces, SVG controls and a real responsive sidebar — without importing its
+monolithic application shell or treating visual state as authority.
+
+The Nordrassil system at `85589a8` now provides:
+
+- a dark, stable control rail with separate Workspace and Knowledge groups;
+- a quiet work canvas with semantic light/dark tokens and task-specific
+  density;
+- persistent project and enforcement context in the top bar;
+- a full-height Chat workspace with session rail, readable message measure,
+  deployment selector and bounded floating composer;
+- shared cards, fields, buttons, warnings, evidence pills and SVG icons across
+  Cookbook, Providers, Projects & Files and the remaining foundation views;
+- a 390 px off-canvas mobile navigation sheet with scrim and automatic close
+  after route selection;
+- visible keyboard focus, labelled icon-only attachment/menu controls and
+  reduced-motion handling.
+
+The Browser acceptance run used live API data, not a mock. Desktop Chat,
+Providers and Projects & Files rendered correctly. At 390 × 844, Chat, the open
+navigation sheet and Providers rendered without horizontal overflow:
+`scrollWidth === clientWidth === 390`.
+
+This is a usable responsive shell, not a complete PWA or accessibility
+certification. Install/offline behavior, user-authored themes, persistent
+density settings and formal assistive-technology testing remain explicit
+follow-up work. The product contract is recorded in
+`nordrassil/docs/design-system.md`.
 
 ### Core-gated chat tools
 
@@ -330,6 +365,8 @@ At this snapshot:
   revalidation of tampered state, URL/zone/transport rejection, plaintext
   secret rejection, probe observations, default persistence, secret
   non-persistence, OpenAI tool schema and capability gates;
+- live desktop/mobile Browser checks verify the shared shell, real route
+  switching, mobile open/close behavior and 390 px no-overflow condition;
 - JavaScript parsing, Python compilation and whitespace checks pass.
 
 The 57 tests are implementation evidence for the current bounded slices. They
@@ -346,10 +383,11 @@ production multi-user security or completion of the full product.
 | Cookbook / local models | working local lifecycle slice; remote server lifecycle and benchmarked fit remain |
 | Providers / deployments | registry, probes, native Ollama and OpenAI Chat working; semantic conformance, remote lifecycle and Triton model adapters remain |
 | Projects / Git workspaces | working local slice |
+| Responsive shell / accessibility | desktop and 390 px shell, system light/dark colours, focus and reduced motion working; PWA, user themes and formal assistive-tech audit remain |
 | Deep Research / Documents | planned |
 | Agents / teams / scheduled tasks | planned; must use bounded loops and evaluated delegation |
 | Email / Calendar / MCP | planned; credentials stay broker-owned and writes require approval |
-| Auth / backup / PWA / accessibility | planned |
+| Auth / backup | planned |
 
 The complete live feature inventory is maintained in
 `nordrassil/docs/feature-matrix.md`.

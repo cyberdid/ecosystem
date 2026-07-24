@@ -12,7 +12,7 @@ remains explicitly unclaimed.
 
 | Page | Purpose | Updated |
 |---|---|---:|
-| [Nordrassil product layer](nordrassil.md) | User-facing product over the enforced core: Odysseus audit, provider/deployment registry, local-model Cookbook, Compare, multi-project workspaces, experiment evidence and honest backlog | 2026-07-24 |
+| [Nordrassil product layer](nordrassil.md) | User-facing product over the enforced core: responsive shell, Odysseus audit, provider/deployment registry, local-model Cookbook, Compare, multi-project workspaces, experiment evidence and honest backlog | 2026-07-24 |
 | [Creating in the ecosystem](../docs/architecture/creation.md) | How loop/contract/skill/agent/memory are created, the shared gate, the L0/L1/L2 autonomy scale and creation invariants | 2026-07-22 |
 | [M6 completion report](../docs/research/2026-07-20-m6-functional-orchestration-completion-report.md) | M6.1–M6.8 delivery, exact-route audit corrections, release evidence, schema identities and honest nonclaims | 2026-07-20 |
 | [M6 functional orchestration](../docs/architecture/functional-orchestration.md) | Additive contracts, governed model bridge, fixed source-review and M6.2–M6.8 delivery sequence | 2026-07-20 |
