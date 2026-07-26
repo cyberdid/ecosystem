@@ -8,7 +8,8 @@ the shared responsive product shell now includes a bounded Deep Research
 library, launch surface, cited report, inspectable evidence rail and a
 read-only Runs / Flow replay surface, sealed bounded single-agent runs with
 authenticated checkpoints, and a canonical `eco_teams` Team Studio whose
-execution remains fail-closed until signed M5 authority is connected. The
+execution remains fail-closed until signed M5 authority is connected. A
+local-model Eval Lab now renders and runs the separate capability battery. The
 current visual language is a Nordrassil-specific bio-cyberpunk system rather
 than a generic SaaS dashboard.
 
@@ -18,7 +19,7 @@ than a generic SaaS dashboard.
 
 - core: `cyberdid/ecosystem`;
 - product: `cyberdid/nordrassil`;
-- product head in this snapshot: `64d2383`.
+- product head in this snapshot: `cf0be03`.
 
 ## Why Nordrassil exists
 
@@ -543,6 +544,56 @@ project isolation and authority-unavailable refusal; the complete product suite
 is 104/104. The detailed contract is
 `nordrassil/docs/team-studio-contract.md`.
 
+### Local-model Eval Lab — capability evidence in the product
+
+Nordrassil `cf0be03` turns the corrected `ecosystem-llm-lab` battery at
+revision `5c08f18` into a normal operator flow without copying or weakening its
+gates:
+
+- choose any installed loopback Ollama models;
+- select 1, 3 or 5 fresh-context attempts and any subset of the seven fixed
+  scenarios;
+- launch/cancel one fixed sibling-lab process;
+- inspect the report archive, model score cards, positive/control vote matrix,
+  per-attempt real gate codes, output digests, token/latency measurements and
+  explicit non-claims.
+
+The seven scenarios cover strict structured output, supplied-skill following,
+package-ready skill creation, real provenance-bound memory dependency, narrowed
+team authoring, native tool invocation plus returned-fact use, and bounded
+planner → analyst → independent-reviewer orchestration. The underlying gates
+remain `eco_gsc`, `eco_memory`, `eco_teams` and `eco_loops`; a model never grades
+or authorizes itself.
+
+Reliability is explicit. A three-attempt run requires both positive and
+dependency-negative arms to reach 2/3; five attempts require 3/5. One attempt is
+shown as **smoke only** even when the raw battery says 1/1. Code-path controls
+are labelled separately because they prove a deterministic gate property, not
+model behavior.
+
+`evals.read` is default-on. `evals.run` is independently default-off and
+`models.invoke` remains a separate dependency. The product starts only a fixed
+Python/module/argv sequence, passes a minimal environment without inherited
+credential variables, accepts only currently installed model IDs and keeps raw
+transcripts inside the sibling lab's ignored private state. Product job records
+are active-project scoped, mode-0600 and HMAC-sealed.
+
+Live acceptance first rendered the corrected full 3-attempt report:
+
+- `gemma4:12b-mlx`: 3/7 contracts established;
+- `gpt-oss:20b`: 5/7 contracts established;
+- skill creation and one-shot team authoring remain not established for both.
+
+Then the new runner produced report `battery-20260726T071441Z` for one GPT-OSS
+structured-output smoke: positive 1/1, control 1/1, 253 tokens, 8.761 seconds.
+The UI correctly labels it smoke-only, not promotion evidence.
+
+Five focused Eval tests plus the complete 109/109 product suite prove fixed
+argv/minimal environment, independent route capabilities, input validation
+before process start, project isolation, HMAC tamper rejection, bounded report
+parsing and transcript-path removal. The product contract is
+`nordrassil/docs/eval-lab-contract.md`.
+
 ## Relationship to the local-LLM experiment
 
 The separate `ecosystem-llm-lab` answers an engineering question: can each
@@ -696,7 +747,8 @@ production multi-user security or completion of the full product.
 | Documents | proposal-first project Markdown editor working; revisions/CAS, import/render/export and research citations remain |
 | Deep Research | bounded project library/report/evidence slice working; governed broker authority, pinned transport, semantic evidence gate and background job lifecycle remain |
 | Runs / Flow | read-only observed Research plus authenticated Agent replay working; Agent SSE/reconnect works, Loop/Team ingestion remains |
-| Agents / teams / scheduled tasks | bounded single-agent launcher, live events, exact non-authorizing review and canonical Team Studio working; signed M5 team execution, generic core approval, crash resume, evaluation and scheduler remain |
+| Agents / teams / scheduled tasks | bounded single-agent launcher, live events, exact non-authorizing review and canonical Team Studio working; signed M5 team execution, generic core approval, crash resume and scheduler remain |
+| Local-model Eval Lab | fixed loopback runner, progress/cancel, sanitized report archive, vote matrix and attempt evidence working; report remains evidence, never deployment authority |
 | Email / Calendar / MCP | planned; credentials stay broker-owned and writes require approval |
 | Auth / backup | planned |
 
@@ -723,8 +775,9 @@ The complete live feature inventory is maintained in
 8. Completed for authoring/inspection: canonical Team Studio with observed role
    deployments, delegation graph and aggregate budgets. Execution stays blocked
    until current signed M5 authority and an `ExecutionAuthorizer` are connected.
-9. Next: LLM Evaluation Lab for skills, memory, tools, agents and orchestration.
-10. Versioned Documents with exact research citations, immutable revisions,
+9. Completed: local-model Eval Lab for skills, memory, tools, agent/team
+   authoring and bounded orchestration, including self-consistency controls.
+10. Next: versioned Documents with exact research citations, immutable revisions,
    render/import/export and promotion receipts.
 11. Tasks, MCP, email/calendar and other external connectors with action-point
    approvals.

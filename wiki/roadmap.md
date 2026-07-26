@@ -33,7 +33,7 @@
 | M7 | Enterprise/network authority and native security backends | Re-sequenced from old M6; not dropped or claimed |
 | GSC | Gated self-creation of skills/agents/loops under adversarial promotion gates | Proposed (design only); see [proposal](../docs/research/2026-07-22-gated-self-creation-contract-proposal-claude.md) |
 | M8 | Optional training/learning and experimental nodes | Future; MOLT/local GPU are adapters, not dependencies |
-| Product / Nordrassil | Normal-user workspace over the core | Active sibling product: sealed bounded Agent runs, canonical fail-closed Team Studio, Memory 2.0, authenticated/observed Flow replay, Deep Research, Documents, sessions, providers, Compare, Cookbook and projects implemented; see [product page](nordrassil.md) |
+| Product / Nordrassil | Normal-user workspace over the core | Active sibling product: sealed bounded Agent runs, canonical fail-closed Team Studio, local-model Eval Lab, Memory 2.0, authenticated/observed Flow replay, Deep Research, Documents, sessions, providers, Compare, Cookbook and projects implemented; see [product page](nordrassil.md) |
 
 ## Product track — Nordrassil
 
@@ -63,8 +63,10 @@ product sequence is:
    exact observed role deployments, aggregate budgets and delegation canvas;
    runtime remains blocked until current signed M5 authority and a separate
    `ExecutionAuthorizer` are connected;
-10. next: local-model Eval Lab;
-11. versioned Documents with exact citations and promotion receipts;
+10. completed: local-model Eval Lab with fixed loopback runner,
+    positive/dependency controls, self-consistency votes, report archive and
+    per-attempt evidence;
+11. next: versioned Documents with exact citations and promotion receipts;
 12. approved external connectors, then auth, backup and PWA hardening.
 
 Product convenience cannot reinterpret an allow-candidate as final runtime

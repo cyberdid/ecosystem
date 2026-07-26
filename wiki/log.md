@@ -4,6 +4,37 @@ Append-only хронологічний лог операцій. Формат: `#
 
 ---
 
+## [2026-07-26] product | Nordrassil local-model Eval Lab
+
+- Published Nordrassil product commit `cf0be03`.
+- Added a usable UI/API adapter over the separate corrected
+  `ecosystem-llm-lab` revision `5c08f18`; the battery remains independently
+  versioned and owns its real `eco_gsc`/`eco_memory`/`eco_teams`/`eco_loops`
+  gates.
+- Operators can select installed Ollama models, any of seven fixed scenarios
+  and 1/3/5 fresh-context attempts, then observe progress/cancel and inspect
+  sanitized historical reports.
+- Reports show positive and dependency-control votes, actual code-owned gate
+  codes, output digests, tokens/latency, control kind and explicit non-claims.
+  One attempt is labelled smoke-only; reliable establishment needs the declared
+  2/3 or 3/5 majority.
+- Added independent default-on `evals.read` and default-off `evals.run`;
+  `models.invoke` is a separate required dependency. Passing never enables a
+  model, deployment, team, capability or tool.
+- Runner input is constrained to installed model IDs, 1–5 attempts and the
+  fixed scenario set. It launches a fixed Python/module argv with a minimal
+  environment and one owned process at a time.
+- Raw prompts, memory markers, tool returns and transcripts stay inside the
+  sibling lab's ignored private state. Product job metadata is project-scoped,
+  mode-0600 and HMAC-sealed; report parsing is bounded and rejects symlinks or
+  invalid profiles.
+- Live acceptance rendered the corrected 3-attempt matrix (Gemma 3/7, GPT-OSS
+  5/7) and produced a new GPT-OSS structured-output smoke report:
+  `battery-20260726T071441Z`, positive 1/1, control 1/1, 253 tokens, 8.761 s.
+- Verification: 5 focused Eval tests, full 109/109 Nordrassil suite, JavaScript
+  syntax, Python compile, whitespace/secret checks and desktop browser
+  acceptance.
+
 ## [2026-07-26] product | Nordrassil canonical Team Studio
 
 - Published Nordrassil product commit `64d2383`.
