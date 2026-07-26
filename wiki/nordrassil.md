@@ -6,7 +6,8 @@ persistent project-bound Chat sessions are implemented; sessions now support
 star/archive/filter, Documents provides proposal-first Markdown editing, and
 the shared responsive product shell now includes a bounded Deep Research
 library, launch surface, cited report, inspectable evidence rail and a
-read-only Runs / Flow replay surface.
+read-only Runs / Flow replay surface. The current visual language is a
+Nordrassil-specific bio-cyberpunk system rather than a generic SaaS dashboard.
 
 **Snapshot:** 2026-07-26
 
@@ -14,7 +15,7 @@ read-only Runs / Flow replay surface.
 
 - core: `cyberdid/ecosystem`;
 - product: `cyberdid/nordrassil`;
-- product head in this snapshot: `728dd17` (feature `6424de5`).
+- product head in this snapshot: `17c2bc3`.
 
 ## Why Nordrassil exists
 
@@ -126,11 +127,16 @@ grammar — persistent navigation, inline model context, dense operational
 surfaces, SVG controls and a real responsive sidebar — without importing its
 monolithic application shell or treating visual state as authority.
 
-The Nordrassil system at `85589a8` now provides:
+The first shared shell landed at `85589a8`. Product commit `17c2bc3` replaces
+its neutral SaaS treatment with a dependency-free **Nordrassil
+bio-cyberpunk** system:
 
-- a dark, stable control rail with separate Workspace and Knowledge groups;
-- a quiet work canvas with semantic light/dark tokens and task-specific
-  density;
+- a root-plane control rail with a hexagonal tree sigil, `ROOT // 01` marker
+  and separate Workspace and Knowledge branches;
+- a dark canopy canvas with low-opacity grid/scanline layers, luminous green
+  active paths and cyan information-flow accents;
+- asymmetric clipped surfaces and monospace system runes without replacing
+  readable proportional body text;
 - persistent project and enforcement context in the top bar;
 - a full-height Chat workspace with session rail, readable message measure,
   deployment selector and bounded floating composer;
@@ -141,15 +147,23 @@ The Nordrassil system at `85589a8` now provides:
 - visible keyboard focus, labelled icon-only attachment/menu controls and
   reduced-motion handling.
 
+The palette preserves semantics: green is active/positive evidence, cyan is
+information flow, amber is warning and red is denial. Glow and elevation never
+claim authorization. Runs / Flow keeps its `observed` trust and boundary text
+visible even though its recorded graph receives the strongest network
+treatment.
+
 The Browser acceptance run used live API data, not a mock. Desktop Chat,
-Providers and Projects & Files rendered correctly. At 390 × 844, Chat, the open
-navigation sheet and Providers rendered without horizontal overflow:
-`scrollWidth === clientWidth === 390`.
+Cookbook, Deep Research and a selected 12-node Runs / Flow graph rendered
+correctly; all 12 destinations activated their expected panel. At 390 × 844,
+Chat and the open navigation sheet rendered without horizontal overflow:
+`scrollWidth === clientWidth === 390`. Browser console errors: zero.
 
 This is a usable responsive shell, not a complete PWA or accessibility
-certification. Install/offline behavior, user-authored themes, persistent
-density settings and formal assistive-technology testing remain explicit
-follow-up work. The product contract is recorded in
+certification. The current theme is deliberately dark; a selectable/light
+theme, install/offline behavior, persistent density settings and formal
+assistive-technology testing remain explicit follow-up work. The product
+contract is recorded in
 `nordrassil/docs/design-system.md`.
 
 ### Core-gated chat tools
@@ -438,7 +452,7 @@ The detailed correction and proof reports are:
 
 At this snapshot:
 
-- Nordrassil: 79 unit tests pass;
+- Nordrassil: 85 unit tests pass;
 - `eco validate`: pass;
 - `eco render --check`: pass;
 - live browser proof: allowed repository read and denied shell execution both
@@ -535,7 +549,7 @@ production multi-user security or completion of the full product.
 | Cookbook / local models | working local lifecycle slice; remote server lifecycle and benchmarked fit remain |
 | Providers / deployments | registry, probes, native Ollama and OpenAI Chat working; semantic conformance, remote lifecycle and Triton model adapters remain |
 | Projects / Git workspaces | working local slice |
-| Responsive shell / accessibility | desktop and 390 px shell, system light/dark colours, focus and reduced motion working; PWA, user themes and formal assistive-tech audit remain |
+| Responsive shell / accessibility | Nordrassil bio-cyberpunk desktop and 390 px shell, focus and reduced motion working; PWA, selectable/light themes and formal assistive-tech audit remain |
 | Documents | proposal-first project Markdown editor working; revisions/CAS, import/render/export and research citations remain |
 | Deep Research | bounded project library/report/evidence slice working; governed broker authority, pinned transport, semantic evidence gate and background job lifecycle remain |
 | Runs / Flow | read-only Research replay working; authenticated core-journal ingestion and live stream remain |

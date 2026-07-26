@@ -4,6 +4,27 @@ Append-only хронологічний лог операцій. Формат: `#
 
 ---
 
+## [2026-07-26] product | Nordrassil bio-cyberpunk interface system
+
+- Replaced the generic neutral shell with a Nordrassil-specific rooted
+  intelligence grammar at product commit `17c2bc3`: hexagonal tree sigil,
+  root-plane navigation, canopy haze, luminous sap paths, clipped surfaces and
+  monospace system runes.
+- Preserved semantic status colours and authority text. Visual glow, graph
+  emphasis and active state do not promote product observations or authorize
+  work.
+- Applied the shared system across Chat, Cookbook, Providers, Compare, Deep
+  Research, Runs / Flow, Projects & Files, Memory, Documents, Notes, Skills and
+  Capabilities without external fonts, images or frontend dependencies.
+- Live acceptance: all 12 routes activate the expected panel; desktop Chat,
+  Cookbook, Deep Research and a selected 12-node Flow graph render with real
+  data; browser console errors are zero.
+- At 390 × 844, Chat and the open navigation sheet render with
+  `scrollWidth === clientWidth === 390`. Focus and reduced-motion behavior
+  remain; complete WCAG, a light/user-selectable theme and PWA are not claimed.
+- Verification: 85/85 Nordrassil tests, Python compilation and whitespace
+  checks pass.
+
 ## [2026-07-26] product | Nordrassil deterministic Runs / Flow replay
 
 - Added canonical A0 `observability.flow.read` and the additive
