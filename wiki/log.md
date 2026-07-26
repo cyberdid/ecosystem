@@ -4,6 +4,23 @@ Append-only хронологічний лог операцій. Формат: `#
 
 ---
 
+## [2026-07-26] product | Nordrassil Deep Research → OpenResearcher-style agentic trajectory
+
+- Elevated Nordrassil Deep Research to the OpenResearcher patterns the ecosystem catalogued
+  (`wiki/openresearcher.md`): explicit **search / open / find / answer** primitives, an agentic
+  trajectory where the model chooses one action per turn, full trajectory recording (successful
+  and failed steps), and retrieval measured separately from reasoning.
+- Kept the SSRF-safe boundary: `open` selects one already-vetted search hit by its Hn id — the
+  model never supplies a URL, so every fetched address stays public-address-checked. `find` is
+  network-free (reads only already-fetched, content-addressed source text). Bounds unchanged
+  (`rounds` caps searches, `maxSources` caps opens); citation-coverage verification and the
+  untrusted-source discipline are intact; semantic truth stays `not-established`.
+- Verified live: a real run searched (9 hits), adapted around failed fetches (kept as failed
+  trajectory steps), used `find`, opened three distinct hosts, and produced a cited Canberra
+  report with honest 0.5 citation coverage. The UI shows the step timeline and retrieval metrics.
+- Remains a product adapter, explicitly not the GovernedResearchBroker. Nordrassil commit
+  `da91d37`; 81 tests pass (2 new: trajectory + find).
+
 ## [2026-07-24] product | Nordrassil bounded Deep Research and evidence-first design
 
 - Published `cyberdid/nordrassil` commit `96a4263` with a project-bound Deep
