@@ -3,7 +3,7 @@
   "kind": "SkillRegistry",
   "metadata": {
     "id": "ecosystem-builtin",
-    "version": "1.2.0"
+    "version": "1.3.0"
   },
   "skills": [
     {
@@ -189,6 +189,69 @@
         }
       },
       "resource": "ecosystem-contract-change/SKILL.md"
+    },
+    {
+      "id": "release-evidence-audit",
+      "version": "1.0.0",
+      "source": {
+        "uri": "package://eco_skills/catalog/release-evidence-audit/SKILL.md",
+        "commit": "package-release:first-project-evaluation-v1"
+      },
+      "contentDigest": "7b2f495d69c1e27d840025d01f91c409717f272b7f41453b8bbe054c5a8de679",
+      "license": "MIT",
+      "owner": "ecosystem maintainers",
+      "capabilities": [
+        "evidence.verify",
+        "source.review"
+      ],
+      "dependencies": [
+        "source-review-evidence"
+      ],
+      "tests": [
+        "tests/test_m6_skills_sync.py::SkillRegistryTests",
+        "tests/test_m6_skills_sync.py::SkillSyncTests",
+        "tests/test_release_evidence_skill.py::ReleaseEvidenceSkillTests"
+      ],
+      "evidence": [
+        "docs/architecture/first-project-evaluation.md"
+      ],
+      "revocation": {
+        "revoked": false,
+        "reason": null
+      },
+      "compatibility": {
+        "codex": {
+          "mode": "native",
+          "limitations": []
+        },
+        "claude": {
+          "mode": "native",
+          "limitations": []
+        },
+        "gemini": {
+          "mode": "native",
+          "limitations": []
+        },
+        "portable": {
+          "mode": "portable",
+          "limitations": [
+            "Client-specific automatic discovery is not claimed."
+          ]
+        },
+        "copilot": {
+          "mode": "instruction-only",
+          "limitations": [
+            "Projected as aggregate repository instructions; native skill invocation is not claimed."
+          ]
+        },
+        "cursor": {
+          "mode": "instruction-only",
+          "limitations": [
+            "Projected as an aggregate rule; native skill invocation is not claimed."
+          ]
+        }
+      },
+      "resource": "release-evidence-audit/SKILL.md"
     },
     {
       "id": "self-consistency-verification",

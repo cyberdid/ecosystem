@@ -2,181 +2,205 @@
   "apiVersion": "skills.ai.ecosystem/v1alpha1",
   "files": [
     {
-      "contentDigest": "686bd881b014742fb5ef57c474d0111866f1d0499848c2598f6a5ace35f7424a",
+      "contentDigest": "32ba434cb0043e845b8e9c842208fdf172e94c54bdb87fe3e10d0d93f16fd2d8",
       "path": ".agents/skills/agent-team-authoring/SKILL.md",
       "skillId": "agent-team-authoring",
       "surface": "codex"
     },
     {
-      "contentDigest": "08a5905fff89176476d9a51bb37614e639e9cda33c135b53e8d031fe0eb21f97",
+      "contentDigest": "6ae503abcf928598cf49768ec58c7e30f4b980aee9f553722f33bec15c5b8636",
       "path": ".agents/skills/bounded-loop-authoring/SKILL.md",
       "skillId": "bounded-loop-authoring",
       "surface": "codex"
     },
     {
-      "contentDigest": "60be4478b24c8fe9ac3210dfa318a691db2ab48d905da40ef2895e68e72dd4ee",
+      "contentDigest": "4c8b6460cdce3313ff9c59e7f288cb0b7e1a97558d09699b08f3d67caef8d9f0",
       "path": ".agents/skills/ecosystem-contract-change/SKILL.md",
       "skillId": "ecosystem-contract-change",
       "surface": "codex"
     },
     {
-      "contentDigest": "dc4363f8a0e45631ba375f63f14d3f6b645aa4d63e0553f394e92f3feb69acb8",
+      "contentDigest": "c074cea42e27fc17e18739818cf2f0e05e7c44336ec587ac08a6d9c272bfd8a1",
+      "path": ".agents/skills/release-evidence-audit/SKILL.md",
+      "skillId": "release-evidence-audit",
+      "surface": "codex"
+    },
+    {
+      "contentDigest": "62156419df0ed27c78a078cede4377af8145ec8a51fbd6979b8cac29afc0e63e",
       "path": ".agents/skills/self-consistency-verification/SKILL.md",
       "skillId": "self-consistency-verification",
       "surface": "codex"
     },
     {
-      "contentDigest": "ab247105458f201bc477fdcbf6c08ae225d4badcee9d387ead3eded62b05a439",
+      "contentDigest": "0c689f90ce8b12372f102f59fc5daecef14cdd43f55e560688170a4bf3fda77f",
       "path": ".agents/skills/skill-authoring/SKILL.md",
       "skillId": "skill-authoring",
       "surface": "codex"
     },
     {
-      "contentDigest": "d54beea4ffd85cd53b56cf7f9b663a1b103bacf727c06b3cc53304bcf65a78e5",
+      "contentDigest": "fb0da01c65e4de8ee818bf56dfdb288012106faa6698d96560ae983407cc4bc9",
       "path": ".agents/skills/source-review-evidence/SKILL.md",
       "skillId": "source-review-evidence",
       "surface": "codex"
     },
     {
-      "contentDigest": "1dbfaa0a89c7e56fd50ff14dc6ce6009d09973c38927ffec0502ab6bd281bc31",
+      "contentDigest": "15a2f41a1ef3a92e7f944619898e36dc84a2d4e2628040915946a23906323cff",
       "path": ".agents/skills/task-decomposition/SKILL.md",
       "skillId": "task-decomposition",
       "surface": "codex"
     },
     {
-      "contentDigest": "04c60b9c759c9194b28a1c6e19c7074e5e76e1693eb60eeb05dbeb96c623194e",
+      "contentDigest": "099bddfa60c4147cfcae496deb5d6a911448b53d825b0e1a46e0772459652948",
       "path": ".ai/skills/projected/agent-team-authoring/SKILL.md",
       "skillId": "agent-team-authoring",
       "surface": "portable"
     },
     {
-      "contentDigest": "35bd0f1f534c8b778e981ac84928ed1e5dba0f356bd705bca4c38b6f1553bf30",
+      "contentDigest": "a90aee35560064e60c8a4cfde55f7111b341f432e38ba5c3ba3d100a63f55f34",
       "path": ".ai/skills/projected/bounded-loop-authoring/SKILL.md",
       "skillId": "bounded-loop-authoring",
       "surface": "portable"
     },
     {
-      "contentDigest": "459dd8665b0d2a8809f344154b4c9dd1eb2af11ec8eab41dd856a63242bcc4cc",
+      "contentDigest": "4eed959a8914b9919a1c0087a3c7bf731f600689c60a20c816f716b19443d6c0",
       "path": ".ai/skills/projected/ecosystem-contract-change/SKILL.md",
       "skillId": "ecosystem-contract-change",
       "surface": "portable"
     },
     {
-      "contentDigest": "905a31e64d17129df9ac3c3fb8f3499b84e50fd38a5b3e25281ac47fdf63d36c",
+      "contentDigest": "3eba96abd77dc96002452dbb937c7390b4c91f8bcf96b5a0d68bdbaa51dbcbb2",
+      "path": ".ai/skills/projected/release-evidence-audit/SKILL.md",
+      "skillId": "release-evidence-audit",
+      "surface": "portable"
+    },
+    {
+      "contentDigest": "42d10424783643d5b64f4295a1e3f3c12cd958788ca8693dac739ae90ed8f0bf",
       "path": ".ai/skills/projected/self-consistency-verification/SKILL.md",
       "skillId": "self-consistency-verification",
       "surface": "portable"
     },
     {
-      "contentDigest": "209d00ca221f022ea1370bac2de5599db34261d83c1e8f708fbf89071ed4c801",
+      "contentDigest": "c3859d1cc9c5373a7d506e67d44a69ef8cfc9cb571c78dadc5e10296eac0e85e",
       "path": ".ai/skills/projected/skill-authoring/SKILL.md",
       "skillId": "skill-authoring",
       "surface": "portable"
     },
     {
-      "contentDigest": "87795fc64680c454f679b33f96b9cfcf37b9188530cf32f77106dc7275ac5c76",
+      "contentDigest": "36f2a93f86cf149f36bac800cb46ad64632a1f3de7ef40e6fc1ce16c50a8a6f6",
       "path": ".ai/skills/projected/source-review-evidence/SKILL.md",
       "skillId": "source-review-evidence",
       "surface": "portable"
     },
     {
-      "contentDigest": "ee506af2b7e33b4372b6a0c691bfdcdda54a578095965314948b0e161b0f6a1b",
+      "contentDigest": "63ee5cbd993aff8ff5d588682192283c955fb5be7946e5072bf26eb40832fb63",
       "path": ".ai/skills/projected/task-decomposition/SKILL.md",
       "skillId": "task-decomposition",
       "surface": "portable"
     },
     {
-      "contentDigest": "8cb5d3d617e786d5cdd615f43acfc6c83712939966a0cd5b63dd24dba133d4c8",
+      "contentDigest": "d03ce6c7cc7bf9c6400a109faf589a5fd5bfc44053d1b166572bbc532a4746d5",
       "path": ".claude/skills/agent-team-authoring/SKILL.md",
       "skillId": "agent-team-authoring",
       "surface": "claude"
     },
     {
-      "contentDigest": "dba572bbc92c0676438017db877c015813ccf535a519b268a121b91b463eedf0",
+      "contentDigest": "76a8a36bec14f4d8a13a5dd2b666ff58042d0c9716ab59f8bb405afb0d0a8e44",
       "path": ".claude/skills/bounded-loop-authoring/SKILL.md",
       "skillId": "bounded-loop-authoring",
       "surface": "claude"
     },
     {
-      "contentDigest": "bcd86d8cb98ea9328a5645e2aeb20851e1e190f4531d1ec8276591f1fd17538a",
+      "contentDigest": "51e3ce789073dc84c2bb94fadd09e80dca18cec0b6504dc39b6cd8ec1619f8df",
       "path": ".claude/skills/ecosystem-contract-change/SKILL.md",
       "skillId": "ecosystem-contract-change",
       "surface": "claude"
     },
     {
-      "contentDigest": "5ad87e7a8b965246c7f235c52fa60e2fcfce886f7e395056e4cb21c1c3652836",
+      "contentDigest": "3634a14fbb7a5089950fb7e7e80dd155a65fff871030aece1354d8f494be12ab",
+      "path": ".claude/skills/release-evidence-audit/SKILL.md",
+      "skillId": "release-evidence-audit",
+      "surface": "claude"
+    },
+    {
+      "contentDigest": "7128ab84c342b299fa9507f506fbf85d484307ba31ee01cbfb49fcd2ca7c745a",
       "path": ".claude/skills/self-consistency-verification/SKILL.md",
       "skillId": "self-consistency-verification",
       "surface": "claude"
     },
     {
-      "contentDigest": "ccec70595f5b719926b0ed474794ffc94529202f5c11ff90f72e8dc39cb0e8e6",
+      "contentDigest": "9c16b351924a35dbdadff8ec188ec80eca2431daa776464692fca7a7113d62b3",
       "path": ".claude/skills/skill-authoring/SKILL.md",
       "skillId": "skill-authoring",
       "surface": "claude"
     },
     {
-      "contentDigest": "21ecef380b40ff3af855e4434944452c9ed5c36917aef4084ac8ac3578da35df",
+      "contentDigest": "d2ef7e80e4bc2cdf8f5f12e4d24df0468f4d661384bf73098d7df09db78e47b1",
       "path": ".claude/skills/source-review-evidence/SKILL.md",
       "skillId": "source-review-evidence",
       "surface": "claude"
     },
     {
-      "contentDigest": "c92f6599ea43492b0125f187c02da6d0950ec61ce636b43c61e6c714b0d1138a",
+      "contentDigest": "78b4f1dce43c37c474e8b8b4cb9326725b1b3c8e31f18dbabd2e907378b9ead7",
       "path": ".claude/skills/task-decomposition/SKILL.md",
       "skillId": "task-decomposition",
       "surface": "claude"
     },
     {
-      "contentDigest": "a4474e645cf54c014215fe4248c080808b58e5df3125a27c18472dd64f9d2c18",
+      "contentDigest": "b92d85910e341b0c501cc0d54dcd94c841e6981f1f2d8fbfa6b8b61f9992c2d6",
       "path": ".cursor/rules/eco-skills.mdc",
       "skillId": null,
       "surface": "cursor"
     },
     {
-      "contentDigest": "c8b5ae2f2297c33f7084789f1e07b75d263f4859e5a98ad2289b075ba4f9f2e5",
+      "contentDigest": "237a51173c071d889adb3f53963645bc427ea7cc7cdd5d8aacccd59da3438a22",
       "path": ".gemini/skills/agent-team-authoring/SKILL.md",
       "skillId": "agent-team-authoring",
       "surface": "gemini"
     },
     {
-      "contentDigest": "96a36bfb91d4de8ae93b7065a5778c462ffd472c81d01227a71596ce3e70ec18",
+      "contentDigest": "bff73575b7f7a75f5068ade31441c3ed26ab1e8a2b7d343654768fb3d89510a4",
       "path": ".gemini/skills/bounded-loop-authoring/SKILL.md",
       "skillId": "bounded-loop-authoring",
       "surface": "gemini"
     },
     {
-      "contentDigest": "00a72d17d10ceda989ad2c4d51a3d88f76756c2998438d055475fbb814f201b7",
+      "contentDigest": "cdb6a8d858eb798d9190fd70e28ec89dee5a0bc557ab1c58dc950b1cdb816a83",
       "path": ".gemini/skills/ecosystem-contract-change/SKILL.md",
       "skillId": "ecosystem-contract-change",
       "surface": "gemini"
     },
     {
-      "contentDigest": "730c75063219921e2d840ade18aedb5d0d4ef931a2e3e1294467b3b5b2544462",
+      "contentDigest": "10085241963e39953493c0254ab396c4aec657122fc161843629f7cb4929431e",
+      "path": ".gemini/skills/release-evidence-audit/SKILL.md",
+      "skillId": "release-evidence-audit",
+      "surface": "gemini"
+    },
+    {
+      "contentDigest": "841eb6834dff03615ae1cce4bae0e4278b53d2002e01ee9f7f744bd31849ba37",
       "path": ".gemini/skills/self-consistency-verification/SKILL.md",
       "skillId": "self-consistency-verification",
       "surface": "gemini"
     },
     {
-      "contentDigest": "b13522eca22c7d29677ce0674561f90b12d760e8c15d811cfa0a014ec14c8cef",
+      "contentDigest": "a8026fc87656a1b48ec08ce6c5b583c5d6d522a380c97d21f812267054e76353",
       "path": ".gemini/skills/skill-authoring/SKILL.md",
       "skillId": "skill-authoring",
       "surface": "gemini"
     },
     {
-      "contentDigest": "f9e773eb5c68f3e320a1ea8c3ebdda98c05331448887a981a722cb7ce3df0ae3",
+      "contentDigest": "92ae613a66e1be2b1b61e965657c82a418788b08eebd816e8f03e5531f55c60d",
       "path": ".gemini/skills/source-review-evidence/SKILL.md",
       "skillId": "source-review-evidence",
       "surface": "gemini"
     },
     {
-      "contentDigest": "9331eaa8ac5be62d3625ced6d40ff8f0966a38830b609027db20f189a486ed17",
+      "contentDigest": "d79c16e6fc64a5f6024ba6f84761ace14f65d0c1a152a2f54248736eb2dc083b",
       "path": ".gemini/skills/task-decomposition/SKILL.md",
       "skillId": "task-decomposition",
       "surface": "gemini"
     },
     {
-      "contentDigest": "64cbe0ccfdafc0afaba59aaea9a8aa2ff1b7aee91de27aeb7e1130f0c9616c50",
+      "contentDigest": "04fb302ee332ce6897c4890083901ea59a43634c7cfe9571d360ba9e0b2dc54d",
       "path": ".github/instructions/eco-skills.instructions.md",
       "skillId": null,
       "surface": "copilot"
@@ -185,7 +209,7 @@
   "kind": "SkillProjectionLock",
   "metadata": {
     "owner": "eco-skills",
-    "registryDigest": "72149b048438ccfbd104239d5586ee78a72386f7692ad2e77f1ab6131545bde4",
-    "registryVersion": "1.2.0"
+    "registryDigest": "4a823fe6b3a2e49a646ac0ec0cbdb15bc08b1749660972cc91123f300e4c2680",
+    "registryVersion": "1.3.0"
   }
 }

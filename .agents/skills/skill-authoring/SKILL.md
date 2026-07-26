@@ -2,7 +2,7 @@
 name: skill-authoring
 description: Author a new package-owned skill that earns registry promotion through tests, evidence, and an accountable owner.
 ---
-<!-- eco-skills:managed surface="codex" registry="72149b048438ccfbd104239d5586ee78a72386f7692ad2e77f1ab6131545bde4" skill="skill-authoring" -->
+<!-- eco-skills:managed surface="codex" registry="4a823fe6b3a2e49a646ac0ec0cbdb15bc08b1749660972cc91123f300e4c2680" skill="skill-authoring" -->
 
 
 # Skill authoring

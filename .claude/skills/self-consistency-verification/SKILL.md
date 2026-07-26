@@ -2,7 +2,7 @@
 name: self-consistency-verification
 description: Raise reliability by sampling independent attempts and requiring majority agreement before a result is accepted.
 ---
-<!-- eco-skills:managed surface="claude" registry="72149b048438ccfbd104239d5586ee78a72386f7692ad2e77f1ab6131545bde4" skill="self-consistency-verification" -->
+<!-- eco-skills:managed surface="claude" registry="4a823fe6b3a2e49a646ac0ec0cbdb15bc08b1749660972cc91123f300e4c2680" skill="self-consistency-verification" -->
 
 
 # Self-consistency verification
