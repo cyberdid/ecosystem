@@ -862,3 +862,74 @@ three attempts per arm and counterbalanced model order; preserve the one-shot
 smoke as historical evidence; compare per-scenario votes and usage; do not
 interpret macOS execution as Linux `openat2`/Landlock proof or a passing report
 as deployment authority.
+
+## Single-operator root testing and runtime lifecycle correction
+
+Nordrassil revision `e080cbe` preserves **Superuser** as an intentional
+single-operator test mode. It is the owner's root escape hatch, not a production
+role and not a claim that the ecosystem core granted broader authority.
+Superuser may enable every product capability and dispatch every mapped tool,
+including A2 local execution and tools the core denied. The underlying core
+verdict and code remain unchanged in the event; every dispatch caused by this
+mode is now explicitly recorded as `superuser-override` with
+`operator-superuser` attribution. Unmapped tools still fail closed.
+
+Tool lifecycle evidence now distinguishes:
+
+- `not-dispatched`: the adapter was never entered;
+- `succeeded`: the adapter returned successfully;
+- `unknown-after-dispatch`: the adapter raised after entry, so a partial side
+  effect cannot be ruled out.
+
+Raw exception types, local paths, provider responses and secret-bearing messages
+are no longer copied into model context. The model receives only the stable
+`NORDRASSIL_TOOL_EXECUTION_FAILED` code and bounded outcome wording.
+
+The Cookbook runtime catalog now keeps five observations separate:
+
+1. host compatibility;
+2. runtime installation;
+3. downloader readiness;
+4. downloaded artifact state;
+5. serve readiness.
+
+An artifact can therefore be downloaded for another host even when the current
+Mac cannot serve it. `runnableHere` is true only when the artifact is installed,
+the runtime and host are ready, and the fit check does not reject it. Ollama,
+Hugging Face and NVIDIA NIM use distinct typed, argv-only plans with an explicit
+plan-bound confirmation and `shell=False`.
+
+The NIM catalog pins the current certified model-specific release `2.0.8` for
+Llama 3.1 8B and Llama 3.3 70B. It requires an externally authenticated Docker
+or Podman client; Nordrassil does not store the NGC credential. NIM fit values
+are explicitly GPU-memory envelopes, not container download sizes. The 8B entry
+uses the documented minimum 24 GB GPU class, while 70B remains a multi-GPU
+deployment whose actual profile depends on precision and tensor parallelism.
+Sources: [NVIDIA prerequisites](https://docs.nvidia.com/nim/large-language-models/latest/get-started/prerequisites.html),
+[support matrix](https://docs.nvidia.com/nim/large-language-models/latest/support-matrix.html)
+and [release notes](https://docs.nvidia.com/nim/large-language-models/latest/about-nim-llm/release-notes.html).
+
+### Claude, Codex and GitHub Copilot integration boundary
+
+API access and account login are different integration classes:
+
+| Product | Official access | Nordrassil at `e080cbe` | Correct next adapter |
+|---|---|---|---|
+| Claude | Anthropic API key, or Claude Code account login on an eligible plan | no native Anthropic Messages transport and no Claude Code client adapter | native API transport or official Claude Code process/agent protocol |
+| Codex | OpenAI API key, or ChatGPT sign-in through the official Codex client | no first-class OpenAI hosted profile and no Codex client adapter | OpenAI API profile or Codex CLI/app-server adapter |
+| GitHub Copilot | Copilot CLI OAuth/device login, supported token sources, or BYOK | no Copilot CLI/ACP adapter | official Copilot CLI programmatic/ACP adapter |
+
+Nordrassil must not read browser cookies, Keychain entries or cached OAuth token
+files from another client. For account-based use, the official CLI owns login
+and secure token storage; Nordrassil communicates through its documented
+process protocol. For API use, the provider adapter receives only a typed
+`env:VARIABLE` reference at its boundary. A consumer subscription is never
+silently treated as generic API entitlement.
+
+Verification for revision `e080cbe`:
+
+- full Nordrassil suite: 128/128;
+- direct Cookbook suite: 16/16;
+- Python compilation, inline JavaScript compilation and `git diff --check`:
+  clean;
+- live loopback API observed the corrected runtime/readiness projection.

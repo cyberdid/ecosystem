@@ -1169,3 +1169,25 @@ Append-only хронологічний лог операцій. Формат: `#
   all code/fixture revisions were clean and pushed before inference. The smoke
   proves the campaign pipeline, not model capability, self-consistency, Linux
   enforcement or production authority.
+
+## [2026-07-26] fix | Nordrassil root testing and runtime truth
+
+- Preserved Superuser as the owner's explicit unrestricted test mode while
+  attributing every override-caused dispatch to `operator-superuser` and
+  retaining the ecosystem core's real verdict.
+- Split adapter dispatch from successful completion and sanitized all exception
+  output sent back to the model; post-dispatch failures are now recorded as
+  outcome unknown.
+- Separated host compatibility, runtime installation, downloader readiness,
+  artifact installation and serve readiness across Ollama, MLX-LM, NIM, vLLM
+  and llama.cpp.
+- Added a typed NVIDIA NIM pull path, local container inventory and externally
+  owned NGC login; pinned the current certified `2.0.8` images and corrected the
+  NIM size basis to a GPU-memory envelope.
+- Kept cross-host downloads available when this Mac cannot run the target
+  runtime; `runnableHere` now requires the artifact to be installed.
+- Recorded the API-versus-account-login boundary and the required future
+  adapters for Claude Code, Codex and GitHub Copilot without copying cached
+  OAuth/token state.
+- Nordrassil revision `e080cbe` is pushed; 128/128 full tests, 16/16 focused
+  Cookbook tests, Python/JavaScript compilation and diff checks passed.
