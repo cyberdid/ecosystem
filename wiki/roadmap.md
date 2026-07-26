@@ -56,10 +56,13 @@ product sequence is:
 7. completed: sealed bounded single-Agent runs with verified skills,
    reviewed-memory context, gateway-disposed tools, hard budgets, HMAC
    checkpoints and authenticated Flow replay;
-8. next: live/reconnect event delivery and durable approval/resume contracts;
-9. versioned Documents with exact citations and promotion receipts;
-10. evaluated narrow teams and the local-model Eval Lab;
-11. approved external connectors, then auth, backup and PWA hardening.
+8. completed: after-sequence SSE over sealed events and exact-digest product
+   review that cannot widen the gateway; generic core approval and crash resume
+   remain;
+9. next: evaluated narrow teams with aggregate budgets and typed handoffs;
+10. versioned Documents with exact citations and promotion receipts;
+11. local-model Eval Lab;
+12. approved external connectors, then auth, backup and PWA hardening.
 
 Product convenience cannot reinterpret an allow-candidate as final runtime
 authority. The detailed current state, local-model inventory, Odysseus audit and

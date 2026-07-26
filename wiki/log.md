@@ -4,6 +4,35 @@ Append-only хронологічний лог операцій. Формат: `#
 
 ---
 
+## [2026-07-26] product | Nordrassil live Agent events and exact tool review
+
+- Published Nordrassil product commit `f31155c`.
+- Added reconnectable SSE over already HMAC-sealed canonical `RunEvent`
+  evidence. `after=N` returns only later contiguous events, a checkpoint,
+  terminal state and head digest; it excludes objective, result, skill/memory
+  bytes, tool arguments and tool output.
+- A gateway `allowed` but non-executable proposal now pauses the run with exact
+  subject/argument/display digests and expiry. Approve/deny is an
+  HMAC-protected product review with `authorityEffect: none`, not a misapplied
+  core `ApprovalGrant` (the current canonical grant is bound to
+  `WorkspaceChangeProposal`).
+- Approve re-evaluates the current gateway. Without a separate executable
+  capability/runtime grant the proposal is recorded as
+  `ECO_TOOL_REVIEW_NOT_EXECUTABLE`; exact denial is
+  `ECO_TOOL_REVIEW_DENIED`.
+- Cancellation or deadline while waiting closes the open tool lifecycle before
+  the terminal event. Cancel received during a blocking model/tool call is
+  rechecked before any success claim.
+- Live acceptance found and fixed a mixed-history bug: Research stored epoch
+  integers while Agent used RFC3339, causing Flow list sorting to fail.
+  Both now normalize to one sort key.
+- Verification: full 99/99 Nordrassil suite; real SSE reconnect from sequence 5
+  returned only events 6–7 plus terminal checkpoint; live Flow listed one
+  authenticated Agent run and three observed Research runs.
+- Still unclaimed: generic core approval grant for arbitrary tools, crash
+  resume, mid-call pre-emption, distributed stream broker and semantic result
+  acceptance.
+
 ## [2026-07-26] product | Nordrassil bounded Agent Run launcher
 
 - Published Nordrassil product commit `28faa1b` with a usable project-bound

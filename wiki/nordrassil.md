@@ -16,7 +16,7 @@ Nordrassil-specific bio-cyberpunk system rather than a generic SaaS dashboard.
 
 - core: `cyberdid/ecosystem`;
 - product: `cyberdid/nordrassil`;
-- product head in this snapshot: `28faa1b`.
+- product head in this snapshot: `f31155c`.
 
 ## Why Nordrassil exists
 
@@ -489,8 +489,23 @@ project isolation, HMAC tamper rejection and authenticated Flow replay. The
 complete suite is 96/96; live browser acceptance verified the bio-cyberpunk
 launcher, catalogs, bounded controls and visible authority boundary.
 
+Commit `f31155c` adds reconnectable live delivery and exact tool review:
+
+- SSE `afterSequence` replay sends only sealed canonical events and checkpoint
+  metadata, then terminates with the run;
+- non-executable allow-candidates pause with exact subject, argument and display
+  digests;
+- approve/deny is recorded as product review with `authorityEffect: none`;
+- approve re-evaluates the current gateway, so it cannot make an otherwise
+  non-executable proposal run;
+- cancel/deadline settles any open tool lifecycle before terminal state.
+
+The existing runtime `ApprovalGrant` is correctly not reused here because its
+schema requires an exact `WorkspaceChangeProposal`. A generic tool approval
+contract remains a core-first future change.
+
 The exact contract is `nordrassil/docs/agent-run-contract.md`. Crash resume,
-durable approval grants, trusted token/cost observations, team execution,
+generic core approval grants, trusted token/cost observations, team execution,
 scheduling and independent result acceptance remain separate slices.
 
 ## Relationship to the local-LLM experiment
@@ -529,7 +544,7 @@ The detailed correction and proof reports are:
 
 At this snapshot:
 
-- Nordrassil: 96 unit tests pass;
+- Nordrassil: 99 unit tests pass;
 - `eco validate`: pass;
 - `eco render --check`: pass;
 - live browser proof: allowed repository read and denied shell execution both
@@ -568,6 +583,10 @@ At this snapshot:
   precedence, HMAC tamper denial, project isolation and authenticated Flow
   replay; the live launcher renders observed models, verified skills, tool
   allowlist and all hard-stop controls;
+- live SSE replay from cursor 5 returned only canonical events 6–7 and the
+  terminal checkpoint; the mixed Flow library simultaneously listed one
+  authenticated Agent run and three observed Research runs after an
+  epoch/RFC3339 sort regression was found and fixed;
 - JavaScript parsing, Python compilation and whitespace checks pass.
 
 ### Runs / Flow — Agent Flow grammar over ecosystem evidence
@@ -623,7 +642,7 @@ This is replay, not live telemetry. Authenticated Runtime/Orchestration/Loop/
 Team adapters, SSE/reconnect, real handoff edges and execution controls remain
 future slices and must be driven by durable source records.
 
-The 96 tests are implementation evidence for the current bounded slices. They
+The 99 tests are implementation evidence for the current bounded slices. They
 do not prove native macOS kernel isolation, remote provider conformance,
 production multi-user security or completion of the full product.
 
@@ -640,8 +659,8 @@ production multi-user security or completion of the full product.
 | Responsive shell / accessibility | Nordrassil bio-cyberpunk desktop and 390 px shell, focus and reduced motion working; PWA, selectable/light themes and formal assistive-tech audit remain |
 | Documents | proposal-first project Markdown editor working; revisions/CAS, import/render/export and research citations remain |
 | Deep Research | bounded project library/report/evidence slice working; governed broker authority, pinned transport, semantic evidence gate and background job lifecycle remain |
-| Runs / Flow | read-only observed Research plus authenticated Agent replay working; live SSE/reconnect and Loop/Team ingestion remain |
-| Agents / teams / scheduled tasks | bounded single-agent launcher working; durable approvals, crash resume, evaluated teams and scheduler remain |
+| Runs / Flow | read-only observed Research plus authenticated Agent replay working; Agent SSE/reconnect works, Loop/Team ingestion remains |
+| Agents / teams / scheduled tasks | bounded single-agent launcher, live events and exact non-authorizing review working; generic core approval, crash resume, evaluated teams and scheduler remain |
 | Email / Calendar / MCP | planned; credentials stay broker-owned and writes require approval |
 | Auth / backup | planned |
 
@@ -663,14 +682,16 @@ The complete live feature inventory is maintained in
    conflict display and reversible compaction.
 6. Completed: bounded Agent Run launcher with sealed skills/memory/tools,
    budgets, HMAC checkpoints and authenticated Flow replay.
-7. Next: live event stream, durable approvals/reconnect and exact resume
-   boundary.
-8. Versioned Documents with exact research citations, immutable revisions,
+7. Completed: after-sequence live event stream, exact non-authorizing tool
+   review and gateway re-evaluation.
+8. Next: evaluated narrow agent teams with aggregate budgets and typed
+   handoffs.
+9. Versioned Documents with exact research citations, immutable revisions,
    render/import/export and promotion receipts.
-9. Evaluated team orchestration and the LLM Evaluation Lab.
-10. Tasks, MCP, email/calendar and other external connectors with action-point
+10. LLM Evaluation Lab for skills, memory, tools, agents and orchestration.
+11. Tasks, MCP, email/calendar and other external connectors with action-point
    approvals.
-11. Authentication, backup/import/export, PWA/mobile and accessibility.
+12. Authentication, backup/import/export, PWA/mobile and accessibility.
 
 Each slice is done only when it has a usable UI/API, a named core or adapter
 boundary, positive and negative tests, a dependency test, provenance and an
