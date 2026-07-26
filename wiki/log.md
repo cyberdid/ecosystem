@@ -4,6 +4,34 @@ Append-only хронологічний лог операцій. Формат: `#
 
 ---
 
+## [2026-07-26] product | Nordrassil canonical Team Studio
+
+- Published Nordrassil product commit `64d2383`.
+- Added Team Studio over the real `eco_teams` reference manifests,
+  `seal_record` and `validate_record`; the product does not duplicate the
+  canonical topology contract.
+- Every role requires an exact provider/model binding resolved through the
+  observed deployment registry. The sealed project-bound manifest fixes
+  delegation, actions, data classes, per-role ceilings and aggregate
+  task/token/cost/deadline budgets.
+- Added a bio-cyberpunk topology canvas, team library, authority status,
+  aggregate metrics and canonical manifest inspector.
+- Added independent `teams.read`, `teams.manage` and default-off `teams.run`
+  capabilities. A toggle cannot create authority.
+- Execution intentionally fails closed with
+  `NORDRASSIL_TEAM_AUTHORITY_UNAVAILABLE`: Nordrassil has no connected current
+  signed M5 snapshot, matching active access policy or separate
+  `ExecutionAuthorizer`. No test guard or simulated multi-model execution is
+  presented as real.
+- Private team records are HMAC-sealed, active-project scoped and revalidated
+  on every read. Cross-project reads and tampering fail closed.
+- Verification: 5 focused Team Studio tests, full 104/104 product suite,
+  Python compile, whitespace/secret checks and live browser creation of an
+  evaluator/optimizer manifest against an observed local deployment.
+- Remaining: connect real M5 authority and `TeamCoordinator`, emit
+  authenticated handoff/budget/cancel events into Flow, and compare evaluated
+  team performance against the single-agent baseline.
+
 ## [2026-07-26] product | Nordrassil live Agent events and exact tool review
 
 - Published Nordrassil product commit `f31155c`.

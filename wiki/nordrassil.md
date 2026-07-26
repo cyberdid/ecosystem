@@ -6,9 +6,11 @@ persistent project-bound Chat sessions are implemented; sessions now support
 star/archive/filter, Documents provides proposal-first Markdown editing, and
 the shared responsive product shell now includes a bounded Deep Research
 library, launch surface, cited report, inspectable evidence rail and a
-read-only Runs / Flow replay surface plus sealed bounded single-agent runs with
-authenticated checkpoints. The current visual language is a
-Nordrassil-specific bio-cyberpunk system rather than a generic SaaS dashboard.
+read-only Runs / Flow replay surface, sealed bounded single-agent runs with
+authenticated checkpoints, and a canonical `eco_teams` Team Studio whose
+execution remains fail-closed until signed M5 authority is connected. The
+current visual language is a Nordrassil-specific bio-cyberpunk system rather
+than a generic SaaS dashboard.
 
 **Snapshot:** 2026-07-26
 
@@ -16,7 +18,7 @@ Nordrassil-specific bio-cyberpunk system rather than a generic SaaS dashboard.
 
 - core: `cyberdid/ecosystem`;
 - product: `cyberdid/nordrassil`;
-- product head in this snapshot: `f31155c`.
+- product head in this snapshot: `64d2383`.
 
 ## Why Nordrassil exists
 
@@ -508,6 +510,39 @@ The exact contract is `nordrassil/docs/agent-run-contract.md`. Crash resume,
 generic core approval grants, trusted token/cost observations, team execution,
 scheduling and independent result acceptance remain separate slices.
 
+### Team Studio — canonical composition without invented authority
+
+Nordrassil `64d2383` adds an operator-facing team manifest studio over the real
+`eco_teams` package:
+
+- the UI catalog is projected from the validated core reference manifests
+  `evaluator-optimizer` and `orchestrator-workers`;
+- every role is bound to exactly one provider/model/transport already observed
+  by the provider registry;
+- active project, deadline, delegation edges, actions, data classes, narrowed
+  role ceilings and aggregate task/token/cost budgets are sealed into a
+  canonical `AgentTeamManifest`;
+- the core `seal_record` and `validate_record` functions are used directly;
+- product state is HMAC-protected, private and revalidated on read;
+- the topology canvas shows roles, deployments, delegation and budget state
+  beside the exact canonical manifest.
+
+Capabilities remain separate: `teams.read` reads definitions, `teams.manage`
+authors them, and default-off `teams.run` is the potential execution surface.
+A valid manifest is not runtime authority. There is currently no connected M5
+authority store in Nordrassil, so Run remains blocked with
+`NORDRASSIL_TEAM_AUTHORITY_UNAVAILABLE` until a current signed authority
+snapshot, matching active access policy and separate `ExecutionAuthorizer`
+exist. The product does not use test guards or turn a UI toggle into authority.
+
+Live acceptance created a real project-bound evaluator/optimizer definition
+against the observed `gemma4:12b-mlx` deployment and rendered its digest,
+bindings and explicit `semanticTruth: not-established` boundary. Five focused
+tests cover canonical validation, complete role bindings, HMAC tamper rejection,
+project isolation and authority-unavailable refusal; the complete product suite
+is 104/104. The detailed contract is
+`nordrassil/docs/team-studio-contract.md`.
+
 ## Relationship to the local-LLM experiment
 
 The separate `ecosystem-llm-lab` answers an engineering question: can each
@@ -638,11 +673,12 @@ At 390 × 844 the document width remained bounded and the graph used its own
 scroll surface. The 85-test Nordrassil suite is green, including a direct
 dependency test for the independent `runs.read` grant.
 
-This is replay, not live telemetry. Authenticated Runtime/Orchestration/Loop/
-Team adapters, SSE/reconnect, real handoff edges and execution controls remain
-future slices and must be driven by durable source records.
+This is replay, not a control plane. Authenticated
+Runtime/Orchestration/Loop/Team execution adapters, real handoff events and
+team controls remain future slices and must be driven by durable source
+records. Agent SSE/reconnect is implemented separately.
 
-The 99 tests are implementation evidence for the current bounded slices. They
+The 104 tests are implementation evidence for the current bounded slices. They
 do not prove native macOS kernel isolation, remote provider conformance,
 production multi-user security or completion of the full product.
 
@@ -660,7 +696,7 @@ production multi-user security or completion of the full product.
 | Documents | proposal-first project Markdown editor working; revisions/CAS, import/render/export and research citations remain |
 | Deep Research | bounded project library/report/evidence slice working; governed broker authority, pinned transport, semantic evidence gate and background job lifecycle remain |
 | Runs / Flow | read-only observed Research plus authenticated Agent replay working; Agent SSE/reconnect works, Loop/Team ingestion remains |
-| Agents / teams / scheduled tasks | bounded single-agent launcher, live events and exact non-authorizing review working; generic core approval, crash resume, evaluated teams and scheduler remain |
+| Agents / teams / scheduled tasks | bounded single-agent launcher, live events, exact non-authorizing review and canonical Team Studio working; signed M5 team execution, generic core approval, crash resume, evaluation and scheduler remain |
 | Email / Calendar / MCP | planned; credentials stay broker-owned and writes require approval |
 | Auth / backup | planned |
 
@@ -684,11 +720,12 @@ The complete live feature inventory is maintained in
    budgets, HMAC checkpoints and authenticated Flow replay.
 7. Completed: after-sequence live event stream, exact non-authorizing tool
    review and gateway re-evaluation.
-8. Next: evaluated narrow agent teams with aggregate budgets and typed
-   handoffs.
-9. Versioned Documents with exact research citations, immutable revisions,
+8. Completed for authoring/inspection: canonical Team Studio with observed role
+   deployments, delegation graph and aggregate budgets. Execution stays blocked
+   until current signed M5 authority and an `ExecutionAuthorizer` are connected.
+9. Next: LLM Evaluation Lab for skills, memory, tools, agents and orchestration.
+10. Versioned Documents with exact research citations, immutable revisions,
    render/import/export and promotion receipts.
-10. LLM Evaluation Lab for skills, memory, tools, agents and orchestration.
 11. Tasks, MCP, email/calendar and other external connectors with action-point
    approvals.
 12. Authentication, backup/import/export, PWA/mobile and accessibility.

@@ -1,6 +1,6 @@
 # Roadmap
 
-**Updated:** 2026-07-24
+**Updated:** 2026-07-26
 
 | Milestone | Deliverable | Status |
 |---|---|---|
@@ -33,7 +33,7 @@
 | M7 | Enterprise/network authority and native security backends | Re-sequenced from old M6; not dropped or claimed |
 | GSC | Gated self-creation of skills/agents/loops under adversarial promotion gates | Proposed (design only); see [proposal](../docs/research/2026-07-22-gated-self-creation-contract-proposal-claude.md) |
 | M8 | Optional training/learning and experimental nodes | Future; MOLT/local GPU are adapters, not dependencies |
-| Product / Nordrassil | Normal-user workspace over the core | Active sibling product: sealed bounded Agent runs, Memory 2.0, authenticated/observed Flow replay, Deep Research, Documents, sessions, providers, Compare, Cookbook and projects implemented; see [product page](nordrassil.md) |
+| Product / Nordrassil | Normal-user workspace over the core | Active sibling product: sealed bounded Agent runs, canonical fail-closed Team Studio, Memory 2.0, authenticated/observed Flow replay, Deep Research, Documents, sessions, providers, Compare, Cookbook and projects implemented; see [product page](nordrassil.md) |
 
 ## Product track — Nordrassil
 
@@ -59,9 +59,12 @@ product sequence is:
 8. completed: after-sequence SSE over sealed events and exact-digest product
    review that cannot widen the gateway; generic core approval and crash resume
    remain;
-9. next: evaluated narrow teams with aggregate budgets and typed handoffs;
-10. versioned Documents with exact citations and promotion receipts;
-11. local-model Eval Lab;
+9. completed for authoring/inspection: canonical `eco_teams` Team Studio with
+   exact observed role deployments, aggregate budgets and delegation canvas;
+   runtime remains blocked until current signed M5 authority and a separate
+   `ExecutionAuthorizer` are connected;
+10. next: local-model Eval Lab;
+11. versioned Documents with exact citations and promotion receipts;
 12. approved external connectors, then auth, backup and PWA hardening.
 
 Product convenience cannot reinterpret an allow-candidate as final runtime
