@@ -1,0 +1,213 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ai.ecosystem/skills/upstream-import-plan.v1.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "apiVersion",
+    "kind",
+    "metadata",
+    "source",
+    "selection",
+    "summary",
+    "repositorySignals",
+    "aliases",
+    "candidates",
+    "promotion",
+    "safety"
+  ],
+  "properties": {
+    "apiVersion": {"const": "skills.ai.ecosystem/v1alpha1"},
+    "kind": {"const": "UpstreamSkillImportPlan"},
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["planDigest"],
+      "properties": {
+        "planDigest": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "uri",
+        "commit",
+        "commitVerified",
+        "treeDigest",
+        "authenticity"
+      ],
+      "properties": {
+        "uri": {
+          "type": "string",
+          "pattern": "^https://[^?#]+$",
+          "maxLength": 512
+        },
+        "commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "commitVerified": {"const": true},
+        "treeDigest": {"$ref": "#/$defs/digest"},
+        "authenticity": {"const": "not-established"}
+      }
+    },
+    "selection": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/identifier"},
+      "uniqueItems": true,
+      "maxItems": 256
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "trackedEntries",
+        "regularSkillFiles",
+        "selectedCandidates",
+        "blockedCandidates",
+        "reviewRequiredCandidates",
+        "trackedSymlinks",
+        "brokenSymlinks"
+      ],
+      "properties": {
+        "trackedEntries": {"$ref": "#/$defs/count"},
+        "regularSkillFiles": {"$ref": "#/$defs/count"},
+        "selectedCandidates": {"$ref": "#/$defs/count"},
+        "blockedCandidates": {"$ref": "#/$defs/count"},
+        "reviewRequiredCandidates": {"$ref": "#/$defs/count"},
+        "trackedSymlinks": {"$ref": "#/$defs/count"},
+        "brokenSymlinks": {"$ref": "#/$defs/count"}
+      }
+    },
+    "repositorySignals": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "executableFiles",
+        "hookFiles",
+        "mcpConfigs",
+        "submodules",
+        "unpinnedRuntimeReferences"
+      ],
+      "properties": {
+        "executableFiles": {"$ref": "#/$defs/count"},
+        "hookFiles": {"$ref": "#/$defs/count"},
+        "mcpConfigs": {"$ref": "#/$defs/count"},
+        "submodules": {"$ref": "#/$defs/count"},
+        "unpinnedRuntimeReferences": {"$ref": "#/$defs/count"}
+      }
+    },
+    "aliases": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "target", "status"],
+        "properties": {
+          "path": {"$ref": "#/$defs/path"},
+          "target": {"$ref": "#/$defs/path"},
+          "status": {"enum": ["resolved", "broken", "blocked"]}
+        }
+      }
+    },
+    "candidates": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "path",
+          "skillName",
+          "contentDigest",
+          "sizeBytes",
+          "status",
+          "reasons",
+          "signals",
+          "proposalEligible"
+        ],
+        "properties": {
+          "path": {"$ref": "#/$defs/path"},
+          "skillName": {
+            "oneOf": [
+              {"$ref": "#/$defs/identifier"},
+              {"type": "null"}
+            ]
+          },
+          "contentDigest": {"$ref": "#/$defs/digest"},
+          "sizeBytes": {"type": "integer", "minimum": 0, "maximum": 262144},
+          "status": {"enum": ["blocked", "review-required"]},
+          "reasons": {"$ref": "#/$defs/codeSet"},
+          "signals": {"$ref": "#/$defs/codeSet"},
+          "proposalEligible": {"const": false}
+        }
+      }
+    },
+    "promotion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "eligible",
+        "requiredNextGate",
+        "capabilitiesInferred",
+        "ownerBound",
+        "testsEstablished",
+        "evidenceEstablished"
+      ],
+      "properties": {
+        "eligible": {"const": false},
+        "requiredNextGate": {"const": "eco skills propose"},
+        "capabilitiesInferred": {"const": false},
+        "ownerBound": {"const": false},
+        "testsEstablished": {"const": false},
+        "evidenceEstablished": {"const": false}
+      }
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "networkAccessed",
+        "skillCodeExecuted",
+        "hooksLoaded",
+        "dependenciesInstalled",
+        "filesWritten",
+        "credentialsConsumed",
+        "runtimeAuthorityCreated"
+      ],
+      "properties": {
+        "networkAccessed": {"const": false},
+        "skillCodeExecuted": {"const": false},
+        "hooksLoaded": {"const": false},
+        "dependenciesInstalled": {"const": false},
+        "filesWritten": {"const": false},
+        "credentialsConsumed": {"const": false},
+        "runtimeAuthorityCreated": {"const": false}
+      }
+    }
+  },
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "count": {"type": "integer", "minimum": 0, "maximum": 100000},
+    "identifier": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "maxLength": 80
+    },
+    "path": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2048,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\).+$"
+    },
+    "codeSet": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+        "maxLength": 80
+      },
+      "uniqueItems": true,
+      "maxItems": 32
+    }
+  }
+}

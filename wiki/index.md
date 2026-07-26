@@ -2,7 +2,7 @@
 
 > Curated operational knowledge. Canonical executable truth lives under `.ai/`; generated vendor files are projections.
 
-**Updated:** 2026-07-24
+**Updated:** 2026-07-26
 **Status:** M1–M6.8 implementation and local/independent gates are complete for
 the bounded reference profile. The `0.8.0` hosted matrix is blocked before job
 creation by GitHub runner/account state; a complete live five-role model PASS
@@ -12,6 +12,7 @@ remains explicitly unclaimed.
 
 | Page | Purpose | Updated |
 |---|---|---:|
+| [External skills / Microsoft Skills](upstream-skills.md) | Pinned upstream audit, Foundry/eval/MCP/memory/agent findings and the offline non-promoting `eco skills import-plan` boundary | 2026-07-26 |
 | [Nordrassil product layer](nordrassil.md) | User-facing product over the enforced core: bounded Deep Research, responsive shell, proposal-first Documents, session lifecycle, provider registry, local-model Cookbook, Compare, multi-project workspaces and honest evidence | 2026-07-24 |
 | [Creating in the ecosystem](../docs/architecture/creation.md) | How loop/contract/skill/agent/memory are created, the shared gate, the L0/L1/L2 autonomy scale and creation invariants | 2026-07-22 |
 | [M6 completion report](../docs/research/2026-07-20-m6-functional-orchestration-completion-report.md) | M6.1–M6.8 delivery, exact-route audit corrections, release evidence, schema identities and honest nonclaims | 2026-07-20 |
@@ -52,7 +53,7 @@ remains explicitly unclaimed.
 | [M2 completion report](../docs/research/2026-07-15-m2-completion-report.md) | Exit-criteria evidence, test gate, and exact limitations | 2026-07-15 |
 | [M2 evaluation report](../docs/research/2026-07-15-m2-cross-deployment-evaluation-report.md) | Identical suite runner, governed local/cloud evidence, cloud-alias and renewal boundaries | 2026-07-15 |
 | [Research register](../docs/research/README.md) | Reviewed external sources and preserved raw material | 2026-07-15 |
-| [log.md](log.md) | Append-only change/decision log | 2026-07-24 |
+| [log.md](log.md) | Append-only change/decision log | 2026-07-26 |
 
 ## Canonical contracts
 
@@ -81,8 +82,9 @@ remains explicitly unclaimed.
 14. `wiki/openresearcher.md` for the current external research-node snapshot
 15. `wiki/labs-molt.md` for the external agentic-RL training-node snapshot
 16. `wiki/ai-legal-claude.md` for the external legal-prompt corpus and its safety limits
-17. `docs/research/README.md` for source reviews and raw-source provenance
-18. This wiki for current operational status
+17. `wiki/upstream-skills.md` for external skill inspection and the Microsoft reference audit
+18. `docs/research/README.md` for source reviews and raw-source provenance
+19. This wiki for current operational status
 
 ## Knowledge boundaries
 

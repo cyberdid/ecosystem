@@ -24,8 +24,9 @@ dependencies, tests, evidence, revocation and per-surface compatibility.
 
 The source revision `package-release:m6.2-v1` identifies this built-in catalog
 revision. It is deliberately not represented as an upstream Git commit. The
-content digest is the exact byte identity; a future external importer must bind
-an actual immutable upstream commit separately.
+content digest is the exact byte identity. The separate
+[upstream import-plan](upstream-skill-import.md) contract binds an immutable
+external commit for review without adding it to this registry.
 
 Registry loading uses JSON Schema plus cross-record checks for duplicate/case or
 Unicode aliases, sorted identities, digest mismatch, unknown/cyclic dependencies,
@@ -69,8 +70,9 @@ Focused tests cover registry closure, traversal, case/Unicode aliases, symlink,
 hardlink, unmanaged ownership, forged marker, drift, lock redirection, sync
 rollback, uninstall rollback, deterministic lifecycle and CLI exit status.
 
-This profile does not provide external discovery/download, signature or
+This synchronization profile does not provide external download, signature or
 transparency verification, live-client semantic conformance, skill execution,
 automatic dependency installation, hostile concurrent parent-swap proof on every
-OS, or native Windows/macOS filesystem security proof. Those need separate import,
-conformance and runtime authority contracts.
+OS, or native Windows/macOS filesystem security proof. Read-only inspection of an
+already local pinned Git object is a separate non-promoting contract; the other
+claims still require conformance and runtime authority boundaries.

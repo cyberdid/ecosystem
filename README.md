@@ -257,6 +257,7 @@ eco --repo /path/to/project uninstall --remove-config --yes
 | `eco team activate --apply` | Activate one exact externally signed policy revision under predecessor/snapshot CAS | External authority store only |
 | `eco route plan` | Compute a pure deterministic model route from exact policy/price/request/evidence inputs | No |
 | `eco skills plan\|sync\|check\|uninstall` | Project the package-owned skill catalog with ownership and drift checks | Projection files only for sync/uninstall |
+| `eco skills import-plan SOURCE --source-uri URI --commit SHA` | Inspect skill-shaped content from one exact local Git commit | Read-only; never imports, executes, installs, or promotes |
 | `eco team run source-review` | Run the exact routed five-role workflow; all five route/authority files are mandatory | External authenticated state/CAS only |
 | `eco run wiki-health-check` | Run the fixed signed-snapshot, no-model A1 health profile | No repository write* |
 | `eco eval wiki-health-check` | Run the fixed five-attempt plus replay L0–L2 promotion gate | No repository write* |

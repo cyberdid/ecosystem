@@ -101,6 +101,28 @@ def _parser() -> argparse.ArgumentParser:
     gsc_promote.add_argument("--capabilities", default="")
     gsc_promote.add_argument("--allowed", default="")
     gsc_promote.add_argument("--json", action="store_true", dest="json_output")
+    import_plan = skills_commands.add_parser(
+        "import-plan",
+        help="Inspect one pinned local Git tree without importing or executing skills",
+    )
+    import_plan.add_argument(
+        "source_root", help="Local Git repository containing the pinned commit object"
+    )
+    import_plan.add_argument(
+        "--source-uri",
+        required=True,
+        help="Credential-free HTTPS identity of the upstream repository",
+    )
+    import_plan.add_argument(
+        "--commit", required=True, help="Exact full 40-character Git commit id"
+    )
+    import_plan.add_argument(
+        "--skill",
+        action="append",
+        default=[],
+        help="Inspect only this skill id (repeatable); repository signals remain global",
+    )
+    import_plan.add_argument("--json", action="store_true", dest="json_output")
 
     loops = commands.add_parser(
         "loops", help="Validate or run an M6.3 deterministic no-effect loop profile"
@@ -1130,6 +1152,49 @@ def _command_skills_gsc(args: argparse.Namespace) -> int:
 def command_skills(args: argparse.Namespace) -> int:
     if args.skills_command in ("propose", "promote"):
         return _command_skills_gsc(args)
+    if args.skills_command == "import-plan":
+        from eco_skills import UpstreamSkillImportError, inspect_upstream_skills
+
+        try:
+            result = inspect_upstream_skills(
+                args.source_root,
+                source_uri=args.source_uri,
+                commit=args.commit,
+                selection=tuple(args.skill),
+            )
+        except UpstreamSkillImportError as exc:
+            result = {
+                "available": False,
+                "operation": "import-plan",
+                "status": "blocked",
+                "code": exc.code,
+                "safety": {
+                    "networkAccessed": False,
+                    "skillCodeExecuted": False,
+                    "hooksLoaded": False,
+                    "dependenciesInstalled": False,
+                    "filesWritten": False,
+                    "credentialsConsumed": False,
+                    "runtimeAuthorityCreated": False,
+                },
+            }
+            if args.json_output:
+                print(stable_json(result), end="")
+            else:
+                print(f"Upstream skill import plan: blocked ({exc.code})", file=sys.stderr)
+            return 1
+        if args.json_output:
+            print(stable_json(result), end="")
+        else:
+            summary = result["summary"]
+            print(
+                "Upstream skill import plan: reviewed "
+                f"({summary['selectedCandidates']} candidates; "
+                f"{summary['blockedCandidates']} blocked; "
+                f"{summary['brokenSymlinks']} broken symlinks)"
+            )
+            print("Promotion: not eligible; run the separate proposal gate after review")
+        return 0
     from eco_skills import (
         SkillSyncError,
         check_skills,

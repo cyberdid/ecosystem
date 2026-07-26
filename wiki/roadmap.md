@@ -23,7 +23,7 @@
 | M5.7 | CLI, backup, portability, documentation and release conformance | Complete for the bounded `0.7.0` profile |
 | M6.0 | Functional-orchestration research, ADRs, contracts, threat model and acceptance gates | Complete |
 | M6.1 | Governed model bridge plus fixed offline `source-review` vertical slice | Deterministic profile complete; enforcement chain exercised live, while a full live five-role model PASS remains an explicit nonclaim |
-| M6.2 | Canonical skills and harness synchronization | Complete for the closed package-owned registry and six projection surfaces |
+| M6.2 | Canonical skills, harness synchronization and upstream inspection | Complete for the closed package-owned registry, six projection surfaces and offline non-promoting inspection of one pinned local Git commit |
 | M6.3 | Generic bounded loop engine | Complete for the embedded deterministic bounded-loop profile |
 | M6.4 | Logical model roles, policy routing and explicit bounded fallback | Complete for exact policy/price/plan/Ed25519 authority, durable consumption and aggregate per-effect usage |
 | M6.5 | Provenance-preserving private context and memory graph | Complete for CAS-bound embedded memory, TTL-safe reversible compaction and exact namespace retrieval |

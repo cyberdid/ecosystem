@@ -4,6 +4,34 @@ Append-only хронологічний лог операцій. Формат: `#
 
 ---
 
+## [2026-07-26] skills | Pinned Microsoft Skills audit and non-promoting importer
+
+- Downloaded and statically reviewed `microsoft/skills` at exact commit
+  `4f1db7ec55caf11e3b143c91220bd79a632bc55b` without executing its scripts,
+  hooks, MCP servers, installers or eval harness.
+- The source is a valuable cookbook but not a drop-in trusted registry: the
+  review found 194 regular skill files, stale catalog counts, warning-only eval
+  gates, opt-out Azure telemetry, unpinned runtime references, prompt-level
+  memory/agent authority and ten broken Microsoft Foundry symlinks.
+- Added `eco skills import-plan`: an offline, deterministic, content-free review
+  of one exact local Git commit. It reads Git objects rather than working-tree
+  bytes, rejects malformed paths/frontmatter/tree modes, never follows
+  filesystem symlinks and reports duplicate identities plus bounded execution
+  signals.
+- Every external candidate remains non-promotable until separate capability,
+  test, evidence, owner, adversarial-gate and exact-digest approval steps.
+- Live repeated CLI output was byte-identical: plan
+  `d09df5b1fe494a00a3de22676a60098b70276710bec150ba1204ffe479a9eb52`,
+  1,982 entries, 194 skill files, 186 review-required, 8 blocked, 60 symlinks,
+  10 broken symlinks, 10 executables, 8 hook files, 3 strict MCP configs and 5
+  unpinned skill runtime references.
+- Verification: 28 focused tests, canonical validation, projection drift,
+  doctor and diff checks pass. Full macOS regression remains explicitly
+  platform-red with the same Linux-only/openat2 class as pristine `HEAD`; all
+  six added importer tests pass.
+- Full analysis and boundaries:
+  [External skills and Microsoft Skills](upstream-skills.md).
+
 ## [2026-07-26] product | Nordrassil Deep Research → OpenResearcher-style agentic trajectory
 
 - Elevated Nordrassil Deep Research to the OpenResearcher patterns the ecosystem catalogued
