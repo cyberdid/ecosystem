@@ -16,6 +16,11 @@ capabilities:
     actionClass: A0
     sideEffect: false
     defaultSandbox: inspect
+  - id: observability.flow.read
+    description: Read a content-free deterministic projection of already recorded run evidence.
+    actionClass: A0
+    sideEffect: false
+    defaultSandbox: inspect
   - id: filesystem.read
     description: Read files inside an approved repository boundary.
     actionClass: A1
@@ -41,4 +46,3 @@ capabilities:
     actionClass: A4
     sideEffect: true
     defaultSandbox: production
-

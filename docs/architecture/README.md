@@ -47,9 +47,16 @@ flowchart TB
     TEAMPLAN -.-> SOURCE["Bounded SourceBundle"]
     TEAMPLAN -.-> HANDOFF["Typed handoffs + claim/evidence graph"]
     HANDOFF -.-> HARDGATE["Independent truthful terminal gate"]
+    STORE --> FLOW["Read-only FlowProjection"]
+    NMJOURNAL --> FLOW
+    FLOW --> PRODUCT["Nordrassil graph / inspector / timeline"]
 ```
 
 Solid lines are implemented. Dashed lines are contracts or future milestones, not current security claims.
+
+The observer boundary is documented in
+[Read-only flow projections](flow-projections.md). `FlowProjection` renders
+recorded evidence and never grants execution authority.
 
 ## Canonical configuration
 

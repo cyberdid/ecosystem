@@ -23,6 +23,10 @@ RunEvent chain + ArtifactRecord or ErrorRecord
 ```
 
 The runtime namespace is `runtime.ai.ecosystem/v1alpha1`; canonical configuration remains `ai.ecosystem/v1alpha1`.
+Read-only observer records use the separate
+`flow.ai.ecosystem/v1alpha1` namespace documented in
+[Read-only flow projections](flow-projections.md); they are derived views, not
+runtime authority or additional events.
 
 ## Implemented record kinds
 

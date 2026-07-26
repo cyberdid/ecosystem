@@ -4,6 +4,32 @@ Append-only хронологічний лог операцій. Формат: `#
 
 ---
 
+## [2026-07-26] product | Nordrassil deterministic Runs / Flow replay
+
+- Added canonical A0 `observability.flow.read` and the additive
+  `flow.ai.ecosystem/v1alpha1` `FlowProjection` contract.
+- The projector produces ordered content-free nodes and edges, explicit source
+  trust/boundary, deterministic summary and a semantic digest. Replay calls no
+  model/tool/runtime and rejects tamper, unknown fields, broken sequence,
+  dangling edges and summary drift.
+- Published Nordrassil feature `6424de5` and boundary-test follow-up `728dd17`
+  with capability-state v6 `runs.read`, `/api/flows` routes and a responsive
+  run library, graph, inspector, integrity card and evidence timeline.
+- Real Deep Research history maps recorded `search/open/find/answer` steps but
+  excludes query arguments, observations, reports and source content from the
+  core projection. The UI displays `observed · product-observation` and
+  `product-research-not-governed-broker`.
+- Live acceptance listed three project runs; one rendered 12 nodes, 11 edges
+  and 12 timeline entries with zero console errors. The 390 × 844 view kept the
+  document width bounded and scrolled only inside the graph surface.
+- Verification: 85/85 Nordrassil tests (including a direct `runs.read`
+  dependency check); 7/7 focused core flow tests, `eco validate`,
+  `eco render --check`, `eco doctor`, compilation and diff checks pass.
+  Full core regression was attempted on macOS and remains platform-red in the
+  pre-existing Linux-only `openat2`/Landlock test class.
+- No live stream, authenticated Orchestration/Loop/Team ingestion, inferred
+  handoffs, graph-authored execution, Resume or Retry is claimed.
+
 ## [2026-07-26] skills | Pinned Microsoft Skills audit and non-promoting importer
 
 - Downloaded and statically reviewed `microsoft/skills` at exact commit

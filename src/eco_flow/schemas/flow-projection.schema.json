@@ -1,0 +1,137 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "eco://flow/flow-projection/v1alpha1",
+  "title": "FlowProjection",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "flow.ai.ecosystem/v1alpha1" },
+    "kind": { "const": "FlowProjection" },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "projectId", "runId", "recordDigest"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "projectId": { "$ref": "#/$defs/id" },
+        "runId": { "$ref": "#/$defs/id" },
+        "recordDigest": { "$ref": "#/$defs/digest" }
+      }
+    },
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["profile", "source", "status", "nodes", "edges", "summary"],
+      "properties": {
+        "profile": { "const": "flow-projection-v1alpha1" },
+        "source": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "trust", "boundary", "headDigest"],
+          "properties": {
+            "kind": {
+              "enum": ["runtime-run-events", "orchestration-events", "loop-events", "team-state-events", "product-observation"]
+            },
+            "trust": { "enum": ["authenticated", "validated", "observed"] },
+            "boundary": { "$ref": "#/$defs/code" },
+            "headDigest": {
+              "oneOf": [{ "$ref": "#/$defs/digest" }, { "type": "null" }]
+            }
+          }
+        },
+        "status": {
+          "enum": ["pending", "running", "succeeded", "incomplete", "failed", "denied", "exhausted", "cancelled", "ambiguous"]
+        },
+        "nodes": {
+          "type": "array",
+          "maxItems": 10000,
+          "items": { "$ref": "#/$defs/node" }
+        },
+        "edges": {
+          "type": "array",
+          "maxItems": 20000,
+          "items": { "$ref": "#/$defs/edge" }
+        },
+        "summary": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["nodeCount", "edgeCount", "failedNodeCount", "deniedNodeCount"],
+          "properties": {
+            "nodeCount": { "type": "integer", "minimum": 0 },
+            "edgeCount": { "type": "integer", "minimum": 0 },
+            "failedNodeCount": { "type": "integer", "minimum": 0 },
+            "deniedNodeCount": { "type": "integer", "minimum": 0 }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "code": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "node": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "sequence", "eventType", "phase", "status", "occurredAt", "reasonCode", "subject"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "sequence": { "type": "integer", "minimum": 1 },
+        "eventType": { "$ref": "#/$defs/code" },
+        "phase": {
+          "enum": ["admission", "plan", "policy", "route", "execute", "retrieve", "synthesize", "verify", "review", "terminal"]
+        },
+        "status": {
+          "enum": ["pending", "running", "succeeded", "incomplete", "failed", "denied", "exhausted", "cancelled", "ambiguous"]
+        },
+        "occurredAt": {
+          "oneOf": [{ "$ref": "#/$defs/timestamp" }, { "type": "null" }]
+        },
+        "reasonCode": {
+          "oneOf": [{ "$ref": "#/$defs/code" }, { "type": "null" }]
+        },
+        "subject": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "id", "digest"],
+          "properties": {
+            "kind": { "$ref": "#/$defs/code" },
+            "id": { "$ref": "#/$defs/id" },
+            "digest": {
+              "oneOf": [{ "$ref": "#/$defs/digest" }, { "type": "null" }]
+            }
+          }
+        }
+      }
+    },
+    "edge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "from", "to", "type"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "from": { "$ref": "#/$defs/id" },
+        "to": { "$ref": "#/$defs/id" },
+        "type": { "enum": ["next", "caused-by", "handoff", "verified-by", "reviewed-by"] }
+      }
+    }
+  }
+}

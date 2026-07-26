@@ -5,15 +5,16 @@ provider/deployment registry, blind Compare, multi-project management and
 persistent project-bound Chat sessions are implemented; sessions now support
 star/archive/filter, Documents provides proposal-first Markdown editing, and
 the shared responsive product shell now includes a bounded Deep Research
-library, launch surface, cited report and inspectable evidence rail.
+library, launch surface, cited report, inspectable evidence rail and a
+read-only Runs / Flow replay surface.
 
-**Snapshot:** 2026-07-24
+**Snapshot:** 2026-07-26
 
 **Repositories:**
 
 - core: `cyberdid/ecosystem`;
 - product: `cyberdid/nordrassil`;
-- product head in this snapshot: `96a4263`.
+- product head in this snapshot: `728dd17` (feature `6424de5`).
 
 ## Why Nordrassil exists
 
@@ -473,7 +474,54 @@ At this snapshot:
   run grant was disabled afterward;
 - JavaScript parsing, Python compilation and whitespace checks pass.
 
-The 79 tests are implementation evidence for the current bounded slices. They
+### Runs / Flow — Agent Flow grammar over ecosystem evidence
+
+The `patoles/agent-flow` review confirmed that a node/edge canvas, selectable
+step inspector and visible execution history are useful product primitives.
+What Nordrassil must not import is browser-owned orchestration truth: moving a
+node, drawing an edge or showing a green badge cannot create a core plan,
+handoff, approval or successful event.
+
+Slice 1 therefore starts from the opposite direction:
+
+```text
+recorded run evidence
+→ deterministic ecosystem FlowProjection
+→ Nordrassil read-only graph
+```
+
+The core now has:
+
+- canonical A0 `observability.flow.read`;
+- strict `flow.ai.ecosystem/v1alpha1` `FlowProjection`;
+- explicit `authenticated`, `validated` and `observed` trust tiers;
+- content-free nodes/edges, derived summary and semantic record digest;
+- deterministic JSON replay with fail-closed tamper, unknown-field, sequence,
+  duplicate/dangling-edge and summary validation;
+- no prompt, output, path, credential or authorization fields.
+
+Nordrassil `6424de5`, with dependency-test follow-up `728dd17`, adds:
+
+- separate default-on `runs.read` in capability-state v6;
+- `GET /api/flows` and `GET /api/flows/{run_id}`;
+- a Runs library, replay graph, selected-step inspector, integrity digest and
+  evidence timeline;
+- real projection of stored Deep Research `search/open/find/answer` steps;
+- truthful `observed · product-observation` and
+  `product-research-not-governed-broker` labels;
+- no Resume, Retry, Cancel, Execute or graph-authoring controls.
+
+Live acceptance used existing `ecosystem` project data: three runs were listed;
+one rendered 12 nodes, 11 edges and 12 timeline steps with zero console errors.
+At 390 × 844 the document width remained bounded and the graph used its own
+scroll surface. The 85-test Nordrassil suite is green, including a direct
+dependency test for the independent `runs.read` grant.
+
+This is replay, not live telemetry. Authenticated Runtime/Orchestration/Loop/
+Team adapters, SSE/reconnect, real handoff edges and execution controls remain
+future slices and must be driven by durable source records.
+
+The 85 tests are implementation evidence for the current bounded slices. They
 do not prove native macOS kernel isolation, remote provider conformance,
 production multi-user security or completion of the full product.
 
@@ -490,6 +538,7 @@ production multi-user security or completion of the full product.
 | Responsive shell / accessibility | desktop and 390 px shell, system light/dark colours, focus and reduced motion working; PWA, user themes and formal assistive-tech audit remain |
 | Documents | proposal-first project Markdown editor working; revisions/CAS, import/render/export and research citations remain |
 | Deep Research | bounded project library/report/evidence slice working; governed broker authority, pinned transport, semantic evidence gate and background job lifecycle remain |
+| Runs / Flow | read-only Research replay working; authenticated core-journal ingestion and live stream remain |
 | Agents / teams / scheduled tasks | planned; must use bounded loops and evaluated delegation |
 | Email / Calendar / MCP | planned; credentials stay broker-owned and writes require approval |
 | Auth / backup | planned |
@@ -506,14 +555,16 @@ The complete live feature inventory is maintained in
 3. Completed: bounded product Deep Research with default-off run, explicit
    budgets, private untrusted source CAS and citation-shape gate; governed
    broker integration and semantic evidence remain.
-4. Next: Memory 2.0 with provenance-visible namespaces, search, fact/lesson lifecycle,
+4. Completed: read-only Runs / Flow with deterministic content-free
+   projection and observed Research replay.
+5. Next: Memory 2.0 with provenance-visible namespaces, search, fact/lesson lifecycle,
    reviewed promotion, conflict display and reversible compaction.
-5. Versioned Documents with exact research citations, immutable revisions,
+6. Versioned Documents with exact research citations, immutable revisions,
    render/import/export and promotion receipts.
-6. Bounded Agent runs, skill repair loops and evaluated team orchestration.
-7. Tasks, MCP, email/calendar and other external connectors with action-point
+7. Bounded Agent runs, skill repair loops and evaluated team orchestration.
+8. Tasks, MCP, email/calendar and other external connectors with action-point
    approvals.
-8. Authentication, backup/import/export, PWA/mobile and accessibility.
+9. Authentication, backup/import/export, PWA/mobile and accessibility.
 
 Each slice is done only when it has a usable UI/API, a named core or adapter
 boundary, positive and negative tests, a dependency test, provenance and an

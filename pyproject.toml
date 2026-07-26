@@ -34,6 +34,7 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 eco_cli = ["schemas/*.json"]
+eco_flow = ["schemas/*.json"]
 eco_memory = ["schemas/*.json"]
 eco_orchestration = ["schemas/*.json", "profiles/source-review.v1/*.json"]
 eco_research = ["schemas/*.json"]
