@@ -15,7 +15,7 @@ Nordrassil-specific bio-cyberpunk system rather than a generic SaaS dashboard.
 
 - core: `cyberdid/ecosystem`;
 - product: `cyberdid/nordrassil`;
-- product head in this snapshot: `17c2bc3`.
+- product head in this snapshot: `d181dcd`.
 
 ## Why Nordrassil exists
 
@@ -416,6 +416,30 @@ support, background streaming/cancel/retry, automatic memory/document
 promotion or multi-agent research. The complete contract is
 `nordrassil/docs/research-contract.md`.
 
+### Memory 2.0 — project context without authority
+
+Nordrassil `d181dcd` replaces the original global note-like memory adapter with
+one product service over the implemented `eco_memory` graph:
+
+- exact active-project namespace;
+- sealed immutable `MemoryRecord`, private content CAS and authenticated journal;
+- facts, claims, decisions, constraints, open questions and failed approaches;
+- D0–D3 data class, P0–P3 privacy and optional TTL;
+- exact content/source/record digests plus supersedes/refutes/conflicts edges;
+- exact-text filtering only over records admitted by the core read policy;
+- product review annotations bound to an exact record digest and protected by
+  a private HMAC;
+- additive compaction whose source records remain expandable.
+
+`reviewed` means that a human reviewed the context record; it does not establish
+truth. Conflict and expiry are derived states, and every product item reports
+`semanticTruth: not-established`. Chat `memory_search` and `memory_add` now use
+the same active-project service as the UI.
+
+Verification: 5 focused Memory tests cover project isolation, provenance, TTL,
+conflict state, review tamper rejection, separate read/write grants and
+reversible compaction. The full Nordrassil suite is 90/90.
+
 ## Relationship to the local-LLM experiment
 
 The separate `ecosystem-llm-lab` answers an engineering question: can each
@@ -544,7 +568,7 @@ production multi-user security or completion of the full product.
 | Flow | State |
 |---|---|
 | Core-gated Chat | persistent sessions, star/archive/filter and bounded UTF-8 attachments working; search and binary extraction remain |
-| Capabilities / Files / Memory / Notes / Skills | working foundation; authoring and richer artifact flows remain |
+| Capabilities / Files / Memory / Notes / Skills | Memory 2.0 plus the remaining foundation working; skill authoring and richer artifact flows remain |
 | Blind Compare | working local slice; rubric/routing gate remains |
 | Cookbook / local models | working local lifecycle slice; remote server lifecycle and benchmarked fit remain |
 | Providers / deployments | registry, probes, native Ollama and OpenAI Chat working; semantic conformance, remote lifecycle and Triton model adapters remain |
@@ -571,14 +595,15 @@ The complete live feature inventory is maintained in
    broker integration and semantic evidence remain.
 4. Completed: read-only Runs / Flow with deterministic content-free
    projection and observed Research replay.
-5. Next: Memory 2.0 with provenance-visible namespaces, search, fact/lesson lifecycle,
-   reviewed promotion, conflict display and reversible compaction.
-6. Versioned Documents with exact research citations, immutable revisions,
+5. Completed: project-scoped Memory 2.0 with provenance, lifecycle filters,
+   conflict display and reversible compaction.
+6. Next: bounded Agent Run launcher with skills, tools, budgets and checkpoints.
+7. Versioned Documents with exact research citations, immutable revisions,
    render/import/export and promotion receipts.
-7. Bounded Agent runs, skill repair loops and evaluated team orchestration.
-8. Tasks, MCP, email/calendar and other external connectors with action-point
+8. Evaluated team orchestration and the LLM Evaluation Lab.
+9. Tasks, MCP, email/calendar and other external connectors with action-point
    approvals.
-9. Authentication, backup/import/export, PWA/mobile and accessibility.
+10. Authentication, backup/import/export, PWA/mobile and accessibility.
 
 Each slice is done only when it has a usable UI/API, a named core or adapter
 boundary, positive and negative tests, a dependency test, provenance and an

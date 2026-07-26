@@ -4,6 +4,23 @@ Append-only хронологічний лог операцій. Формат: `#
 
 ---
 
+## [2026-07-26] product | Nordrassil project-scoped Memory 2.0
+
+- Published product commit `d181dcd` over the existing `eco_memory` sealed
+  record, private CAS, HMAC journal, deterministic retrieval and reversible
+  compaction primitives.
+- Replaced the global note-like adapter with exact active-project namespaces.
+  Chat memory tools and the UI now consume the same service.
+- Added memory types, D0–D3/P0–P3 labels, TTL, conflict links, provenance
+  digests, search/filtering, review state, compaction and source expansion.
+- Human review is a content-free HMAC-protected product annotation bound to one
+  record digest. It is not semantic truth, policy or authority; every item
+  reports `semanticTruth: not-established`.
+- Verification: 5 focused Memory tests and the full 90/90 Nordrassil suite,
+  compilation, whitespace checks and live desktop UI acceptance pass.
+- No embeddings, semantic ranking, automatic promotion, deletion worker,
+  distributed storage or memory-derived permission is claimed.
+
 ## [2026-07-26] product | Nordrassil bio-cyberpunk interface system
 
 - Replaced the generic neutral shell with a Nordrassil-specific rooted
