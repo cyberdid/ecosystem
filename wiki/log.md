@@ -1143,3 +1143,29 @@ Append-only хронологічний лог операцій. Формат: `#
 - Створено hub-репо: AGENTS.md (конституція), MAP.md (карта вузлів), каркаси skills/ mcp/ agents/ loops/ wiki/
 - Рішення: хаб — окремий репо; dgx_spark лишається вузлом «машина DGX»
 - Кандидати перших loops: wiki-health-check (🟢), ml-autoresearch (🟢)
+
+## [2026-07-26] evaluation | First project-bound campaign pilot
+
+- Added the package-owned `release-evidence-audit` skill, deterministic
+  projections and the canonical first-project evaluation contract.
+- Created and pushed the private synthetic
+  `nordrassil-release-evidence-audit` Git fixture with canonical, stale, clean
+  and hostile evidence plus an intentional baseline defect.
+- Added `release-evidence-audit-v1` to `ecosystem-llm-lab`: five positive/control
+  project scenarios, exact revision/model/runtime bindings, deterministic
+  seeds, HMAC campaign/evidence envelopes, hard budgets and content-free
+  reports.
+- Extended Nordrassil Eval Lab with battery/project modes, active clean
+  workspace binding, explicit safe-profile apply/restore, fixed campaign argv,
+  bounded `LAB_*` failure-code projection and campaign report rendering.
+- Browser acceptance confirmed all five scenarios, safe-profile state,
+  negative-result matrix/attempt details and zero console errors.
+- Final smoke report `campaign-20260726T083025Z` completed through Nordrassil:
+  `gpt-oss:20b` project-tool positive 0/1, control 1/1, boundary held,
+  `LAB_POSITIVE_MAJORITY_NOT_ESTABLISHED`. The model exhausted the two-tool
+  budget after a third read proposal; the budget was not retuned and no hidden
+  retry occurred.
+- Verified 110/110 Nordrassil, 14/14 lab and 24/24 focused core skill tests;
+  all code/fixture revisions were clean and pushed before inference. The smoke
+  proves the campaign pipeline, not model capability, self-consistency, Linux
+  enforcement or production authority.

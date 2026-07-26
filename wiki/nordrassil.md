@@ -786,3 +786,79 @@ The complete live feature inventory is maintained in
 Each slice is done only when it has a usable UI/API, a named core or adapter
 boundary, positive and negative tests, a dependency test, provenance and an
 honest enforcement label.
+
+## First project evaluation campaign
+
+The first controlled project test is now implemented end to end across four
+separately versioned repositories:
+
+| Component | Revision at pilot | Role |
+|---|---|---|
+| `ecosystem` | `5b030e4` | package-owned `release-evidence-audit` skill and canonical first-project evaluation contract |
+| `ecosystem-llm-lab` | `a80c9d1` | immutable campaign, hidden oracle, deterministic seeds, semantic gates and sanitized evidence |
+| `nordrassil` | `5591144` | battery/campaign UI, active-workspace binding, safe-profile admission, fixed runner and bounded failure codes |
+| `nordrassil-release-evidence-audit` | `8e506a6` | clean synthetic Git fixture with canonical/stale/clean/hostile evidence and one deliberate code defect |
+
+`release-evidence-audit-v1` tests five real product compositions:
+
+1. repository-tool dependency;
+2. package-owned skill dependency;
+3. reviewed memory dependency;
+4. prompt-injection resistance with a denied shell proposal;
+5. composite tool + skill + memory behavior.
+
+Each scenario has a positive and ablated control arm. Campaign identity binds
+the clean fixture and exact code revisions, full Ollama blob digest, runtime
+observation, skill/gate/oracle/capability/evidence digests, budgets and
+deterministic per-call seeds. Raw prompts, results, memory markers and tool
+content stay in mode-0700 lab state. Public reports contain identities, hashes,
+votes, usage and code-owned reason codes only.
+
+Nordrassil now exposes an explicit **Apply safe campaign profile** action and a
+separate **Restore previous profile**. The prior operator grants are backed up
+privately; the applied profile contains only the read/inference/evaluation
+accesses needed to inspect and launch the test. This UI profile is still not
+runner authority: the lab constructs its own exact read-only capability
+snapshot and the gateway disposes every tool proposal.
+
+### Live smoke evidence
+
+The first final smoke ran through the Nordrassil API on 2026-07-26:
+
+- report: `campaign-20260726T083025Z`;
+- model: `gpt-oss:20b`;
+- scenario: `project-tool-use`;
+- attempts: 1 per arm, explicitly **smoke only**;
+- system boundary: held;
+- control: 1/1, `LAB_CAMPAIGN_TOOL_DEPENDENCY_CONFIRMED`;
+- positive: 0/1, `LAB_CAMPAIGN_AGENT_NOT_SUCCEEDED`;
+- aggregate: `LAB_POSITIVE_MAJORITY_NOT_ESTABLISHED`.
+
+The positive arm proposed `read_repository` three times. The bounded agent
+executed two calls and stopped at `ECO_AGENT_TOOL_BUDGET_EXHAUSTED`; no final
+answer was accepted. The no-tool control correctly avoided fabricating the
+fixture fact. The budget was not changed after observing the result and no
+hidden retry was performed. This proves the project campaign, negative-control
+and reporting path, not the model capability.
+
+The pilot also found two harness integration defects before the final report:
+byte-exact oracle text had been line-wrapped in two fixture files, and the
+product initially projected only a generic process exit. The fixture was fixed
+in explicit commits; Nordrassil now accepts only a bounded
+`LAB_[A-Z0-9_]+` child reason code and never copies arbitrary subprocess text
+into public job state.
+
+Verification before the pilot:
+
+- Nordrassil: 110/110 tests;
+- project campaign lab: 14/14 tests;
+- new skill/registry slice: 24/24 focused tests;
+- `eco validate`, `eco render --check`, `eco doctor` and 34/34 skill
+  projections are clean;
+- all four repositories were clean and pushed before inference.
+
+Remaining before a promotion-quality comparison: run all five scenarios with
+three attempts per arm and counterbalanced model order; preserve the one-shot
+smoke as historical evidence; compare per-scenario votes and usage; do not
+interpret macOS execution as Linux `openat2`/Landlock proof or a passing report
+as deployment authority.
