@@ -6,7 +6,8 @@ persistent project-bound Chat sessions are implemented; sessions now support
 star/archive/filter, Documents provides proposal-first Markdown editing, and
 the shared responsive product shell now includes a bounded Deep Research
 library, launch surface, cited report, inspectable evidence rail and a
-read-only Runs / Flow replay surface. The current visual language is a
+read-only Runs / Flow replay surface plus sealed bounded single-agent runs with
+authenticated checkpoints. The current visual language is a
 Nordrassil-specific bio-cyberpunk system rather than a generic SaaS dashboard.
 
 **Snapshot:** 2026-07-26
@@ -15,7 +16,7 @@ Nordrassil-specific bio-cyberpunk system rather than a generic SaaS dashboard.
 
 - core: `cyberdid/ecosystem`;
 - product: `cyberdid/nordrassil`;
-- product head in this snapshot: `d181dcd`.
+- product head in this snapshot: `28faa1b`.
 
 ## Why Nordrassil exists
 
@@ -440,6 +441,58 @@ Verification: 5 focused Memory tests cover project isolation, provenance, TTL,
 conflict state, review tamper rejection, separate read/write grants and
 reversible compaction. The full Nordrassil suite is 90/90.
 
+### Bounded Agent Runs — composed context, gateway-owned authority
+
+Nordrassil `28faa1b` adds the first usable single-agent execution surface:
+
+- project-bound Agent run library and launcher;
+- explicit observed provider/model selection;
+- verified `eco_skills` records with transitive dependencies, exact content and
+  registry digests, revoked-skill rejection and an instruction-byte budget;
+- optional reviewed-only active-project memory; proposed/conflicted/expired/
+  rejected records never enter model context;
+- exact tool proposal allowlist and capability snapshot;
+- maximum steps, tool calls, wall-clock seconds and output tokens reserved per
+  model request;
+- result, stop reason, checkpoint counters, sealed manifest and full runtime
+  event chain in the operator UI.
+
+The architectural boundary is deliberate. `eco_loops` currently executes only
+deterministic no-effect/report-only profiles, so Nordrassil does not claim that
+an LLM agent is executed by `LoopEngine`. Each run embeds a canonical,
+non-executable `LoopDefinition` outline and its digest. The product adapter
+enforces the declared reservations and uses the real gateway plus
+`eco_runtime.RunEventChain` for lifecycle truth.
+
+Skill text and memory are placed in an explicitly untrusted context section and
+carry no authority. Selecting a tool only makes it visible to the model. A real
+adapter runs only after the gateway returns `executable`; otherwise the event
+chain records `tool.denied`. A2 still requires its named capability and local
+execution opt-in; A3 remains core-refused.
+
+After every accepted event Nordrassil atomically rewrites a private
+HMAC-SHA256 envelope. The record is reverified on read, exact project identity
+is required and the Flow adapter projects only canonical content-free
+`RunEvent` data. This qualifies as authenticated product-journal evidence, not
+distributed audit authority or semantic answer truth.
+
+Capabilities are separated:
+
+- `agents.read` is default-on and reads only active-project records;
+- `agents.run` is default-off and starts/cancels;
+- `models.invoke` remains an independent dependency;
+- every selected tool retains its own capability and gateway decision.
+
+Verification: 6 focused tests prove manifest/context binding, reviewed-memory
+selection, gateway denial, explicit exhaustion, cancellation precedence,
+project isolation, HMAC tamper rejection and authenticated Flow replay. The
+complete suite is 96/96; live browser acceptance verified the bio-cyberpunk
+launcher, catalogs, bounded controls and visible authority boundary.
+
+The exact contract is `nordrassil/docs/agent-run-contract.md`. Crash resume,
+durable approval grants, trusted token/cost observations, team execution,
+scheduling and independent result acceptance remain separate slices.
+
 ## Relationship to the local-LLM experiment
 
 The separate `ecosystem-llm-lab` answers an engineering question: can each
@@ -476,7 +529,7 @@ The detailed correction and proof reports are:
 
 At this snapshot:
 
-- Nordrassil: 85 unit tests pass;
+- Nordrassil: 96 unit tests pass;
 - `eco validate`: pass;
 - `eco render --check`: pass;
 - live browser proof: allowed repository read and denied shell execution both
@@ -510,6 +563,11 @@ At this snapshot:
   search/fetch, two source cards, digest/excerpt display, saved search plan and
   a 50% incomplete citation result from the selected local model; the temporary
   run grant was disabled afterward;
+- Agent tests verify immutable composition, reviewed-memory filtering,
+  gateway-only tool execution, explicit budget exhaustion, cancellation
+  precedence, HMAC tamper denial, project isolation and authenticated Flow
+  replay; the live launcher renders observed models, verified skills, tool
+  allowlist and all hard-stop controls;
 - JavaScript parsing, Python compilation and whitespace checks pass.
 
 ### Runs / Flow — Agent Flow grammar over ecosystem evidence
@@ -549,6 +607,12 @@ Nordrassil `6424de5`, with dependency-test follow-up `728dd17`, adds:
   `product-research-not-governed-broker` labels;
 - no Resume, Retry, Cancel, Execute or graph-authoring controls.
 
+Nordrassil `28faa1b` extends the same observer with real Agent `RunEvent`
+chains. Their product journal is HMAC-authenticated and the runtime reducer has
+already validated producer capability, issuer, sequence, chain head, lifecycle
+and exact tool subject binding. Objective, result, memory, skill bytes,
+arguments and returned tool content remain outside Flow.
+
 Live acceptance used existing `ecosystem` project data: three runs were listed;
 one rendered 12 nodes, 11 edges and 12 timeline steps with zero console errors.
 At 390 × 844 the document width remained bounded and the graph used its own
@@ -559,7 +623,7 @@ This is replay, not live telemetry. Authenticated Runtime/Orchestration/Loop/
 Team adapters, SSE/reconnect, real handoff edges and execution controls remain
 future slices and must be driven by durable source records.
 
-The 85 tests are implementation evidence for the current bounded slices. They
+The 96 tests are implementation evidence for the current bounded slices. They
 do not prove native macOS kernel isolation, remote provider conformance,
 production multi-user security or completion of the full product.
 
@@ -576,8 +640,8 @@ production multi-user security or completion of the full product.
 | Responsive shell / accessibility | Nordrassil bio-cyberpunk desktop and 390 px shell, focus and reduced motion working; PWA, selectable/light themes and formal assistive-tech audit remain |
 | Documents | proposal-first project Markdown editor working; revisions/CAS, import/render/export and research citations remain |
 | Deep Research | bounded project library/report/evidence slice working; governed broker authority, pinned transport, semantic evidence gate and background job lifecycle remain |
-| Runs / Flow | read-only Research replay working; authenticated core-journal ingestion and live stream remain |
-| Agents / teams / scheduled tasks | planned; must use bounded loops and evaluated delegation |
+| Runs / Flow | read-only observed Research plus authenticated Agent replay working; live SSE/reconnect and Loop/Team ingestion remain |
+| Agents / teams / scheduled tasks | bounded single-agent launcher working; durable approvals, crash resume, evaluated teams and scheduler remain |
 | Email / Calendar / MCP | planned; credentials stay broker-owned and writes require approval |
 | Auth / backup | planned |
 
@@ -597,13 +661,16 @@ The complete live feature inventory is maintained in
    projection and observed Research replay.
 5. Completed: project-scoped Memory 2.0 with provenance, lifecycle filters,
    conflict display and reversible compaction.
-6. Next: bounded Agent Run launcher with skills, tools, budgets and checkpoints.
-7. Versioned Documents with exact research citations, immutable revisions,
+6. Completed: bounded Agent Run launcher with sealed skills/memory/tools,
+   budgets, HMAC checkpoints and authenticated Flow replay.
+7. Next: live event stream, durable approvals/reconnect and exact resume
+   boundary.
+8. Versioned Documents with exact research citations, immutable revisions,
    render/import/export and promotion receipts.
-8. Evaluated team orchestration and the LLM Evaluation Lab.
-9. Tasks, MCP, email/calendar and other external connectors with action-point
+9. Evaluated team orchestration and the LLM Evaluation Lab.
+10. Tasks, MCP, email/calendar and other external connectors with action-point
    approvals.
-10. Authentication, backup/import/export, PWA/mobile and accessibility.
+11. Authentication, backup/import/export, PWA/mobile and accessibility.
 
 Each slice is done only when it has a usable UI/API, a named core or adapter
 boundary, positive and negative tests, a dependency test, provenance and an

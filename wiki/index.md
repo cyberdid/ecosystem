@@ -13,7 +13,7 @@ remains explicitly unclaimed.
 | Page | Purpose | Updated |
 |---|---|---:|
 | [External skills / Microsoft Skills](upstream-skills.md) | Pinned upstream audit, Foundry/eval/MCP/memory/agent findings and the offline non-promoting `eco skills import-plan` boundary | 2026-07-26 |
-| [Nordrassil product layer](nordrassil.md) | User-facing product over the enforced core: bounded Deep Research, responsive shell, proposal-first Documents, session lifecycle, provider registry, local-model Cookbook, Compare, multi-project workspaces and honest evidence | 2026-07-24 |
+| [Nordrassil product layer](nordrassil.md) | User-facing product over the enforced core: sealed bounded Agent runs, Memory 2.0, Deep Research, authenticated/observed Flow replay, responsive shell, Documents, sessions, providers, Cookbook, Compare and projects | 2026-07-26 |
 | [Creating in the ecosystem](../docs/architecture/creation.md) | How loop/contract/skill/agent/memory are created, the shared gate, the L0/L1/L2 autonomy scale and creation invariants | 2026-07-22 |
 | [M6 completion report](../docs/research/2026-07-20-m6-functional-orchestration-completion-report.md) | M6.1–M6.8 delivery, exact-route audit corrections, release evidence, schema identities and honest nonclaims | 2026-07-20 |
 | [M6 functional orchestration](../docs/architecture/functional-orchestration.md) | Additive contracts, governed model bridge, fixed source-review and M6.2–M6.8 delivery sequence | 2026-07-20 |

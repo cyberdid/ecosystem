@@ -4,6 +4,37 @@ Append-only хронологічний лог операцій. Формат: `#
 
 ---
 
+## [2026-07-26] product | Nordrassil bounded Agent Run launcher
+
+- Published Nordrassil product commit `28faa1b` with a usable project-bound
+  Agent launcher over existing ecosystem primitives rather than a second
+  prompt-owned runtime.
+- Every run seals the objective digest, observed provider/model, exact verified
+  skill and registry digests, reviewed-memory bindings, tool allowlist,
+  capability snapshot and step/tool/deadline/output-reservation budgets before
+  execution.
+- The current `eco_loops` engine executes only deterministic no-effect profiles,
+  so the model run honestly carries a non-executable canonical
+  `LoopDefinition` outline while the product adapter enforces its reservations
+  and hard stops.
+- Every tool proposal is disposed by the existing gateway. Skill instructions
+  and memory are context only and cannot enable tools, capabilities or
+  permissions.
+- Runtime lifecycle evidence is accepted by `RunEventChain`; every checkpoint
+  is atomically HMAC-sealed. Project mismatch and journal tamper fail closed.
+  Agent events now replay through Runs / Flow as authenticated external-journal
+  evidence without exposing objective, result, memory, skill bytes, arguments
+  or tool output.
+- Added default-on `agents.read` and separate default-off `agents.run`;
+  `models.invoke` and each tool capability remain independent dependencies.
+- Verification: 6 focused Agent tests plus the full 96/96 Nordrassil suite,
+  Python/JavaScript syntax, whitespace checks and live browser acceptance pass.
+  Cancel during a blocking model call is rechecked before success can be
+  recorded.
+- Explicit non-claims: no crash resume, durable approval-grant protocol,
+  trusted observed token/cost telemetry, team delegation, scheduler or
+  independent semantic result gate.
+
 ## [2026-07-26] product | Nordrassil project-scoped Memory 2.0
 
 - Published product commit `d181dcd` over the existing `eco_memory` sealed
