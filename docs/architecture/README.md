@@ -5,7 +5,7 @@ complete for the bounded reference profile. GitHub hosted jobs are blocked
 before creation; a live five-role model PASS is an explicit optional-provider
 nonclaim.
 
-**Updated:** 2026-07-20
+**Updated:** 2026-07-26
 
 ## Logical architecture
 
@@ -57,6 +57,12 @@ Solid lines are implemented. Dashed lines are contracts or future milestones, no
 The observer boundary is documented in
 [Read-only flow projections](flow-projections.md). `FlowProjection` renders
 recorded evidence and never grants execution authority.
+
+The separate product boundary for locally installed official assistant clients,
+private execution traces and review-gated lessons is documented in
+[Official assistant clients, private traces and reviewed learning](official-client-observability.md).
+An authenticated client session is not a canonical deployment or runtime
+authority.
 
 ## Canonical configuration
 

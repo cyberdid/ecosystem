@@ -11,7 +11,9 @@ authenticated checkpoints, and a canonical `eco_teams` Team Studio whose
 execution remains fail-closed until signed M5 authority is connected. A
 local-model Eval Lab now renders and runs the separate capability battery. The
 current visual language is a Nordrassil-specific bio-cyberpunk system rather
-than a generic SaaS dashboard.
+than a generic SaaS dashboard. Trace Lab now invokes installed official
+assistant clients, records private project traces and turns selected failures
+into review-gated memory proposals.
 
 **Snapshot:** 2026-07-26
 
@@ -19,7 +21,7 @@ than a generic SaaS dashboard.
 
 - core: `cyberdid/ecosystem`;
 - product: `cyberdid/nordrassil`;
-- product head in this snapshot: `cf0be03`.
+- product head in this snapshot: `101a321`.
 
 ## Why Nordrassil exists
 
@@ -933,3 +935,67 @@ Verification for revision `e080cbe`:
 - Python compilation, inline JavaScript compilation and `git diff --check`:
   clean;
 - live loopback API observed the corrected runtime/readiness projection.
+
+## Official client adapters, Trace Lab and reviewed learning
+
+Nordrassil revision `101a321` implements the missing account-login adapter
+class rather than pretending every subscription is an API key.
+
+The **Trace Lab** detects the official Claude Code, Codex and GitHub Copilot
+clients, reports sanitized installation/authentication state, and launches a
+selected client in the active project using a fixed no-shell argv. Each client
+offers `read-only`, `workspace-write` and the owner's explicit `superuser`
+mode. Turn count, deadline, model identifier, prompt size and captured output
+have hard limits.
+
+Authentication remains client-owned:
+
+- Claude Code owns Claude account/API authentication;
+- Codex owns ChatGPT sign-in or OpenAI API-key authentication;
+- Copilot CLI owns GitHub OAuth/device/token/BYOK authentication.
+
+Nordrassil does not read cookies, Keychain items or cached token files. A
+successful login is also not inserted into canonical
+`.ai/deployments.yaml`: it proves a usable local client adapter, not model
+identity or semantic deployment conformance.
+
+Every official-client run and every Nordrassil Chat turn now receives a
+project-private HMAC trace containing bounded input, model/client events,
+gateway tool decisions, results, stderr, stable failure codes, timing, usage
+and lifecycle state. Public lists are content-free; private trace bytes require
+`audit.read`. Environment-secret values, bearer credentials and common
+credential assignments are redacted before persistence. Symlink/hardlink,
+tamper, cross-project, terminal-rewrite and size-limit violations fail closed.
+
+The learning path is deliberately review-gated:
+
+```text
+trace → bounded untrusted analysis → proposed memory → human review
+```
+
+Trace analysis has no tools and requires `audit.read`, `learning.analyze`,
+`memory.write` and `models.invoke`. Its lesson separates evidence, hypotheses,
+failed approach, prevention, next verification and uncertainty. The result is
+always `proposed`; it cannot retrieve itself, authorize an action or change
+policy until a human marks the memory reviewed.
+
+Existing Agents, Deep Research, Eval Lab and Cookbook records retain their
+specialized authenticated evidence stores. Trace Lab currently provides the
+unified analyzer for Chat/client traces; a cross-surface read-only index is a
+follow-up projection, not a reason to discard those richer records.
+
+Live verification on 2026-07-26 found:
+
+- Codex `0.146.0-alpha.3.1` installed and authenticated through its official
+  account session;
+- Claude Code and Copilot CLI not installed on this Mac;
+- a live Codex Superuser smoke returned the exact requested sentinel;
+- four JSONL events, exit code, duration, token usage and private output were
+  recorded;
+- the public trace projection exposed no prompt/output;
+- full Nordrassil suite 139/139, focused trace/client/security suite 18/18,
+  Python/JavaScript compilation and diff checks green.
+
+The normative product/core boundary and hard limits are recorded in
+`docs/architecture/official-client-observability.md` and
+`nordrassil/docs/client-adapter-observability-contract.md`.

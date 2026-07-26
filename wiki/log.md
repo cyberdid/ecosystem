@@ -1191,3 +1191,26 @@ Append-only хронологічний лог операцій. Формат: `#
   OAuth/token state.
 - Nordrassil revision `e080cbe` is pushed; 128/128 full tests, 16/16 focused
   Cookbook tests, Python/JavaScript compilation and diff checks passed.
+
+## [2026-07-26] implementation | Official client adapters and reviewed trace learning
+
+- Added bounded official Claude Code, OpenAI Codex and GitHub Copilot CLI
+  adapters in Nordrassil revision `101a321`; each uses a fixed no-shell argv,
+  project cwd, client-specific environment allowlist and explicit mode/budgets.
+- Kept account login and token storage owned by the official client; Nordrassil
+  does not scrape cookies, Keychain records or cached token files.
+- Added project-private mode-0700/0600 HMAC execution traces for Chat and
+  official-client runs with bounded inputs, outputs, stderr, events, metrics,
+  stable error codes and pre-persistence credential redaction.
+- Added a content-free public trace index, private detail view and four-grant
+  analysis path that creates only a provenance-bound `proposed` memory lesson.
+  Human review remains required; memory and traces grant no authority.
+- Preserved specialized Agent, Research, Eval and Cookbook evidence rather than
+  flattening or discarding it; a cross-surface read-only index remains explicit
+  follow-up work.
+- Live Codex Superuser smoke succeeded through the product using the official
+  authenticated client and captured four JSONL events. Claude Code and Copilot
+  CLI were not installed, so no live claim is made for them.
+- Verified 139/139 Nordrassil tests, 18/18 focused trace/client/security tests,
+  Python/JavaScript compilation, diff checks and public/private trace
+  projections.
