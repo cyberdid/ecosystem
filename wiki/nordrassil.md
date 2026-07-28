@@ -747,6 +747,9 @@ production multi-user security or completion of the full product.
 | Projects / Git workspaces | working local slice |
 | Responsive shell / accessibility | Nordrassil bio-cyberpunk desktop and 390 px shell, focus and reduced motion working; PWA, selectable/light themes and formal assistive-tech audit remain |
 | Localisation | Ukrainian UI with an EN/УКР switcher working (~430 entries, persisted, lossless switch back); contract values and conversation data stay exact by design; further languages and backend-supplied strings that are not yet in the dictionary remain |
+| Host tool discovery | PATH plus a fixed allowlist of standard install directories, so uv/pipx/Homebrew installs are seen without restarting the server from a login shell; Windows/other layouts and a user-configurable search path remain |
+| Install feedback | a finished Cookbook job re-probes and refreshes the view in place; progress streaming, per-job notifications and failure remediation hints remain |
+| Cookbook responsiveness | dependency probes cached for 30 s with an explicit rescan, version probe capped at 1 s, visible scanning state; background/warm probing and a persistent cache remain |
 | In-app dialogs | confirm/prompt replaced by a translatable in-app modal after native dialogs were found suppressed in embedded browsers; toast/undo affordances remain |
 | Documents | proposal-first project Markdown editor working; revisions/CAS, import/render/export and research citations remain |
 | Deep Research | bounded project library/report/evidence slice working; governed broker authority, pinned transport, semantic evidence gate and background job lifecycle remain |

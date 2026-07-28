@@ -4,6 +4,43 @@ Append-only хронологічний лог операцій. Формат: `#
 
 ---
 
+## [2026-07-28] product | Nordrassil host discovery, install feedback and Cookbook responsiveness
+
+Three defects reported as "I installed it and nothing picked it up" and "no text in
+UK". Each cause was measured before any change, and each turned out to be a
+different layer.
+
+- **Freshly installed tools were invisible.** `mlx-lm` installed correctly to
+  `~/.local/bin`, that directory was on the shell PATH, but the running server
+  process had none of it: a GUI- or launchd-started process does not inherit it,
+  so `shutil.which` reported Missing forever. Added `_which()` — PATH first, then
+  a fixed allowlist of standard install directories (`~/.local/bin`, Homebrew,
+  `/usr/local`, `/usr/bin`) — and routed all 24 Cookbook lookups plus the
+  official-client lookup through it. Discovery only resolves a path; execution
+  still requires the confirmed argv plan. This also revealed that `llama.cpp`,
+  `uv` and Homebrew had been installed and reported Missing all along.
+- **A finished install never refreshed the view.** `loadJobs()` ran once, nothing
+  polled it, and nothing re-read the inventory on completion, so the operator had
+  to reload the page to see the result of their own install. Added `watchJobs()`:
+  polls while a job runs, then re-probes and refreshes in place. Verified with a
+  real install through the UI — "Hugging Face CLI ... not found Missing" became
+  its resolved path in about three seconds with no reload.
+- **The Cookbook panel sat blank for seconds.** The reported "no text" was an empty
+  panel, not a translation gap: nothing rendered until `/api/cookbook/overview`
+  resolved, and that call re-probed every tool in a subprocess on each visit —
+  about 1.3 s warm, over 5 s cold. Cached the probes for 30 s (rescan and a
+  finished install pass `refresh=true`), capped the version probe at 1 s because
+  `llama-server --version` starts serving instead of printing and burned the full
+  4 s timeout alone, and added a visible scanning state. Repeat views 1.26 s ->
+  0.39 s; cold 5.2 s -> 2.2 s.
+
+Two existing tests patched `shutil.which` to simulate an absent tool; since the
+filesystem fallback legitimately bypasses that, they now patch `_which` — the seam
+moved, the assertions did not.
+
+Nordrassil `87fce5f`; 153 tests pass (6 new: discovery off PATH, non-executables
+ignored, cache reuse vs refresh re-probe, install visible after refresh).
+
 ## [2026-07-26] product | Nordrassil Ukrainian localisation, working dialogs and a live subscription client
 
 - **Ukrainian UI localisation with an EN/УКР switcher.** The product had no i18n at
