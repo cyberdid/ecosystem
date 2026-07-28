@@ -4,6 +4,39 @@ Append-only хронологічний лог операцій. Формат: `#
 
 ---
 
+## [2026-07-26] product | Nordrassil Ukrainian localisation, working dialogs and a live subscription client
+
+- **Ukrainian UI localisation with an EN/УКР switcher.** The product had no i18n at
+  all (`lang="en"`, zero Cyrillic) while the operator and every project document are
+  Ukrainian. Added `/i18n.js`: ~430 entries covering the shell, all sixteen panels,
+  form labels, placeholders, empty states, capability labels and notes, runtime
+  profile descriptions and the model catalog. Translation is keyed by the exact
+  English source, so unknown text stays English instead of breaking, and a
+  MutationObserver re-applies it to panels that render after their fetch resolves.
+  The choice persists in `localStorage`, seeds from `navigator.language`, sets
+  `<html lang>`, and switching back to English restores every original string.
+- **Contract values are deliberately never translated.** Core reason codes
+  (`ECO_*`, `LAB_*`, `NORDRASSIL_*`) and transport/runtime identifiers
+  (`ollama-native`, `openai-compatible`, `anthropic-messages`, `code.execute`) stay
+  English because they are values a reader matches against code and config;
+  conversation content, model IDs, URLs and digests are data and stay exact. A test
+  fails if a contract value is ever added to the dictionary.
+- **Fixed dead rename/delete buttons.** Reported as "chat buttons do not work". The
+  wiring was intact (archive and export worked); measurement showed
+  `window.confirm()` returning `false` in ~1 ms without rendering — embedded browser
+  views suppress native dialogs, so every action gated behind `confirm()`/`prompt()`
+  was a silent no-op (session rename/delete, provider, research and document delete).
+  Replaced all five with an in-app modal: always renders, Enter confirms, Escape
+  cancels, and the strings are translatable, which native dialogs never were.
+- **Official Codex client works from the ChatGPT subscription, no API key.** Every
+  run failed in 0.6 s because the adapter passed `--ask-for-approval`, which
+  `codex exec` (codex-cli 0.146) rejects outright; `exec` is non-interactive, so
+  `--sandbox` alone governs it. Verified end to end live: a read-only run through the
+  operator's subscription returned the exact expected string. Claude Code and Copilot
+  CLI adapters exist but are unverified here — neither binary is installed.
+- Nordrassil `58cd93f`; 149 tests pass (4 new localisation tests). Verified live
+  across all panels: no console errors, UK→EN→UK is lossless.
+
 ## [2026-07-26] product | Nordrassil local-model Eval Lab
 
 - Published Nordrassil product commit `cf0be03`.

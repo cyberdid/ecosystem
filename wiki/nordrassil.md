@@ -746,6 +746,8 @@ production multi-user security or completion of the full product.
 | Providers / deployments | registry, probes, native Ollama and OpenAI Chat working; semantic conformance, remote lifecycle and Triton model adapters remain |
 | Projects / Git workspaces | working local slice |
 | Responsive shell / accessibility | Nordrassil bio-cyberpunk desktop and 390 px shell, focus and reduced motion working; PWA, selectable/light themes and formal assistive-tech audit remain |
+| Localisation | Ukrainian UI with an EN/УКР switcher working (~430 entries, persisted, lossless switch back); contract values and conversation data stay exact by design; further languages and backend-supplied strings that are not yet in the dictionary remain |
+| In-app dialogs | confirm/prompt replaced by a translatable in-app modal after native dialogs were found suppressed in embedded browsers; toast/undo affordances remain |
 | Documents | proposal-first project Markdown editor working; revisions/CAS, import/render/export and research citations remain |
 | Deep Research | bounded project library/report/evidence slice working; governed broker authority, pinned transport, semantic evidence gate and background job lifecycle remain |
 | Runs / Flow | read-only observed Research plus authenticated Agent replay working; Agent SSE/reconnect works, Loop/Team ingestion remains |
