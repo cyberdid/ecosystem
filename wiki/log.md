@@ -4,6 +4,41 @@ Append-only хронологічний лог операцій. Формат: `#
 
 ---
 
+## [2026-08-03] product | Autopilot S10: the loop runs the work
+
+The loop prepared and stopped. A person stated a task and got memory, a wiki
+page, a note, a skill and an agent — and no work done. The stage between `gate`
+and `record` closes that.
+
+- **The gate's answer became the tool list.** The agent starts with exactly the
+  tools the core allowed and nothing else, so a tool the core refused cannot
+  reappear at execution time. In the live run the proposal asked for
+  `run_shell`, the core denied it, and the agent never received it.
+- **It is the one stage that outlives a call.** The agent runs with its own
+  budgets, gateway disposal and approval flow; each `advance` polls it and
+  returns unchanged while it is going, and a run already waiting resumes rather
+  than starting a second. Still no background driver.
+- **Refusals stay visible.** Without `agents.run`/`models.invoke` the stage
+  completes as `not-attempted` with its reason rather than skipping silently. An
+  agent ending in anything but `succeeded` halts the run and `record` never
+  executes — writing a summary over failed work would record a success nobody
+  observed. A deadline passing mid-run reports `abandoned`; the agent keeps its
+  own deadline.
+
+What the live run taught: it completed with `ECO_AGENT_COMPLETED` after four
+steps and three tool calls and returned an **empty result** — this local model
+finished by acting rather than by writing a summary. "Succeeded with an empty
+result" must not read like "succeeded having done nothing", so the execution
+record now carries the step, tool-call and model-call counts from the runner's
+own checkpoint, and the panel says so in words when the text is empty.
+
+Verified live end to end against the real runner and the local model:
+understand → resolve → assemble → gate → execute → record, `succeeded`, tools
+`['list_files', 'read_file', 'read_repository']`, 4 steps / 3 tool calls / 4
+model calls. A second run with an intent the catalogue does not cover halted at
+`resolve` instead, because authoring was not permitted — the refusal path still
+works. 342 tests pass.
+
 ## [2026-08-03] product | Autopilot S9: notes, and starting a run from the chat
 
 Measured against the done-condition this repository wrote for itself, two items

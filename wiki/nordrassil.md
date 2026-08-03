@@ -1032,6 +1032,15 @@ A task can be stated from the chat composer itself: "Do it for me" runs the same
 loop through the same endpoints and reports each stage, the core's verdicts and
 what was written, back into the conversation. It is a button, never a default.
 
-**Honest limit.** The loop authors and gates the concept layer; it does not yet
-carry a task to completion. Execution remains the existing agent-run path with
-its own budgets and its own gateway disposal.
+The loop now runs the work too. Its `execute` stage hands the prepared run to the
+existing agent runner with **exactly the tools the gate allowed** — a tool the
+core refused cannot reappear at execution time — and polls it, without a
+background driver. An agent ending in anything but `succeeded` halts the run, so
+no summary is written on top of failed work.
+
+**Honest limits.** Team manifests are authored and canonically validated but
+still cannot run: `teams.run` stays fail-closed without a signed M5 authority
+snapshot, which the product cannot manufacture from a toggle. Synthesis and the
+broker are deterministic — they produce validated, project-derived artifacts, but
+a skill body is a shape applied to the intent rather than reasoning about the
+code. MCP is searched for and honestly reported as unconfigured.
