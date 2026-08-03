@@ -1004,3 +1004,30 @@ Live verification on 2026-07-26 found:
 The normative product/core boundary and hard limits are recorded in
 `docs/architecture/official-client-observability.md` and
 `nordrassil/docs/client-adapter-observability-contract.md`.
+
+## Autopilot — the concept layer, written for people who do not know the concepts
+
+The product exposed every concept and required the operator to know all of them.
+Eight sub-tasks closed that gap; the goal, its objective done-condition and its
+decomposition are recorded in `nordrassil/docs/autopilot-goal.md`.
+
+| Surface | Contract | What it does | What it refuses |
+| --- | --- | --- | --- |
+| Autopilot scopes | `autopilot-scope-contract.md` | three operator switches — `install`, `author`, `run` — all off by default | unrestricted mode never grants them; a granted scope whose prerequisites are off reports itself ineffective and names what it waits for |
+| Project brief | `project-brief-contract.md` | a structural tier that opens no file, and a shared tier reading the README heading/excerpt and manifest name/description | consent must name the exact structural digest that was shown; a stale share is reported stale, never reused |
+| Concept synthesis | `concept-synthesis-contract.md` | candidate memory, document, skill, agent and team, each named with the validator that passed it | a candidate failing validation is rejected, not offered; a team with no observed deployment is not bound to an invented one |
+| Capability broker | `capability-broker-contract.md` | searches tools and skills for a stated task; writes the missing skill | authors skills, never tools; an authored skill is project-scoped and `registryPromotion: not-earned` |
+| Provisioner | `provisioning-contract.md` | runs readiness gaps as ordered, typed, allowlisted Cookbook plans | a failed step halts the run; a gap with no typed plan is recorded, not dropped |
+| Autopilot loop | `autopilot-loop-contract.md` | understand → resolve → assemble → gate → record, one stage per call | prepares and asks, never dispatches; the intent is immutable for the run |
+
+**Verification.** `docs/research/2026-08-03-autopilot-cold-start-verification-claude.md`
+records the dependency-method result on a synthetic UAV-navigation fixture: with
+the scopes on, one memory record, one project document and one authored skill
+whose verification step names the project's own test command; with the same
+capabilities and the scopes off, the identical run halts at `resolve` and
+produces nothing; with `execution.superuser` on and the scopes off, still
+nothing. 322 tests pass.
+
+**Honest limit.** The loop authors and gates the concept layer; it does not yet
+carry a task to completion. Execution remains the existing agent-run path with
+its own budgets and its own gateway disposal.

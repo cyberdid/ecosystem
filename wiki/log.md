@@ -4,6 +4,67 @@ Append-only хронологічний лог операцій. Формат: `#
 
 ---
 
+## [2026-08-03] product | Autopilot: from a stated sentence to a written concept layer
+
+The gap the roadmap named: the product exposed every concept — memory, wiki,
+skills, agents, teams, typed plans — and required the operator to know all of
+them. Eight sub-tasks (S0–S8) closed it, each landing with its own contract doc
+and dependency-proven tests.
+
+- **S0 merged Copilot's guided onboarding and project context map into `main`.**
+  The branch forked before the client/i18n/Cookbook work, so every conflict was
+  resolved by keeping the answer that survives inspection rather than the newer
+  commit. Two defects the merge itself introduced were caught by the suite, not
+  by reading: a duplicated `AnthropicMessagesModel` class where the second
+  shadowed the better `_split`, and a readiness test slicing to the last
+  `</script>` after a new block was appended. Copilot's `uiConfirm`/`uiPrompt`
+  turned out to be thin wrappers over native `confirm`/`prompt`, which return
+  instantly without rendering here — the same silent-no-op class we had already
+  fixed once — so they now route to the in-app modal and every call site awaits.
+- **S1 made autonomy a separate decision from authority.** Three scopes
+  (`autopilot.install`/`author`/`run`), all off by default. The real risk was
+  `_effective_enabled`: unrestricted mode expanded to *every* capability, so
+  adding the scopes as ordinary capabilities would have meant that turning off
+  the blocks for testing silently turned on acting-unasked. `superuser_expansion`
+  now grants everything except the autopilot scopes. Verified on the live host,
+  where superuser is on and the autopilot still reports `mode: manual`.
+- **S3 split the project brief into a tier that opens no file and a tier that
+  needs consent.** The consent names the exact structural digest that was shown:
+  a confirmation not tied to a digest authorizes whatever the project happens to
+  contain later, which is not consent. Verified live — the wrong digest is
+  refused with `NORDRASSIL_BRIEF_CONFIRMATION_STALE`, the right one returns the
+  README's own heading and 668 recorded bytes.
+- **S4 writes the concept layer and validates before offering.** Teams go
+  through `eco_teams.validate_record`, agents through the same static validators
+  a real run applies, memory through `eco_memory`'s own enums. A team with no
+  observed deployment is rejected rather than bound to an invented one; a
+  verification skill with no command to verify with is not proposed at all.
+- **S5 finds a capability before writing one.** The stemming exists for one
+  concrete failure: without it "sub-tasks" misses `task-decomposition` and the
+  broker writes a second skill for a job the catalogue already covers. It
+  authors skills, never tools — a skill is discipline, a tool is reach.
+- **S2 runs the install sequence a person who has never seen a typed plan
+  cannot.** Every step is the same allowlisted Cookbook plan, confirmed with the
+  Cookbook's own token; a failed step halts the run. Job field names came from
+  `cookbook.py` rather than expectation (`complete`, `returnCode`, epoch
+  seconds). Confirmed live without executing: `brew install ollama` then
+  `ollama pull qwen3:32b`, in that order.
+- **S6 walks a plain sentence through understand → resolve → assemble → gate →
+  record.** The intent is immutable for the run, because widening it later would
+  make every earlier gate decision a decision about something else. It prepares
+  and asks; it does not dispatch — a loop that both decided and executed would be
+  the one place where propose and grant quietly became the same act.
+- **S8 proved the whole thing by dependency.** A synthetic UAV-navigation
+  fixture, three arms differing only in the capability set: with the scopes on,
+  1 memory record, 1 document and 1 authored skill whose verification step names
+  the project's own test command; with the scopes off, the identical run halts at
+  `resolve` and produces nothing; with `execution.superuser` on and the scopes
+  off, still nothing. Recorded in
+  `docs/research/2026-08-03-autopilot-cold-start-verification-claude.md`.
+
+322 tests pass. Honest limit: the loop authors and gates the concept layer, it
+does not yet carry a task to completion — execution stays in the agent-run path.
+
 ## [2026-07-28] product | Nordrassil host discovery, install feedback and Cookbook responsiveness
 
 Three defects reported as "I installed it and nothing picked it up" and "no text in
