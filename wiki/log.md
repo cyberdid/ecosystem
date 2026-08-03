@@ -4,6 +4,43 @@ Append-only хронологічний лог операцій. Формат: `#
 
 ---
 
+## [2026-08-03] product | Autopilot S9: notes, and starting a run from the chat
+
+Measured against the done-condition this repository wrote for itself, two items
+were unmet after S8. Both are now closed, and the condition itself was too loose
+in one place.
+
+- **Notes.** The synthesizer produced memory, document, skill, agent and team —
+  no note, though the goal said "a project wiki page and notes". A note now
+  records what the brief could **not** determine: no test command, an
+  unrecognised stack, an unshared subject, no version control, no recognised
+  entrypoint, a truncated scan. The memory fact holds what is known and the
+  overview page presents it; neither carried what is still unknown, which is
+  what someone opening an unfamiliar project actually has to find out. A note
+  with nothing open is not proposed at all — the same reasoning that keeps a
+  verification skill from being proposed without a command to run.
+- **The chat entry.** The loop lived in its own panel while the condition said
+  "without leaving the chat". The composer now carries a "Do it for me" button
+  that runs the same endpoints and reports each stage as it lands, ending with
+  what the broker found, what the core allowed and denied, and what was written.
+  It is a button, never a default: an ordinary message stays an ordinary
+  message, and a halted run shows its reason code rather than a generic failure.
+- **The condition was sharpened.** "and notes" said nothing about when a note is
+  warranted. It now reads: a note of what the brief could not determine, written
+  only when something is actually open.
+
+Two things worth recording because neither was visible from reading. The cold
+start now has an arm without a manifest, where the stack and test command
+genuinely cannot be determined, asserting the loop writes memory, document AND
+note; the fully-understood arm asserts the opposite. And the fixture had to
+redirect `tools.DATA` and `tools.NOTES_DIR`, which are module-level constants
+pointing at real state — without that, a test would have filed a note into the
+operator's own notes directory.
+
+332 tests pass. Verified live: the active project's note lists exactly the two
+questions its brief cannot answer, and not the subject question, because its
+description had been shared.
+
 ## [2026-08-03] product | Autopilot: from a stated sentence to a written concept layer
 
 The gap the roadmap named: the product exposed every concept — memory, wiki,

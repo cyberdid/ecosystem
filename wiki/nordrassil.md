@@ -1028,6 +1028,10 @@ capabilities and the scopes off, the identical run halts at `resolve` and
 produces nothing; with `execution.superuser` on and the scopes off, still
 nothing. 322 tests pass.
 
+A task can be stated from the chat composer itself: "Do it for me" runs the same
+loop through the same endpoints and reports each stage, the core's verdicts and
+what was written, back into the conversation. It is a button, never a default.
+
 **Honest limit.** The loop authors and gates the concept layer; it does not yet
 carry a task to completion. Execution remains the existing agent-run path with
 its own budgets and its own gateway disposal.
